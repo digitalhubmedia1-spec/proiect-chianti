@@ -90,25 +90,50 @@ export const AuthProvider = ({ children }) => {
 
     const approveDriverApplication = async (appId) => {
         if (!supabase) return false;
+
         // 1. Update status
-        await supabase.from('driver_applications').update({ status: 'approved' }).eq('id', appId);
+        const { error: updateError } = await supabase
+            .from('driver_applications')
+            .update({ status: 'approved' })
+            .eq('id', appId);
+
+        if (updateError) {
+            console.error("Error approving application:", updateError);
+            alert("Eroare la aprobare: " + updateError.message);
+            return false;
+        }
 
         // 2. Create Driver (in 'drivers' table) to allow login
-        const { data: appData } = await supabase.from('driver_applications').select('*').eq('id', appId).single();
+        const { data: appData, error: fetchError } = await supabase
+            .from('driver_applications')
+            .select('*')
+            .eq('id', appId)
+            .single();
+
+        if (fetchError || !appData) {
+            console.error("Error fetching app data:", fetchError);
+            return false; // update succeeded but fetch failed? odd state.
+        }
+
         if (appData) {
             // Check if already exists to avoid duplicates
             const { data: existing } = await supabase.from('drivers').select('*').eq('email', appData.email).single();
             if (!existing) {
                 const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + "!@#";
-                const { error } = await supabase.from('drivers').insert([{
+                const { error: insertError } = await supabase.from('drivers').insert([{
                     name: appData.name,
                     email: appData.email,
                     phone: appData.phone,
                     status: 'active',
                     password: generatedPassword
                 }]);
-                if (error) console.error("Error creating driver profile:", error);
-                else alert(`Livrator aprobat! Parola generată este: ${generatedPassword}. Salveaz-o și trimite-o livratorului.`);
+
+                if (insertError) {
+                    console.error("Error creating driver profile:", insertError);
+                    alert("Aplicația a fost aprobată, dar contul de livrator nu a putut fi creat: " + insertError.message);
+                } else {
+                    alert(`Livrator aprobat! Parola generată este: ${generatedPassword}. Salveaz-o și trimite-o livratorului.`);
+                }
             }
         }
         return true;
