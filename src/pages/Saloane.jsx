@@ -400,8 +400,16 @@ const Saloane = () => {
                         </div>
                         <div className="venue-media-side">
                             {/* Placeholder Video */}
-                            <div className="venue-video-placeholder">
-                                <span>Prezentare Video Salon Veneția</span>
+                            <div className="venue-video-wrapper">
+                                <iframe
+                                    src="https://player.vimeo.com/video/559543560"
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    allow="autoplay; fullscreen; picture-in-picture"
+                                    allowFullScreen
+                                    title="Prezentare Salon Venetia"
+                                ></iframe>
                             </div>
 
                             <ImageCarousel
@@ -449,8 +457,16 @@ const Saloane = () => {
                         </div>
                         <div className="venue-media-side">
                             {/* Placeholder Video */}
-                            <div className="venue-video-placeholder">
-                                <span>Prezentare Video Salon Roma</span>
+                            <div className="venue-video-wrapper">
+                                <iframe
+                                    src="https://player.vimeo.com/video/559543520"
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    allow="autoplay; fullscreen; picture-in-picture"
+                                    allowFullScreen
+                                    title="Prezentare Salon Roma"
+                                ></iframe>
                             </div>
 
                             <ImageCarousel
