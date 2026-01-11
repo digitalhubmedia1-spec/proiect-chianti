@@ -406,9 +406,10 @@ const Saloane = () => {
 
                             <ImageCarousel
                                 images={[
-                                    "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1464366400600-7168b8af0bc3?auto=format&fit=crop&w=800&q=80"
+                                    "/assets/saloane/venetia/Salon-Venetia-Good.jpg",
+                                    "/assets/saloane/venetia/Salon-Venetia-Candy-Bar-eveniment-2.jpg",
+                                    "/assets/saloane/venetia/Salon-Venetia-decor-masa-1.jpg",
+                                    "/assets/saloane/venetia/Salon-Venetia-masa-miri-1-1.jpg"
                                 ]}
                                 alt="Salon Venetia"
                             />
@@ -454,9 +455,13 @@ const Saloane = () => {
 
                             <ImageCarousel
                                 images={[
-                                    "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1505932794465-14a0584f9755?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1546749876-247ca45155cc?auto=format&fit=crop&w=800&q=80"
+                                    "/assets/saloane/roma/Salon-Roma-masa-1-1.jpg",
+                                    "/assets/saloane/roma/S-Roma-primire-1-1.jpg",
+                                    "/assets/saloane/roma/Salon-Roma-decor-masa-1-1.jpg",
+                                    "/assets/saloane/roma/Salon-Roma-artisitic-decor-2.jpg",
+                                    "/assets/saloane/roma/Salon-Roma-masa-mireasa-1.jpg",
+                                    "/assets/saloane/roma/Salon-Roma-masa-mireasa4.jpg",
+                                    "/assets/saloane/roma/S-Roma-primire-2-1.jpg"
                                 ]}
                                 alt="Salon Roma"
                             />
@@ -502,9 +507,12 @@ const Saloane = () => {
 
                             <ImageCarousel
                                 images={[
-                                    "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1519225468359-69496a36d941?auto=format&fit=crop&w=800&q=80",
-                                    "https://images.unsplash.com/photo-1519219788971-8d9797e0928e?auto=format&fit=crop&w=800&q=80"
+                                    "/assets/saloane/florenta/SALON-CREM-MASA-MIRI-1-1.jpg",
+                                    "/assets/saloane/florenta/SALON-CREM-DECORATIUNI-1.jpg",
+                                    "/assets/saloane/florenta/SALON-CREM-MASA-DECOR2-1.jpg",
+                                    "/assets/saloane/florenta/Salon-Florenta-masa-decor-1-1.jpg",
+                                    "/assets/saloane/florenta/SALON-CREM-DECORATIUNI-3-1.jpg",
+                                    "/assets/saloane/florenta/Salon-Florenta-masa-miri-2.jpg"
                                 ]}
                                 alt="Salon Florenta"
                             />
