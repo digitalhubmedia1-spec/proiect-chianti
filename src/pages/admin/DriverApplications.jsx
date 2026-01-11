@@ -250,11 +250,11 @@ const DriverApplications = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div>
                                             <h5 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#1e293b' }}>
-                                                {app.nume} {app.prenume}
+                                                {app.name || `${app.nume || ''} ${app.prenume || ''}`}
                                             </h5>
                                             <div style={{ display: 'flex', alignItems: 'center', color: '#94a3b8', fontSize: '0.875rem', marginTop: '4px' }}>
                                                 <Calendar size={14} style={{ marginRight: '6px' }} />
-                                                {new Date(app.date).toLocaleDateString()}
+                                                {new Date(app.created_at || app.date).toLocaleDateString()}
                                             </div>
                                         </div>
                                         <span
@@ -283,7 +283,7 @@ const DriverApplications = () => {
                                             </div>
                                             <div>
                                                 <div style={{ color: '#94a3b8', fontSize: '0.75rem', lineHeight: '1.2' }}>Vârstă</div>
-                                                <div style={{ color: '#334155', fontWeight: '500' }}>{app.varsta} ani</div>
+                                                <div style={{ color: '#334155', fontWeight: '500' }}>{app.age || app.varsta || '-'} ani</div>
                                             </div>
                                         </div>
 
@@ -293,7 +293,7 @@ const DriverApplications = () => {
                                             </div>
                                             <div>
                                                 <div style={{ color: '#94a3b8', fontSize: '0.75rem', lineHeight: '1.2' }}>Telefon</div>
-                                                <div style={{ color: '#334155', fontWeight: '500' }}>{app.telefon}</div>
+                                                <div style={{ color: '#334155', fontWeight: '500' }}>{app.phone || app.telefon}</div>
                                             </div>
                                         </div>
 
