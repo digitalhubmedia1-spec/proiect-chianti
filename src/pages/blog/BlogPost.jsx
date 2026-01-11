@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBlog } from '../../context/BlogContext';
 import { ArrowLeft } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import SEO from '../../components/SEO';
 import './Blog.css';
 
 const BlogPost = () => {
@@ -74,7 +76,7 @@ const BlogPost = () => {
                     </div>
                 )}
 
-                <div className="post-body" dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div className="post-body" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }} />
             </div>
         </div>
     );

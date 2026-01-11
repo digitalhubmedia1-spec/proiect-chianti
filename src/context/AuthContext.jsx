@@ -254,13 +254,16 @@ export const AuthProvider = ({ children }) => {
 
     const driverLogin = async (email, password) => {
         if (!supabase) return null;
-        // Specialized simple login for drivers accessing the dashboard
-        const { data, error } = await supabase
-            .from('drivers')
-            .select('*')
-            .eq('email', email)
-            .eq('password', password)
-            .single();
+        // Secure RPC Login to avoid public read access to 'drivers' table
+        const { data, error } = await supabase.rpc('login_driver', {
+            p_email: email,
+            p_password: password
+        });
+
+        if (error) {
+            console.error("Driver login error:", error);
+            return null;
+        }
 
         if (data) {
             localStorage.setItem('driver_token', JSON.stringify(data));
