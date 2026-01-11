@@ -172,10 +172,55 @@ export const AuthProvider = ({ children }) => {
         return true;
     };
 
-    const rejectDriverApplication = async (appId) => {
+    const rejectDriverApplication = async (appOrId) => {
         if (!supabase) return false;
-        await supabase.from('driver_applications').update({ status: 'rejected' }).eq('id', appId);
-        return true;
+
+        const appId = typeof appOrId === 'object' ? appOrId.id : appOrId;
+        const appDataInput = typeof appOrId === 'object' ? appOrId : null;
+
+        // 1. Try Update status
+        const { data: updatedData, error: updateError } = await supabase
+            .from('driver_applications')
+            .update({ status: 'rejected' })
+            .eq('id', appId)
+            .select();
+
+        if (updateError) {
+            console.error("Error rejecting application:", updateError);
+            alert("Eroare la respingere: " + updateError.message);
+            return false;
+        }
+
+        // 2. If valid update, we are done
+        if (updatedData && updatedData.length > 0) {
+            return true;
+        }
+
+        // 3. If not found, try Migration (for legacy local apps)
+        if (appDataInput) {
+            console.log("Legacy application found. Migrating as REJECTED...");
+            const { error: insertError } = await supabase
+                .from('driver_applications')
+                .insert([{
+                    name: `${appDataInput.nume} ${appDataInput.prenume}`,
+                    phone: appDataInput.telefon,
+                    email: appDataInput.email,
+                    experience: appDataInput.experienta || '',
+                    vehicle: appDataInput.vehicul || '',
+                    status: 'rejected',
+                    created_at: new Date(appDataInput.date || Date.now()).toISOString()
+                }]);
+
+            if (insertError) {
+                console.error("Error migrating rejection:", insertError);
+                alert("Eroare la migrare (respingere): " + insertError.message);
+                return false;
+            }
+            return true;
+        }
+
+        alert("Eroare: Aplicația nu a putut fi găsită pentru a fi respinsă.");
+        return false;
     };
 
     const deleteDriverApplication = async (appId) => {
