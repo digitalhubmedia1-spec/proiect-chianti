@@ -80,17 +80,17 @@ const DriverApplications = () => {
         }
     };
 
-    const handleApprove = (id) => {
+    const handleApprove = async (id) => {
         if (window.confirm("Ești sigur că vrei să aprobi această aplicație? Se va crea automat un cont de livrator.")) {
-            approveDriverApplication(id);
-            loadData();
+            await approveDriverApplication(id);
+            await loadData();
         }
     };
 
-    const handleReject = (id) => {
+    const handleReject = async (id) => {
         if (window.confirm("Ești sigur că vrei să respingi această aplicație?")) {
-            rejectDriverApplication(id);
-            loadData();
+            await rejectDriverApplication(id);
+            await loadData();
         }
     };
 
