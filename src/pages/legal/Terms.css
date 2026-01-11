@@ -1,0 +1,144 @@
+/* Terms.css */
+
+.terms-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-top: 120px;
+    font-family: 'Open Sans', 'Helvetica Neue', sans-serif;
+    /* Or rely on global font */
+    color: #444;
+    /* Softer black */
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+.terms-header-title {
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.terms-update-date {
+    font-style: italic;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 3rem;
+}
+
+.terms-toc {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    border-left: 5px solid #c0392b;
+    /* Brand color accent */
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.terms-toc h4 {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.terms-toc ul {
+    padding-left: 1.2rem;
+}
+
+.terms-toc li {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+    transition: color 0.2s;
+}
+
+.terms-toc li:hover {
+    color: #c0392b;
+    cursor: pointer;
+}
+
+.terms-section {
+    margin-bottom: 4rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px dashed #eee;
+}
+
+.terms-section:last-child {
+    border-bottom: none;
+}
+
+.terms-section h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+    position: relative;
+    padding-left: 15px;
+}
+
+.terms-section h3::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 5px;
+    bottom: 5px;
+    width: 4px;
+    background-color: #c0392b;
+    border-radius: 2px;
+}
+
+.terms-section h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #34495e;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.terms-section p {
+    margin-bottom: 1.2rem;
+    text-align: justify;
+    /* Optional, for cleaner blocks */
+}
+
+.terms-section ul,
+.terms-section ol {
+    margin-bottom: 1.5rem;
+    padding-left: 2rem;
+}
+
+.terms-section li {
+    margin-bottom: 0.5rem;
+}
+
+.terms-link {
+    color: #c0392b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.terms-link:hover {
+    color: #a93226;
+    text-decoration: underline;
+}
+
+.alert-info-custom {
+    background-color: #e8f6f3;
+    border-left: 4px solid #1abc9c;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    color: #16a085;
+}
+
+.highlight-box {
+    background-color: #fff8e1;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    border: 1px solid #ffe0b2;
+    margin: 1.5rem 0;
+}

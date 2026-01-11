@@ -1,0 +1,102 @@
+/* Global Animations - Public Site Only */
+
+/* Global Animations - Public Site Only */
+
+.animated-site {
+    /* Base class for enabling animations on children */
+}
+
+/* 1. Page Content Fade In - Triggered on Route Change */
+.page-animate-enter {
+    animation: fadeInPage 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes fadeInPage {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 2. Button Micro-interactions */
+/* Target all buttons inside the animated site */
+.animated-site button,
+.animated-site .btn {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.animated-site button:hover,
+.animated-site .btn:hover {
+    transform: translateY(-2px) scale(1.02);
+}
+
+.animated-site button:active,
+.animated-site .btn:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+/* 3. Card/Product Hover Lifts */
+/* Target common card classes */
+.animated-site .product-card,
+.animated-site .card,
+.animated-site .menu-item,
+.animated-site .blog-card,
+.animated-site .feature-card {
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease;
+}
+
+.animated-site .product-card:hover,
+.animated-site .card:hover,
+.animated-site .menu-item:hover,
+.animated-site .blog-card:hover,
+.animated-site .feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* 4. Link Underline Animation */
+/* Specific links in text or nav */
+.animated-site a:not(.btn):not(.product-card):not(.card-link) {
+    position: relative;
+    text-decoration: none;
+}
+
+/* Add a subtle underline animation for nav/text links if desired, 
+   but be careful not to break layout. 
+   Safe approach: simple opacity transition */
+.animated-site a {
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.animated-site a:hover {
+    opacity: 0.8;
+}
+
+/* 5. Input Fields Focus */
+.animated-site input:not([type="checkbox"]):not([type="radio"]),
+.animated-site textarea,
+.animated-site select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.animated-site input:focus,
+.animated-site textarea:focus,
+.animated-site select:focus {
+    transform: scale(1.005);
+    /* Very subtle pop */
+}
+
+/* 6. Images & Media */
+.animated-site img {
+    transition: transform 0.5s ease;
+}
+
+/* Optional: Slight zoom on hover for images inside overflow-hidden containers */
+.animated-site .img-wrapper img:hover {
+    transform: scale(1.05);
+}
