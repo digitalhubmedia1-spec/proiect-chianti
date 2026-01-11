@@ -12,7 +12,8 @@ const AdminBlog = () => {
         title: '',
         image: '',
         excerpt: '',
-        content: ''
+        content: '',
+        video_url: ''
     };
 
     const handleEdit = (post) => {
@@ -98,6 +99,17 @@ const AdminBlog = () => {
                             <img src={currentPost.image} alt="Preview" style={{ height: '100px', borderRadius: '4px' }} />
                         </div>
                     )}
+                    <div className="form-group">
+                        <label>Video URL (YouTube / Vimeo - Opțional)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={currentPost.video_url || ''}
+                            onChange={e => setCurrentPost({ ...currentPost, video_url: e.target.value })}
+                        />
+                        <small className="text-muted">Adaugă un link video pentru a fi afișat în articol.</small>
+                    </div>
                     <div className="form-group">
                         <label>Rezumat (pentru lista de articole)</label>
                         <textarea
