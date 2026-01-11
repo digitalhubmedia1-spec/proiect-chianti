@@ -88,48 +88,69 @@ export const AuthProvider = ({ children }) => {
         return data || [];
     };
 
-    const approveDriverApplication = async (appId) => {
+    const approveDriverApplication = async (appOrId) => {
         if (!supabase) return false;
 
-        alert(`Debug: Încerc aprobare pentru ID: ${appId}`);
+        const appId = typeof appOrId === 'object' ? appOrId.id : appOrId;
+        const appDataInput = typeof appOrId === 'object' ? appOrId : null;
 
-        // 1. Update status
-        const { data: updatedData, error: updateError } = await supabase
+        // alert(`Debug: Încerc aprobare pentru ID: ${appId}`);
+
+        // 1. Try to Update status of existing DB row
+        let { data: updatedData, error: updateError } = await supabase
             .from('driver_applications')
             .update({ status: 'approved' })
             .eq('id', appId)
             .select();
 
+        let appData = null;
+
         if (updateError) {
-            console.error("Error approving application:", updateError);
+            console.error("Error approving application (update):", updateError);
             alert("Eroare la aprobare (SQL): " + updateError.message);
             return false;
         }
 
-        if (!updatedData || updatedData.length === 0) {
-            alert("Eroare: Aplicația nu a fost găsită în baza de date (sau ID-ul nu corespunde).");
-            return false;
+        if (updatedData && updatedData.length > 0) {
+            appData = updatedData[0];
+        } else {
+            // Row not found in DB. If we have the source data (legacy local app), MIGRATE IT.
+            if (appDataInput) {
+                console.log("Legacy application found. Migrating to database...");
+                // Insert new row
+                const { data: insertedData, error: insertError } = await supabase
+                    .from('driver_applications')
+                    .insert([{
+                        name: `${appDataInput.nume} ${appDataInput.prenume}`,
+                        phone: appDataInput.telefon,
+                        email: appDataInput.email,
+                        experience: appDataInput.experienta || '',
+                        vehicle: appDataInput.vehicul || '',
+                        status: 'approved',
+                        created_at: new Date(appDataInput.date || Date.now()).toISOString()
+                    }])
+                    .select();
+
+                if (insertError) {
+                    console.error("Error migrating legacy app:", insertError);
+                    alert("Eroare la migrarea aplicației locale: " + insertError.message);
+                    return false;
+                }
+                appData = insertedData[0];
+            } else {
+                alert("Eroare: Aplicația nu a fost găsită în baza de date și nu există date locale pentru migrare.");
+                return false;
+            }
         }
 
         // 2. Create Driver (in 'drivers' table) to allow login
-        const { data: appData, error: fetchError } = await supabase
-            .from('driver_applications')
-            .select('*')
-            .eq('id', appId)
-            .single();
-
-        if (fetchError || !appData) {
-            console.error("Error fetching app data:", fetchError);
-            return false; // update succeeded but fetch failed? odd state.
-        }
-
         if (appData) {
             // Check if already exists to avoid duplicates
             const { data: existing } = await supabase.from('drivers').select('*').eq('email', appData.email).single();
             if (!existing) {
                 const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + "!@#";
                 const { error: insertError } = await supabase.from('drivers').insert([{
-                    name: appData.name,
+                    name: appData.name, // drivers table uses 'name'
                     email: appData.email,
                     phone: appData.phone,
                     status: 'active',
@@ -138,10 +159,14 @@ export const AuthProvider = ({ children }) => {
 
                 if (insertError) {
                     console.error("Error creating driver profile:", insertError);
-                    alert("Aplicația a fost aprobată, dar contul de livrator nu a putut fi creat: " + insertError.message);
+                    alert("Aplicația a fost aprobată/migrată, dar contul de livrator nu a putut fi creat: " + insertError.message);
                 } else {
-                    alert(`Livrator aprobat! Parola generată este: ${generatedPassword}. Salveaz-o și trimite-o livratorului.`);
+                    alert(`Livrator aprobat și migrat în baza de date! Parola generată este: ${generatedPassword}.`);
                 }
+            } else {
+                // Already exists as driver, just ensure app is approved (done above)
+                // Maybe show password of existing? No, security.
+                alert("Această aplicație a fost aprobată. Livratorul există deja în sistem.");
             }
         }
         return true;
