@@ -84,21 +84,36 @@ const DriverApplications = () => {
         if (window.confirm("Ești sigur că vrei să aprobi această aplicație? Se va crea automat un cont de livrator.")) {
             const success = await approveDriverApplication(app);
             if (success) {
-                // If it was a local-only app (timestamp ID), remove it from local storage now that it's migrated to DB
-                if (typeof app.id === 'number' && app.id > 1700000000000) {
-                    const currentLocal = JSON.parse(localStorage.getItem('chianti_driver_apps_v2') || '[]');
-                    const newLocal = currentLocal.filter(a => a.id !== app.id);
+                // Remove legacy local app if it exists (by ID matching) to prevent duplication
+                // The DB now has the 'approved' version (likely with a NEW ID if migrated, or same if updated)
+                // We must remove the OLD local pending item.
+                const currentLocal = JSON.parse(localStorage.getItem('chianti_driver_apps_v2') || '[]');
+                const newLocal = currentLocal.filter(a => a.id !== app.id); // Remove the specific legacy item
+
+                if (currentLocal.length !== newLocal.length) {
                     localStorage.setItem('chianti_driver_apps_v2', JSON.stringify(newLocal));
+                    console.log("Legacy local app removed:", app.id);
                 }
+
                 await loadData();
             }
         }
     };
 
-    const handleReject = async (id) => {
+    const handleReject = async (app) => {
         if (window.confirm("Ești sigur că vrei să respingi această aplicație?")) {
-            await rejectDriverApplication(id);
-            await loadData();
+            const success = await rejectDriverApplication(app);
+            if (success) {
+                // Remove legacy local app if it exists
+                const currentLocal = JSON.parse(localStorage.getItem('chianti_driver_apps_v2') || '[]');
+                const newLocal = currentLocal.filter(a => a.id !== app.id);
+
+                if (currentLocal.length !== newLocal.length) {
+                    localStorage.setItem('chianti_driver_apps_v2', JSON.stringify(newLocal));
+                }
+
+                await loadData();
+            }
         }
     };
 
@@ -369,7 +384,7 @@ const DriverApplications = () => {
                                                     <Check size={18} style={{ marginRight: '6px' }} /> ADMIS
                                                 </button>
                                                 <button
-                                                    onClick={() => handleReject(app.id)}
+                                                    onClick={() => handleReject(app)}
                                                     style={{
                                                         flex: 1,
                                                         backgroundColor: '#800020',
