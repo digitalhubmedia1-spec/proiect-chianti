@@ -307,28 +307,133 @@ export const MenuProvider = ({ children }) => {
         }
     };
 
-    // Configurator Logic
+    // --- Configurator Logic (Supabase) ---
     const [configuratorSteps, setConfiguratorSteps] = useState([]);
     const [configuratorProducts, setConfiguratorProducts] = useState({});
-    useEffect(() => {
-        const storedSteps = localStorage.getItem('chianti_config_steps');
-        const storedProds = localStorage.getItem('chianti_config_products');
-        setConfiguratorSteps(storedSteps ? JSON.parse(storedSteps) : SEED_STEPS);
-        setConfiguratorProducts(storedProds ? JSON.parse(storedProds) : SEED_PRODUCTS);
-    }, []);
-    useEffect(() => {
-        if (!loading) {
-            localStorage.setItem('chianti_config_steps', JSON.stringify(configuratorSteps));
-            localStorage.setItem('chianti_config_products', JSON.stringify(configuratorProducts));
-        }
-    }, [configuratorSteps, configuratorProducts, loading]);
 
-    // Config Actions (Legacy Local)
-    const updateStep = (id, newTitle) => setConfiguratorSteps(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
-    const addConfigProduct = (stepId, product) => setConfiguratorProducts(prev => ({ ...prev, [stepId]: [...(prev[stepId] || []), { ...product, id: Date.now() }] }));
-    const updateConfigProduct = (stepId, productId, updatedData) => setConfiguratorProducts(prev => ({ ...prev, [stepId]: prev[stepId].map(p => p.id === productId ? { ...p, ...updatedData } : p) }));
-    const deleteConfigProduct = (stepId, productId) => {
-        if (window.confirm('Stergi produsul?')) setConfiguratorProducts(prev => ({ ...prev, [stepId]: prev[stepId].filter(p => p.id !== productId) }));
+    // Fetch Configurator Data
+    const fetchConfigData = async () => {
+        if (!supabase) return;
+        try {
+            // 1. Fetch Steps
+            const { data: stepsData, error: stepsError } = await supabase
+                .from('configurator_steps')
+                .select('*')
+                .order('sort_order', { ascending: true });
+
+            if (stepsError) throw stepsError;
+
+            // If empty, maybe seed? For now, just set.
+            setConfiguratorSteps(stepsData || []);
+
+            // 2. Fetch Products
+            const { data: prodsData, error: prodsError } = await supabase
+                .from('configurator_products')
+                .select('*')
+                .eq('is_active', true);
+
+            if (prodsError) throw prodsError;
+
+            // Transform flat list to Map { stepId: [products] }
+            const prodMap = {};
+            (prodsData || []).forEach(p => {
+                if (!prodMap[p.step_id]) prodMap[p.step_id] = [];
+                prodMap[p.step_id].push(p);
+            });
+            setConfiguratorProducts(prodMap);
+
+            // If no steps in DB, and we have seed data, maybe we should insert them?
+            // For now, let's assume manual entry or we inject seed if empty.
+            if ((!stepsData || stepsData.length === 0) && SEED_STEPS.length > 0) {
+                // Auto-seed Steps if empty (one-time migration helper)
+                console.log("Seeding Configurator Steps...");
+                for (let i = 0; i < SEED_STEPS.length; i++) {
+                    const { data: newStep } = await supabase.from('configurator_steps').insert([{ title: SEED_STEPS[i].title, sort_order: i }].select());
+                    // If we want to seed products too, we'd need ID mapping. Too complex for auto.
+                }
+                // Re-fetch
+                // fetchConfigData(); // recursion risk, skip for now.
+            }
+
+        } catch (error) {
+            console.error("Error fetching configurator data:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchConfigData();
+    }, []);
+
+    // Config Actions
+    const updateStep = async (id, newTitle) => {
+        if (!supabase) return;
+        try {
+            const { error } = await supabase.from('configurator_steps').update({ title: newTitle }).eq('id', id);
+            if (error) throw error;
+            setConfiguratorSteps(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
+        } catch (error) {
+            alert("Eroare la actualizare pas: " + error.message);
+        }
+    };
+
+    const addConfigProduct = async (stepId, product) => {
+        if (!supabase) return;
+        try {
+            const payload = {
+                step_id: stepId,
+                name: product.name,
+                price: parseFloat(product.price || 0),
+                image: product.image || '',
+                description: product.description || '',
+                is_active: true
+            };
+            const { data, error } = await supabase.from('configurator_products').insert([payload]).select();
+            if (error) throw error;
+
+            if (data) {
+                const newProd = data[0];
+                setConfiguratorProducts(prev => ({
+                    ...prev,
+                    [stepId]: [...(prev[stepId] || []), newProd]
+                }));
+            }
+        } catch (error) {
+            console.error("Error adding config product:", error);
+            alert("Eroare: " + error.message);
+        }
+    };
+
+    const updateConfigProduct = async (stepId, productId, updatedData) => {
+        if (!supabase) return;
+        try {
+            const { error } = await supabase.from('configurator_products').update(updatedData).eq('id', productId);
+            if (error) throw error;
+
+            setConfiguratorProducts(prev => ({
+                ...prev,
+                [stepId]: prev[stepId].map(p => p.id === productId ? { ...p, ...updatedData } : p)
+            }));
+        } catch (error) {
+            console.error("Error updating config product:", error);
+            alert("Eroare: " + error.message);
+        }
+    };
+
+    const deleteConfigProduct = async (stepId, productId) => {
+        if (!window.confirm('Verifică intenția: Ștergi acest produs?')) return;
+        if (!supabase) return;
+        try {
+            const { error } = await supabase.from('configurator_products').delete().eq('id', productId);
+            if (error) throw error;
+
+            setConfiguratorProducts(prev => ({
+                ...prev,
+                [stepId]: prev[stepId].filter(p => p.id !== productId)
+            }));
+        } catch (error) {
+            console.error("Error deleting config product:", error);
+            alert("Eroare: " + error.message);
+        }
     };
 
     const value = {
