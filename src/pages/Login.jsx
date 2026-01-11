@@ -11,7 +11,7 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!isCaptchaValid) {
@@ -19,11 +19,12 @@ const Login = () => {
             return;
         }
 
-        const success = login(email, password);
+        const success = await login(email, password);
         if (success) {
             navigate('/contul-meu');
         } else {
-            alert("Email sau parolă incorecte! Dacă nu ai cont, te rugăm să te înregistrezi.");
+            // Error is handled in context (alert), but we can add fallback here if needed
+            // alert("Email sau parolă incorecte!"); 
         }
     };
 
