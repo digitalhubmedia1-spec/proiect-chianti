@@ -1,14 +1,22 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useOrder } from '../context/OrderContext';
 import './Account.css';
 
 const Account = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const navigate = useNavigate();
 
     const { orders } = useOrder();
+
+    if (loading) {
+        return <div className="loading-spinner">Se încarcă profilul...</div>;
+    }
+
+    if (!user) {
+        return <Navigate to="/login" />;
+    }
 
     // Filter orders by current user's email
     // Note: In a real app we'd query API by userID, but here we filter the global context state
