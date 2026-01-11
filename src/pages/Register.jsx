@@ -34,8 +34,15 @@ const Register = () => {
             return;
         }
 
-        const fullName = `${formData.firstName} ${formData.lastName}`;
-        const success = await register(fullName, formData.email, formData.password, formData.phone);
+        // Clean inputs (remove accidental spaces)
+        const cleanEmail = formData.email.trim();
+        const cleanPhone = formData.phone.trim();
+        const cleanFirstName = formData.firstName.trim();
+        const cleanLastName = formData.lastName.trim();
+
+        const fullName = `${cleanFirstName} ${cleanLastName}`;
+
+        const success = await register(fullName, cleanEmail, formData.password, cleanPhone);
         if (success) {
             navigate('/login');
         }
