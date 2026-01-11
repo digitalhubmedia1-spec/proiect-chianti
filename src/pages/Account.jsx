@@ -31,7 +31,7 @@ const Account = () => {
         <div className="account-page">
             <div className="container">
                 <div className="account-header">
-                    <h1>Bine ai venit, {user.name}!</h1>
+                    <h1>Bine ai venit, {user.user_metadata?.full_name || user.email}!</h1>
                     <button onClick={handleLogout} className="btn btn-outline-dark">Deconectare</button>
                 </div>
 
@@ -39,9 +39,9 @@ const Account = () => {
                     <div className="account-card profile-card">
                         <h3>Detaliile Tale</h3>
                         <div className="profile-info">
-                            <p><strong>Nume:</strong> {user.name}</p>
+                            <p><strong>Nume:</strong> {user.user_metadata?.full_name || 'Nespecificat'}</p>
                             <p><strong>Email:</strong> {user.email}</p>
-                            <p><strong>Telefon:</strong> {user.phone || 'Nespecificat'}</p>
+                            <p><strong>Telefon:</strong> {user.user_metadata?.phone || user.phone || 'Nespecificat'}</p>
                         </div>
                     </div>
 
