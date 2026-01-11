@@ -21,7 +21,7 @@ const Register = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!isCaptchaValid) {
@@ -35,13 +35,11 @@ const Register = () => {
         }
 
         const fullName = `${formData.firstName} ${formData.lastName}`;
-        const success = register(fullName, formData.email, formData.password, formData.phone);
+        const success = await register(fullName, formData.email, formData.password, formData.phone);
         if (success) {
-            alert("Cont creat cu succes!");
             navigate('/login');
-        } else {
-            alert("Acest email este deja înregistrat!");
         }
+        // If not success, the register function already alerted the error
     };
 
     return (

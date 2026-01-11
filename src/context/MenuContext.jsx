@@ -229,21 +229,82 @@ export const MenuProvider = ({ children }) => {
     // --- Legacy / LocalStorage Features (Booking, Configurator) ---
     // Keeping these on LocalStorage for now to reduce migration risk/time
 
-    // Booking Logic
+    // Booking Logic (Supabase)
     const [bookedDates, setBookedDates] = useState({});
+
+    // Fetch Bookings
     useEffect(() => {
-        const storedBookings = localStorage.getItem('chianti_bookings');
-        if (storedBookings) setBookedDates(JSON.parse(storedBookings));
+        const fetchBookings = async () => {
+            if (!supabase) return;
+            try {
+                const { data, error } = await supabase.from('venue_bookings').select('*');
+                if (error) throw error;
+
+                // Transform list [{venue, date}] into object { venetia: [date1, date2], ... }
+                const bookingMap = {};
+                (data || []).forEach(b => {
+                    if (!bookingMap[b.venue]) bookingMap[b.venue] = [];
+                    bookingMap[b.venue].push(b.date);
+                });
+                setBookedDates(bookingMap);
+            } catch (err) {
+                console.error("Error fetching bookings:", err);
+            }
+        };
+
+        fetchBookings();
+
+        // Subscribe to changes for realtime updates
+        const channel = supabase
+            .channel('public:venue_bookings')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'venue_bookings' }, () => {
+                fetchBookings();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
-    useEffect(() => {
-        if (!loading) localStorage.setItem('chianti_bookings', JSON.stringify(bookedDates));
-    }, [bookedDates, loading]);
-    const toggleBooking = (venue, dateStr) => {
+
+    const toggleBooking = async (venue, dateStr) => {
+        if (!supabase) {
+            alert("Baza de date nu este conectată.");
+            return;
+        }
+
+        const currentVenueDates = bookedDates[venue] || [];
+        const isBooked = currentVenueDates.includes(dateStr);
+
+        // Optimistic Update
         setBookedDates(prev => {
             const venueDates = prev[venue] || [];
-            const isBooked = venueDates.includes(dateStr);
-            return { ...prev, [venue]: isBooked ? venueDates.filter(d => d !== dateStr) : [...venueDates, dateStr] };
+            return {
+                ...prev,
+                [venue]: isBooked ? venueDates.filter(d => d !== dateStr) : [...venueDates, dateStr]
+            };
         });
+
+        try {
+            if (isBooked) {
+                // Delete
+                const { error } = await supabase
+                    .from('venue_bookings')
+                    .delete()
+                    .match({ venue, date: dateStr });
+                if (error) throw error;
+            } else {
+                // Insert
+                const { error } = await supabase
+                    .from('venue_bookings')
+                    .insert([{ venue, date: dateStr }]);
+                if (error) throw error;
+            }
+        } catch (error) {
+            console.error("Error toggling booking:", error);
+            alert("Eroare la salvarea disponibilității: " + error.message);
+            // Revert optimistic update? For now, we rely on the next fetch or user retry.
+        }
     };
 
     // Configurator Logic
