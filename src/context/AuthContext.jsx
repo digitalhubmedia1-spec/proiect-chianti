@@ -91,15 +91,23 @@ export const AuthProvider = ({ children }) => {
     const approveDriverApplication = async (appId) => {
         if (!supabase) return false;
 
+        alert(`Debug: Încerc aprobare pentru ID: ${appId}`);
+
         // 1. Update status
-        const { error: updateError } = await supabase
+        const { data: updatedData, error: updateError } = await supabase
             .from('driver_applications')
             .update({ status: 'approved' })
-            .eq('id', appId);
+            .eq('id', appId)
+            .select();
 
         if (updateError) {
             console.error("Error approving application:", updateError);
-            alert("Eroare la aprobare: " + updateError.message);
+            alert("Eroare la aprobare (SQL): " + updateError.message);
+            return false;
+        }
+
+        if (!updatedData || updatedData.length === 0) {
+            alert("Eroare: Aplicația nu a fost găsită în baza de date (sau ID-ul nu corespunde).");
             return false;
         }
 
