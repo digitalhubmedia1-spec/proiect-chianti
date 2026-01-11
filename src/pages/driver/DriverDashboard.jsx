@@ -242,7 +242,7 @@ const DriverDashboard = () => {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', fontSize: '0.9rem', color: '#64748b' }}>
                                     <Clock size={16} style={{ marginRight: '8px', flexShrink: 0 }} />
-                                    <span>{new Date(order.date).toLocaleDateString()}</span>
+                                    <span>{new Date(order.created_at || order.date).toLocaleDateString('ro-RO')}</span>
                                 </div>
                                 <div style={{
                                     paddingTop: '0.75rem',
