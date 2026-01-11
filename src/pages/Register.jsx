@@ -36,14 +36,19 @@ const Register = () => {
 
         // Clean inputs (remove accidental spaces)
         // Aggressively remove ALL whitespace from email and phone (including internal spaces)
-        const cleanEmail = formData.email.replace(/\s/g, '');
-        const cleanPhone = formData.phone.replace(/\s/g, '');
+        // FORCE LOWERCASE (Supabase usually handles this multiple case sensitivity issues)
+        const cleanEmail = formData.email ? formData.email.replace(/\s/g, '').toLowerCase() : '';
+        const cleanPhone = formData.phone ? formData.phone.replace(/\s/g, '') : '';
 
         // Names can have internal spaces, so only trim ends
-        const cleanFirstName = formData.firstName.trim();
-        const cleanLastName = formData.lastName.trim();
+        const cleanFirstName = formData.firstName ? formData.firstName.trim() : '';
+        const cleanLastName = formData.lastName ? formData.lastName.trim() : '';
 
         const fullName = `${cleanFirstName} ${cleanLastName}`;
+
+        // DEBUG: Alert exactly what is being sent to identify hidden chars
+        // REMOVE THIS after fixing
+        alert(`DEBUG: Email trimis: [${cleanEmail}] (lungime: ${cleanEmail.length})`);
 
         const success = await register(fullName, cleanEmail, formData.password, cleanPhone);
         if (success) {
@@ -96,7 +101,7 @@ const Register = () => {
 
                     <Captcha onValidate={setIsCaptchaValid} />
 
-                    <button type="submit" className="auth-btn">Înregistrează-te</button>
+                    <button type="submit" className="auth-btn">Înregistrează-te (Debug)</button>
                 </form>
                 <p className="auth-link">
                     Ai deja cont? <Link to="/login">Autentifică-te</Link>
