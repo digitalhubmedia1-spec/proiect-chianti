@@ -1,11 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom'; // Added import
-import { FileText, Settings } from 'lucide-react';
+import { Calendar, Users, Music, Star, ArrowRight, CheckCircle } from 'lucide-react';
+import SEO from '../components/SEO';
 import './Events.css';
 
 const Events = () => {
     return (
         <div className="events-page">
+            <SEO
+                title="Organizare Evenimente & Nunți - Restaurant Chianti Roman"
+                description="Găzduim evenimente speciale, nunți, botezuri și petreceri private în saloanele noastre elegante din Roman. Meniuri personalizate și servicii premium."
+                canonical="/evenimente"
+            />
             <div className="events-header">
                 <div className="container">
                     <h1 className="page-title">Meniuri Evenimente</h1>

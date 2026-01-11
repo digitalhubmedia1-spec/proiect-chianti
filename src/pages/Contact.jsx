@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Clock, Calendar, Users, Home, Map } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import SEO from '../components/SEO';
 import './Contact.css';
 
 const Contact = () => {
@@ -78,6 +79,11 @@ const Contact = () => {
 
     return (
         <div className="contact-page">
+            <SEO
+                title="Contact & Rezervări - Restaurant Chianti Roman"
+                description="Contactează-ne pentru rezervări la masă, comenzi telefonice sau organizarea de evenimente. Suntem situați în centrul orașului Roman."
+                canonical="/contact"
+            />
             <div className="contact-header">
                 <div className="container">
                     <h1 className="page-title">Contact & Rezervări</h1>

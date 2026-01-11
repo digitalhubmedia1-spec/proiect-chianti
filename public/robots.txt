@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /driver/
+Disallow: /login
+Disallow: /register
+Disallow: /account
+Disallow: /contul-meu
+Disallow: /checkout
+
+Sitemap: https://chianti.ro/sitemap.xml

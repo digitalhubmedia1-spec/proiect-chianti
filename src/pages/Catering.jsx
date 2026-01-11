@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
 import { isRestaurantOpen, getScheduleMessage, isPreOrderPeriod } from '../utils/schedule';
 import { Search } from 'lucide-react';
+import SEO from '../components/SEO';
 import './Catering.css';
 import './Products.css'; // Reuse product grid styles
 
@@ -77,6 +78,12 @@ const Catering = () => {
 
     return (
         <div className="products-page catering-page-dynamic">
+            <SEO
+                title="Catering Premium Roman - Evenimente Speciale"
+                description="Platouri aperitiv cald și rece, meniuri complete pentru evenimente. Livrare catering la domiciliu sau birou în Roman."
+                canonical="/catering"
+            />
+
             {/* 48h Advance Notice Popup */}
             {showInfoPopup && (
                 <div className="schedule-popup-overlay" style={{ zIndex: 2000 }}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Clock, Star } from 'lucide-react';
+import SEO from '../components/SEO';
 import './Home.css';
 
 const TESTIMONIALS = [

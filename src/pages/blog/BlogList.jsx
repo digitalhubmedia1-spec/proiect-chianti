@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useBlog } from '../../context/BlogContext';
 import { ArrowRight } from 'lucide-react';
+import SEO from '../../components/SEO';
 import './Blog.css';
 
 const BlogList = () => {
@@ -9,6 +10,7 @@ const BlogList = () => {
 
     return (
         <div className="blog-page">
+            <SEO title="Blog Culinar - Rețete & Povești Chianti Roman" description="Descoperă secretele bucătăriei italiene, rețete autentice și poveștile din spatele preparatelor noastre." canonical="/blog" />
             <div className="container">
                 <div className="blog-header">
                     <h1>Blog & Noutăți</h1>

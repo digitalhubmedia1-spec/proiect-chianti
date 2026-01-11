@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
 import { isRestaurantOpen, getScheduleMessage, isPreOrderPeriod } from '../utils/schedule';
 import { Search } from 'lucide-react';
+import SEO from '../components/SEO';
 import './Products.css';
 
 const Products = () => {
@@ -86,6 +87,11 @@ const Products = () => {
 
     return (
         <div className="products-page">
+            <SEO
+                title="Meniul Nostru - Comandă Online Pizza & Paste Roman"
+                description="Explorează meniul nostru complet: pizza, paste, fructe de mare și deserturi. Livrare rapidă la domiciliu în Roman."
+                canonical="/meniu"
+            />
             {showPopup && (
                 <div className="schedule-popup-overlay">
                     <div className="schedule-popup">

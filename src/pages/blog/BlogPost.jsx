@@ -42,6 +42,11 @@ const BlogPost = () => {
 
     return (
         <div className="blog-post-page">
+            <SEO
+                title={post.title}
+                description={post.excerpt}
+                canonical={`/blog/${id}`}
+            />
             <div className="post-hero" style={{ backgroundImage: `url(${post.image})` }}>
                 <div className="post-hero-overlay">
                     <div className="container">
