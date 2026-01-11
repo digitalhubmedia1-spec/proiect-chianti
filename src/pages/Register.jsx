@@ -35,8 +35,11 @@ const Register = () => {
         }
 
         // Clean inputs (remove accidental spaces)
-        const cleanEmail = formData.email.trim();
-        const cleanPhone = formData.phone.trim();
+        // Aggressively remove ALL whitespace from email and phone (including internal spaces)
+        const cleanEmail = formData.email.replace(/\s/g, '');
+        const cleanPhone = formData.phone.replace(/\s/g, '');
+
+        // Names can have internal spaces, so only trim ends
         const cleanFirstName = formData.firstName.trim();
         const cleanLastName = formData.lastName.trim();
 
