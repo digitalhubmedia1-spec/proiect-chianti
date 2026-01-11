@@ -46,10 +46,6 @@ const Register = () => {
 
         const fullName = `${cleanFirstName} ${cleanLastName}`;
 
-        // DEBUG: Alert exactly what is being sent to identify hidden chars
-        // REMOVE THIS after fixing
-        alert(`DEBUG: Email trimis: [${cleanEmail}] (lungime: ${cleanEmail.length})`);
-
         const success = await register(fullName, cleanEmail, formData.password, cleanPhone);
         if (success) {
             navigate('/login');
@@ -101,20 +97,11 @@ const Register = () => {
 
                     <Captcha onValidate={setIsCaptchaValid} />
 
-                    <button type="submit" className="auth-btn">Înregistrează-te (Debug)</button>
+                    <button type="submit" className="auth-btn">Înregistrează-te</button>
                 </form>
                 <p className="auth-link">
                     Ai deja cont? <Link to="/login">Autentifică-te</Link>
                 </p>
-
-                {/* DEBUG SECTION - REMOVE BEFORE PRODUCTION */}
-                <div style={{ marginTop: '20px', padding: '10px', background: '#f0f0f0', fontSize: '10px', color: '#333' }}>
-                    <strong>DIAGNOSTIC SERVER (Trimite poză cu asta):</strong><br />
-                    URL: {import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.substring(0, 20) + "..." : "LIPSA"}<br />
-                    KEY: {import.meta.env.VITE_SUPABASE_KEY ? "PREZENT (KEY)" : (import.meta.env.VITE_SUPABASE_ANON_KEY ? "PREZENT (ANON)" : "LIPSA COMPLET")}
-                    <br />
-                    URL are ghilimele? {import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.includes('"') ? "DA (STERGE-LE!)" : "NU"}
-                </div>
             </div>
         </div>
     );
