@@ -4,7 +4,6 @@ import { Menu, X, User, ShoppingCart, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
-import { useMenu } from '../context/MenuContext';
 import logoAlb from '../assets/logo/logoalb.png';
 import logoColorat from '../assets/logo/logocolorat.png';
 import './Header.css';

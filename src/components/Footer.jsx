@@ -1,6 +1,5 @@
 import React from 'react';
 import { CreditCard, Wallet } from 'lucide-react';
-import { CreditCard, Wallet } from 'lucide-react';
 import logoAlb from '../assets/logo/logoalb.png';
 import './Footer.css';
 

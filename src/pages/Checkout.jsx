@@ -175,7 +175,6 @@ const Checkout = () => {
         addOrder({
             customer: formData,
             items: cartItems,
-            items: cartItems,
             finalTotal: finalTotal, // Store full total
             subtotal: cartTotal,
             deliveryCost: deliveryCost,
