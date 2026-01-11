@@ -1,5 +1,7 @@
 import React from 'react';
 import { CreditCard, Wallet } from 'lucide-react';
+import { CreditCard, Wallet } from 'lucide-react';
+import logoAlb from '../assets/logo/logoalb.png';
 import './Footer.css';
 
 const Footer = () => {
@@ -11,15 +13,12 @@ const Footer = () => {
                     {/* Column 1: Brand & Info */}
                     <div className="footer-col brand-col">
                         <div className="footer-logo">
-                            {/* Using text for now, should ideally be the SVG logo from image */}
-                            <div className="logo-icon">
-                                <span className="logo-house">🏠</span>
-                                <span className="logo-utensils">🍴</span>
-                            </div>
-                            <div className="logo-text">
-                                <h2>CASA CHIANTI</h2>
-                                <span>LIVRAM INTOTDEAUNA CALITATE</span>
-                            </div>
+                            <img
+                                src={logoAlb}
+                                alt="Casa Chianti"
+                                className="logo-image-footer"
+                                style={{ maxHeight: '80px', width: 'auto' }}
+                            />
                         </div>
                         <p className="brand-desc">
                             Singura companie din zona Roman dedicată exclusiv serviciilor de catering pentru evenimente

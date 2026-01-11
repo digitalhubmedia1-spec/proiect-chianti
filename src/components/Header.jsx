@@ -4,6 +4,9 @@ import { Menu, X, User, ShoppingCart, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
+import { useMenu } from '../context/MenuContext';
+import logoAlb from '../assets/logo/logoalb.png';
+import logoColorat from '../assets/logo/logocolorat.png';
 import './Header.css';
 
 const Header = () => {
@@ -61,7 +64,11 @@ const Header = () => {
             <div className="main-nav">
                 <div className="container nav-container">
                     <Link to="/" className="logo">
-                        CHIANTI
+                        <img
+                            src={headerClass.includes('transparent') ? logoAlb : logoColorat}
+                            alt="Chianti"
+                            style={{ height: '50px', width: 'auto' }}
+                        />
                     </Link>
 
                     {/* Desktop Menu */}
