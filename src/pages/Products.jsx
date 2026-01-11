@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
@@ -92,14 +93,15 @@ const Products = () => {
                 description="Explorează meniul nostru complet: pizza, paste, fructe de mare și deserturi. Livrare rapidă la domiciliu în Roman."
                 canonical="/meniu"
             />
-            {showPopup && (
+            {showPopup && ReactDOM.createPortal(
                 <div className="schedule-popup-overlay">
                     <div className="schedule-popup">
                         <h2>{!isOpen ? "Restaurant Închis Momentan" : " informații Comenzi"}</h2>
                         <p>{getScheduleMessage()}</p>
                         <button className="btn-close-popup" onClick={() => setShowPopup(false)}>Am înțeles</button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <div className="page-header">

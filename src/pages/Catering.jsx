@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
@@ -85,7 +86,8 @@ const Catering = () => {
             />
 
             {/* 48h Advance Notice Popup */}
-            {showInfoPopup && (
+            {/* Portals for Popups */}
+            {showInfoPopup && ReactDOM.createPortal(
                 <div className="schedule-popup-overlay" style={{ zIndex: 2000 }}>
                     <div className="schedule-popup">
                         <h2 style={{ color: '#800020' }}>Notă Importantă</h2>
@@ -103,17 +105,19 @@ const Catering = () => {
                             Am înțeles
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {showPopup && (
+            {showPopup && ReactDOM.createPortal(
                 <div className="schedule-popup-overlay">
                     <div className="schedule-popup">
                         <h2>{!isOpen ? "Comenzi Indisponibile" : "Informații Catering"}</h2>
                         <p>{getScheduleMessage()}</p>
                         <button className="btn-close-popup" onClick={() => setShowPopup(false)}>Am înțeles</button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <div className="page-header catering-header">

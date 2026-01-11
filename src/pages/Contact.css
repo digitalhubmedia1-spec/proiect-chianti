@@ -20,6 +20,16 @@
     opacity: 0.9;
 }
 
+@media (max-width: 768px) {
+    .contact-header {
+        padding: 6rem 0 2rem;
+    }
+
+    .contact-header .page-title {
+        font-size: 2rem;
+    }
+}
+
 .contact-content-vertical {
     display: flex;
     flex-direction: column;

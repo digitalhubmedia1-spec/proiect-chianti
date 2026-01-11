@@ -26,6 +26,28 @@
     text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
+.page-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+    .venues-header-hero {
+        padding: 5rem 0 3rem;
+        /* Adjusted for mobile */
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+}
+
 .hero-subtitle {
     font-size: 1.25rem;
     margin-bottom: 3rem;
@@ -159,6 +181,25 @@
     padding-bottom: 8rem;
 }
 
+.events.page-header {
+    background-color: var(--color-background-off);
+    padding: 4rem 0;
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        padding: 6rem 0 2rem;
+        /* More top padding for header overlap */
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+}
+
 .events-header {
     text-align: center;
     margin-bottom: 4rem;
@@ -280,6 +321,13 @@
     overflow: hidden;
 }
 
+@media (max-width: 768px) {
+    .hero {
+        padding-top: 80px;
+        /* Accounts for fixed header */
+    }
+}
+
 .hero-overlay {
     position: absolute;
     top: 0;
@@ -322,6 +370,26 @@
     font-weight: 800;
     line-height: 1.1;
     text-transform: uppercase;
+}
+
+.contact-header .page-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .contact-header {
+        padding: 6rem 0 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .contact-header .page-title {
+        font-size: 2rem;
+    }
+
+    .contact-header .page-subtitle {
+        font-size: 1rem;
+    }
 }
 
 .hero-subtitle {

@@ -5,6 +5,13 @@
     margin-bottom: 4rem;
 }
 
+@media (max-width: 768px) {
+    .catering-header {
+        padding: 6rem 0 2rem;
+        margin-bottom: 3rem;
+    }
+}
+
 .sections-wrapper {
     display: flex;
     flex-direction: column;

@@ -28,6 +28,22 @@
     letter-spacing: 1px;
 }
 
+@media (max-width: 768px) {
+    .venues-header-hero {
+        padding: 6rem 0 3rem;
+        /* Increase top padding for fixed header */
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+}
+
 .venues-intro {
     max-width: 800px;
     margin: 0 auto 5rem;
