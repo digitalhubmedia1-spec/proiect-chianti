@@ -64,16 +64,22 @@ const Checkout = () => {
 
         // Autofill if user is logged in
         if (user) {
-            const nameParts = user.name ? user.name.split(' ') : [];
+            // Retrieve data from metadata or top-level properties (depending on auth provider)
+            const fullName = user.user_metadata?.full_name || user.name || '';
+            const phone = user.user_metadata?.phone || user.phone || '';
+
+            const nameParts = fullName.split(' ');
+            // If only one word, assume it's Last Name or split intelligently?
+            // Usually: First Last. Let's assume First is [0], Last is [1...]
             const firstName = nameParts[0] || '';
             const lastName = nameParts.slice(1).join(' ') || '';
 
             setFormData(prev => ({
                 ...prev,
-                firstName: firstName,
-                lastName: lastName,
-                email: user.email || '',
-                phone: user.phone || ''
+                firstName: prev.firstName || firstName, // Only autofill if empty
+                lastName: prev.lastName || lastName,
+                email: prev.email || user.email || '',
+                phone: prev.phone || phone
             }));
         }
     }, [user]);
