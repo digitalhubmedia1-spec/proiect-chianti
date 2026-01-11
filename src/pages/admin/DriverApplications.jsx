@@ -80,10 +80,18 @@ const DriverApplications = () => {
         }
     };
 
-    const handleApprove = async (id) => {
+    const handleApprove = async (app) => {
         if (window.confirm("Ești sigur că vrei să aprobi această aplicație? Se va crea automat un cont de livrator.")) {
-            await approveDriverApplication(id);
-            await loadData();
+            const success = await approveDriverApplication(app);
+            if (success) {
+                // If it was a local-only app (timestamp ID), remove it from local storage now that it's migrated to DB
+                if (typeof app.id === 'number' && app.id > 1700000000000) {
+                    const currentLocal = JSON.parse(localStorage.getItem('chianti_driver_apps_v2') || '[]');
+                    const newLocal = currentLocal.filter(a => a.id !== app.id);
+                    localStorage.setItem('chianti_driver_apps_v2', JSON.stringify(newLocal));
+                }
+                await loadData();
+            }
         }
     };
 
@@ -342,7 +350,7 @@ const DriverApplications = () => {
                                         {app.status === 'pending' && (
                                             <div style={{ display: 'flex', gap: '0.75rem' }}>
                                                 <button
-                                                    onClick={() => handleApprove(app.id)}
+                                                    onClick={() => handleApprove(app)}
                                                     style={{
                                                         flex: 1,
                                                         backgroundColor: '#28a745',
