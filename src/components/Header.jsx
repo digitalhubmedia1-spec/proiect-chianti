@@ -72,13 +72,13 @@ const Header = () => {
 
                     {/* Desktop Menu */}
                     <nav className="desktop-menu">
-                        <Link to="/" className="nav-link">Acasă</Link>
+                        <Link to="/" className="nav-link">Pagina Principală</Link>
                         <Link to="/produse" className="nav-link">Comandă Mâncare</Link>
-                        <Link to="/catering" className="nav-link">Catering</Link>
-                        <Link to="/configurator" className="nav-link">Meniuri</Link>
-                        <Link to="/saloane" className="nav-link">Saloane</Link>
-                        <Link to="/blog" className="nav-link">Blog</Link>
-                        <Link to="/contact" className="nav-link">Contact</Link>
+                        <Link to="/catering" className="nav-link">Servicii Catering</Link>
+                        {/* Meniuri (Configurator) removed from header */}
+                        <Link to="/saloane" className="nav-link">Servicii Rezervări</Link>
+                        <Link to="/blog" className="nav-link">Blog & Informații</Link>
+                        <Link to="/contact" className="nav-link">Contact & Oferte</Link>
                     </nav>
 
                     {/* Auth Buttons */}
@@ -147,13 +147,13 @@ const Header = () => {
             {/* Mobile Menu Dropdown */}
             {isMenuOpen && (
                 <div className="mobile-menu">
-                    <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Acasă</Link>
+                    <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
                     <Link to="/produse" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
-                    <Link to="/catering" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Catering</Link>
-                    <Link to="/configurator" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Meniuri</Link>
-                    <Link to="/saloane" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Saloane</Link>
-                    <Link to="/blog" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Blog</Link>
-                    <Link to="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+                    <Link to="/catering" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
+                    {/* <Link to="/configurator" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Meniuri</Link> */}
+                    <Link to="/saloane" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
+                    <Link to="/blog" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
+                    <Link to="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
 
                     <div className="mobile-auth">
                         <Link to="/cos" className="mobile-btn mobile-login" style={{ borderColor: '#333', color: '#333' }} onClick={() => setIsMenuOpen(false)}>

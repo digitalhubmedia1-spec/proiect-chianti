@@ -159,8 +159,8 @@
 @media (min-width: 900px) {
     .desktop-menu {
         display: flex;
-        gap: 1.5rem;
-        /* Reduced from 2rem */
+        gap: 1.1rem;
+        /* Reduced from 1.5rem for longer text */
     }
 
     .mobile-menu-btn {

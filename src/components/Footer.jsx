@@ -37,13 +37,13 @@ const Footer = () => {
                     <div className="footer-col">
                         <h3>NAVIGARE</h3>
                         <ul className="footer-links">
-                            <li><a href="/">Acasă</a></li>
+                            <li><a href="/">Pagina Principală</a></li>
                             <li><a href="/produse">Comandă Mâncare</a></li>
-                            <li><a href="/catering">Catering Evenimente</a></li>
-                            <li><a href="/configurator">Configurator Meniu</a></li>
-                            <li><a href="/saloane">Saloane Evenimente</a></li>
-                            <li><a href="/blog">Blog</a></li>
-                            <li><a href="/contact">Contact</a></li>
+                            <li><a href="/catering">Servicii Catering</a></li>
+                            <li><a href="/configurator">Configurator Meniuri</a></li>
+                            <li><a href="/saloane">Servicii Rezervări</a></li>
+                            <li><a href="/blog">Blog & Informații</a></li>
+                            <li><a href="/contact">Contact & Oferte</a></li>
                             <li className="mt-2 pt-2 border-top border-secondary"><a href="/devino-livrator" style={{ color: '#e74c3c' }}>🚀 Devino Livrator Chianti</a></li>
                         </ul>
                     </div>
