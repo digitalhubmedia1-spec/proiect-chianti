@@ -141,18 +141,14 @@
     position: fixed;
     top: 0;
     right: 0;
-    width: 380px;
-    /* Slightly wider for better spacing */
+    width: 300px;
     height: 100vh;
     background: white;
     z-index: 1200;
-    /* Topmost */
-    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
     transform: translateX(100%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    /* Smooth easing */
-    padding: 3rem;
-    /* Increased padding */
+    padding: 2rem;
     display: flex;
     flex-direction: column;
 }
@@ -165,69 +161,59 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4rem;
-    /* More space */
-    padding-bottom: 0;
-    border-bottom: none;
-    /* Cleaner look */
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .drawer-title {
-    font-size: 1.5rem;
-    /* Larger */
+    font-size: 1.2rem;
     font-weight: 800;
     text-transform: uppercase;
     color: #1a1a1a;
     letter-spacing: 1px;
-    display: none;
-    /* Hide title simply, rely on navigation presence */
+    display: block;
 }
 
 .drawer-close {
-    background: #f8f9fa;
+    background: none;
     border: none;
     color: #1a1a1a;
     cursor: pointer;
-    padding: 12px;
+    padding: 8px;
     border-radius: 50%;
-    transition: all 0.2s;
+    transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
-    /* Push to right */
 }
 
 .drawer-close:hover {
-    background: #e9ecef;
-    transform: rotate(90deg);
+    background: #f0f0f0;
+    transform: none;
 }
 
 .drawer-nav {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    /* More breathing room */
+    gap: 1.5rem;
 }
 
 .drawer-link {
     text-decoration: none;
-    color: #94a3b8;
-    /* Muted default */
-    font-size: 1.3rem;
-    /* Larger, more impactful */
-    font-weight: 700;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.3s;
-    padding-left: 0;
-    border-left: 3px solid transparent;
-    display: flex;
-    align-items: center;
+    padding-left: 10px;
+    border-left: 2px solid transparent;
+    display: block;
 }
 
 .drawer-link:hover {
-    color: #1a1a1a;
+    color: var(--color-primary);
     padding-left: 10px;
 }
 
