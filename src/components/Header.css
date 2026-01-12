@@ -123,8 +123,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
     z-index: 1050;
     /* Behind drawer (1100), above header (1000) */
     opacity: 0;
@@ -142,7 +142,8 @@
     position: fixed;
     top: 0;
     right: 0;
-    width: 320px;
+    width: 380px;
+    /* Slightly wider for better spacing */
     height: 100vh;
     background: white;
     z-index: 1200;
@@ -151,7 +152,8 @@
     transform: translateX(100%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     /* Smooth easing */
-    padding: 2rem;
+    padding: 3rem;
+    /* Increased padding */
     display: flex;
     flex-direction: column;
 }
@@ -164,57 +166,75 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 4rem;
+    /* More space */
+    padding-bottom: 0;
+    border-bottom: none;
+    /* Cleaner look */
 }
 
 .drawer-title {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
+    /* Larger */
     font-weight: 800;
     text-transform: uppercase;
     color: #1a1a1a;
     letter-spacing: 1px;
+    display: none;
+    /* Hide title simply, rely on navigation presence */
 }
 
 .drawer-close {
-    background: none;
+    background: #f8f9fa;
     border: none;
     color: #1a1a1a;
     cursor: pointer;
-    padding: 8px;
+    padding: 12px;
     border-radius: 50%;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-left: auto;
+    /* Push to right */
 }
 
 .drawer-close:hover {
-    background: #f0f0f0;
+    background: #e9ecef;
+    transform: rotate(90deg);
 }
 
 .drawer-nav {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
+    /* More breathing room */
 }
 
 .drawer-link {
     text-decoration: none;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
+    color: #94a3b8;
+    /* Muted default */
+    font-size: 1.3rem;
+    /* Larger, more impactful */
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.3s;
-    padding-left: 10px;
-    border-left: 2px solid transparent;
+    padding-left: 0;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
 }
 
 .drawer-link:hover {
+    color: #1a1a1a;
+    padding-left: 10px;
+}
+
+.drawer-link.active {
     color: var(--color-primary);
-    padding-left: 20px;
+    padding-left: 15px;
     border-left-color: var(--color-primary);
 }
 

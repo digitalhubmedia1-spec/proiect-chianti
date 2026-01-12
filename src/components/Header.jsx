@@ -151,12 +151,12 @@ const Header = () => {
                 </div>
 
                 <nav className="drawer-nav">
-                    <Link to="/" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
-                    <Link to="/produse" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
-                    <Link to="/catering" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
-                    <Link to="/saloane" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
-                    <Link to="/blog" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
-                    <Link to="/contact" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
+                    <Link to="/" className={`drawer-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
+                    <Link to="/produse" className={`drawer-link ${location.pathname === '/produse' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
+                    <Link to="/catering" className={`drawer-link ${location.pathname === '/catering' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
+                    <Link to="/saloane" className={`drawer-link ${location.pathname === '/saloane' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
+                    <Link to="/blog" className={`drawer-link ${location.pathname === '/blog' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
+                    <Link to="/contact" className={`drawer-link ${location.pathname === '/contact' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
                 </nav>
 
                 {/* Mobile-only Auth in Drawer (Hidden on Desktop since they are in header) */}
