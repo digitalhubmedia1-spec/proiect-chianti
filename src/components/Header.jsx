@@ -70,109 +70,108 @@ const Header = () => {
                         />
                     </Link>
 
-                    {/* Desktop Menu */}
-                    <nav className="desktop-menu">
-                        <Link to="/" className="nav-link">Pagina Principală</Link>
-                        <Link to="/produse" className="nav-link">Comandă Mâncare</Link>
-                        <Link to="/catering" className="nav-link">Servicii Catering</Link>
-                        {/* Meniuri (Configurator) removed from header */}
-                        <Link to="/saloane" className="nav-link">Servicii Rezervări</Link>
-                        <Link to="/blog" className="nav-link">Blog & Informații</Link>
-                        <Link to="/contact" className="nav-link">Contact & Oferte</Link>
-                    </nav>
+                    {/* Desktop Menu - REMOVED as per request, replaced by Burger/Drawer */}
 
-                    {/* Auth Buttons */}
-                    <div className="auth-buttons desktop-only">
-                        <div className="cart-dropdown-wrapper">
-                            <Link to="/cos" className="btn-cart-icon">
-                                <ShoppingCart size={24} />
-                                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-                            </Link>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {/* Auth Buttons - Always visible now on Desktop */}
+                        <div className="auth-buttons desktop-only">
+                            <div className="cart-dropdown-wrapper">
+                                <Link to="/cos" className="btn-cart-icon">
+                                    <ShoppingCart size={24} />
+                                    {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                                </Link>
 
-                            {/* Minicart Dropdown */}
-                            {cartCount > 0 && (
-                                <div className="minicart-dropdown">
-                                    <div className="minicart-items">
-                                        {cateringItems.length > 0 && (
-                                            <>
-                                                <div className="minicart-section-title">Catering</div>
-                                                {cateringItems.slice(0, 3).map(renderMinicartItem)}
-                                                {cateringItems.length > 3 && <p className="minicart-more">și încă {cateringItems.length - 3} produse...</p>}
-                                                {deliveryItems.length > 0 && <div className="minicart-divider" />}
-                                            </>
-                                        )}
+                                {/* Minicart Dropdown */}
+                                {cartCount > 0 && (
+                                    <div className="minicart-dropdown">
+                                        <div className="minicart-items">
+                                            {cateringItems.length > 0 && (
+                                                <>
+                                                    <div className="minicart-section-title">Catering</div>
+                                                    {cateringItems.slice(0, 3).map(renderMinicartItem)}
+                                                    {cateringItems.length > 3 && <p className="minicart-more">și încă {cateringItems.length - 3} produse...</p>}
+                                                    {deliveryItems.length > 0 && <div className="minicart-divider" />}
+                                                </>
+                                            )}
 
-                                        {deliveryItems.length > 0 && (
-                                            <>
-                                                {cateringItems.length > 0 && <div className="minicart-section-title">Livrări</div>}
-                                                {deliveryItems.slice(0, 3).map(renderMinicartItem)}
-                                                {deliveryItems.length > 3 && <p className="minicart-more">și încă {deliveryItems.length - 3} produse...</p>}
-                                            </>
-                                        )}
-                                    </div>
-                                    <div className="minicart-footer">
-                                        <div className="minicart-total">
-                                            <span>Total:</span>
-                                            <strong>{cartTotal.toFixed(2)} Lei</strong>
+                                            {deliveryItems.length > 0 && (
+                                                <>
+                                                    {cateringItems.length > 0 && <div className="minicart-section-title">Livrări</div>}
+                                                    {deliveryItems.slice(0, 3).map(renderMinicartItem)}
+                                                    {deliveryItems.length > 3 && <p className="minicart-more">și încă {deliveryItems.length - 3} produse...</p>}
+                                                </>
+                                            )}
                                         </div>
-                                        <Link to="/cos" className="btn btn-primary btn-sm btn-block">Vezi Coșul</Link>
+                                        <div className="minicart-footer">
+                                            <div className="minicart-total">
+                                                <span>Total:</span>
+                                                <strong>{cartTotal.toFixed(2)} Lei</strong>
+                                            </div>
+                                            <Link to="/cos" className="btn btn-primary btn-sm btn-block">Vezi Coșul</Link>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+                            </div>
+
+                            {user ? (
+                                <Link to="/contul-meu" className="btn-auth btn-account">
+                                    <User size={18} />
+                                    <span>Contul Meu</span>
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link to="/login" className="btn-auth btn-login">Autentificare</Link>
+                                    <Link to="/register" className="btn-auth btn-register">Înregistrare</Link>
+                                </>
                             )}
                         </div>
 
-                        {user ? (
-                            <Link to="/contul-meu" className="btn-auth btn-account">
-                                <User size={18} />
-                                <span>Contul Meu</span>
-                            </Link>
-                        ) : (
-                            <>
-                                <Link to="/login" className="btn-auth btn-login">Autentificare</Link>
-                                <Link to="/register" className="btn-auth btn-register">Înregistrare</Link>
-                            </>
-                        )}
+                        {/* Menu Toggle Button (Visible on both Desktop and Mobile now) */}
+                        <button
+                            className="menu-toggle-btn"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                        </button>
                     </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="mobile-menu-btn"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    >
-                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
                 </div>
             </div>
 
-            {/* Mobile Menu Dropdown */}
-            {isMenuOpen && (
-                <div className="mobile-menu">
-                    <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
-                    <Link to="/produse" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
-                    <Link to="/catering" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
-                    {/* <Link to="/configurator" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Meniuri</Link> */}
-                    <Link to="/saloane" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
-                    <Link to="/blog" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
-                    <Link to="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
+            {/* Side Drawer Overlay */}
+            <div className={`side-drawer-overlay ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)}></div>
 
-                    <div className="mobile-auth">
-                        <Link to="/cos" className="mobile-btn mobile-login" style={{ borderColor: '#333', color: '#333' }} onClick={() => setIsMenuOpen(false)}>
-                            <ShoppingCart size={18} style={{ marginRight: '8px' }} /> Coșul Meu {cartCount > 0 && `(${cartCount})`}
-                        </Link>
-
-                        {user ? (
-                            <Link to="/contul-meu" className="mobile-btn mobile-account" onClick={() => setIsMenuOpen(false)}>
-                                <User size={18} style={{ marginRight: '8px' }} /> Contul Meu
-                            </Link>
-                        ) : (
-                            <>
-                                <Link to="/login" className="mobile-btn mobile-login" onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
-                                <Link to="/register" className="mobile-btn mobile-register" onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
-                            </>
-                        )}
-                    </div>
+            {/* Side Drawer Menu */}
+            <div className={`side-drawer ${isMenuOpen ? 'open' : ''}`}>
+                <div className="side-drawer-header">
+                    <span className="drawer-title">Meniu</span>
+                    <button className="drawer-close" onClick={() => setIsMenuOpen(false)}>
+                        <X size={24} />
+                    </button>
                 </div>
-            )}
+
+                <nav className="drawer-nav">
+                    <Link to="/" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
+                    <Link to="/produse" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
+                    <Link to="/catering" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
+                    <Link to="/saloane" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
+                    <Link to="/blog" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
+                    <Link to="/contact" className="drawer-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
+                </nav>
+
+                {/* Mobile-only Auth in Drawer (Hidden on Desktop since they are in header) */}
+                <div className="drawer-footer mobile-only">
+                    {user ? (
+                        <Link to="/contul-meu" className="drawer-auth-btn" onClick={() => setIsMenuOpen(false)}>
+                            <User size={18} style={{ marginRight: '8px' }} /> Contul Meu
+                        </Link>
+                    ) : (
+                        <div className="drawer-auth-group">
+                            <Link to="/login" className="drawer-auth-btn login" onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
+                            <Link to="/register" className="drawer-auth-btn register" onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
+                        </div>
+                    )}
+                </div>
+            </div>
         </header>
     );
 };
