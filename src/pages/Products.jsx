@@ -337,7 +337,7 @@ const Products = () => {
                     <div className="products-grid">
                         {filteredProducts.length > 0 ? (
                             filteredProducts.map(product => (
-                                <div key={product.id} className="product-card" onClick={() => navigate(`/produs/${product.id}`)} style={{ cursor: 'pointer' }}>
+                                <div key={product.id} className={`product-card ${product.is_available === false ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}`)} style={{ cursor: 'pointer' }}>
                                     <div className="product-image">
                                         <img src={product.image} alt={product.name} />
                                     </div>
