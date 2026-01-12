@@ -243,7 +243,7 @@ const ReservationForm = () => {
                         onChange={handleChange}
                         required
                     />
-                    <label htmlFor="contact-accept">Accept să fiu contactat.</label>
+                    <label htmlFor="contact-accept">Da, puteți să mă contactați în legătură cu cererea mea de oferta. Numărul meu de telefon și adresa de e-mail de mai sus sunt corecte.</label>
                 </div>
             </div>
 
@@ -257,7 +257,7 @@ const ReservationForm = () => {
                         onChange={handleChange}
                         required
                     />
-                    <label htmlFor="terms-accept">Sunt de acord cu <Link to="/termeni-si-conditii">Termenii și Condițiile</Link>.</label>
+                    <label htmlFor="terms-accept">Am luat la cunostinta si sunt de acord cu <Link to="/termeni">Termeni si Conditii</Link>.</label>
                 </div>
             </div>
 
