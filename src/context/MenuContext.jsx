@@ -74,7 +74,8 @@ export const MenuProvider = ({ children }) => {
                 description: prodData.description || '',
                 weight: prodData.weight || '',
                 ingredients: prodData.ingredients || '',
-                is_active: true
+                is_active: true,
+                is_available: true
             };
 
             const { data, error } = await supabase.from('products').insert([payload]).select();
