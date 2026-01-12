@@ -47,10 +47,11 @@ const AdminInventory = () => {
 
     const handleItemSubmit = (e) => {
         e.preventDefault();
+        const payload = { ...itemForm, name: itemForm.name.toUpperCase() };
         if (editingItem) {
-            updateItem(editingItem.id, itemForm);
+            updateItem(editingItem.id, payload);
         } else {
-            addItem(itemForm);
+            addItem(payload);
         }
         closeModal();
     };

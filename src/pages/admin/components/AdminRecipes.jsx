@@ -39,8 +39,8 @@ const AdminRecipes = () => {
         newIngredients[index][field] = value;
 
         // Auto-fill unit if item selected
-        if (field === 'itemId') {
-            const item = inventoryItems.find(i => i.id == value);
+        if (field === 'itemName') {
+            const item = inventoryItems.find(i => i.name === value);
             if (item) newIngredients[index].unit = item.unit;
         }
 
@@ -50,7 +50,7 @@ const AdminRecipes = () => {
     const addIngredientRow = () => {
         setRecipeForm({
             ...recipeForm,
-            ingredients: [...recipeForm.ingredients, { itemId: '', qty: '', unit: '' }]
+            ingredients: [...recipeForm.ingredients, { itemName: '', qty: '', unit: '' }]
         });
     };
 
@@ -62,8 +62,17 @@ const AdminRecipes = () => {
     const handleSaveRecipe = (e) => {
         e.preventDefault();
         // Filter out empty rows
-        const validIngredients = recipeForm.ingredients.filter(i => i.itemId && i.qty);
-        const data = { ...recipeForm, ingredients: validIngredients };
+        const validIngredients = recipeForm.ingredients.filter(i => i.itemName && i.qty);
+
+        // Normalize to Uppercase
+        const data = {
+            ...recipeForm,
+            name: recipeForm.name.toUpperCase(),
+            ingredients: validIngredients.map(ing => ({
+                ...ing,
+                itemName: ing.itemName.toUpperCase()
+            }))
+        };
 
         if (editingId) {
             updateRecipe(editingId, data);
@@ -73,23 +82,27 @@ const AdminRecipes = () => {
         setIsModalOpen(false);
     };
 
-    // --- CALCULATOR HANDLERS ---
+    // --- CALCULATOR HANDLERS (FIFO Logic) ---
     const calculateRequirements = () => {
         if (!selectedRecipeId || portions <= 0) return;
         const recipe = recipes.find(r => r.id === selectedRecipeId);
         if (!recipe) return;
 
         const results = recipe.ingredients.map(ing => {
-            const stockItem = inventoryItems.find(i => i.id == ing.itemId);
+            // Find ALL batches for this ingredient name
+            const batches = inventoryItems.filter(i => i.name === ing.itemName);
+
+            // Calculate total available stock from all batches
+            const totalStock = batches.reduce((sum, item) => sum + parseFloat(item.stock), 0);
+
             const needed = parseFloat(ing.qty) * portions;
-            const available = stockItem ? parseFloat(stockItem.stock) : 0;
+
             return {
-                ...ing,
-                itemName: stockItem ? stockItem.name : 'Unknown',
+                ...ing, // contains itemName, qty, unit
                 needed,
-                available,
-                isSufficient: available >= needed,
-                stockItem // keep ref for updates
+                available: totalStock,
+                isSufficient: totalStock >= needed,
+                batches // Keep reference to batches for deduction logic
             };
         });
 
@@ -100,25 +113,60 @@ const AdminRecipes = () => {
         if (!calculationResult) return;
 
         // Confirm action
-        if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru ${portions} porții din stoc?`)) return;
+        if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru ${portions} porții din stoc (FIFO)?`)) return;
 
+        const updates = [];
+
+        // FIFO Deduction Logic
         calculationResult.forEach(res => {
-            if (res.stockItem) {
-                // Get fresh stock value from the current inventoryItems list
-                const freshItem = inventoryItems.find(i => i.id === res.stockItem.id);
-                const currentStock = freshItem ? parseFloat(freshItem.stock) : parseFloat(res.available);
+            let remainingNeeded = res.needed;
 
-                // Calculate new stock
-                const preciseResult = parseFloat((currentStock - res.needed).toFixed(4));
-                const newStock = Math.max(0, preciseResult);
+            // Sort batches by entryDate ASC (Oldest first)
+            // If entryDate is same, maybe sort by ID or creation? We use entryDate.
+            const sortedBatches = [...res.batches].sort((a, b) => new Date(a.entryDate || a.created_at) - new Date(b.entryDate || b.created_at));
 
-                updateStock(res.stockItem.id, newStock);
+            for (const batch of sortedBatches) {
+                if (remainingNeeded <= 0) break;
+
+                const currentStock = parseFloat(batch.stock);
+                if (currentStock <= 0) continue;
+
+                let deductAmount = 0;
+
+                if (currentStock >= remainingNeeded) {
+                    // Batch has enough to cover remaining request
+                    deductAmount = remainingNeeded;
+                    remainingNeeded = 0;
+                } else {
+                    // Batch is partial matched, take all of it
+                    deductAmount = currentStock;
+                    remainingNeeded -= currentStock;
+                }
+
+                const newStock = parseFloat((currentStock - deductAmount).toFixed(4));
+                updates.push({ id: batch.id, stock: newStock });
             }
         });
 
-        alert("Stocul a fost actualizat!");
-        calculateRequirements(); // Refresh calculations
+        // Loop over updates and call Context function
+        // Note: In a real app this should be a batch transaction in Supabase
+        updates.forEach(up => {
+            updateStock(up.id, up.stock);
+        });
+
+        alert("Stocul a fost actualizat (FIFO)!");
+        // We need to wait a bit or just clear result, or re-calculate
+        // Since updateStock is async but we fired many keys, let's just clear for now or wait 500ms
+        setTimeout(() => {
+            // To properly reflect changes we'd need to wait for all promises but Context doesn't expose Promise.all friendly way easily here without refactor
+            // Just clearing result to force re-calc user interaction
+            setCalculationResult(null);
+            // Optionally trigger re-calc if we want to show updated state immediately, but simplified flow is better.
+        }, 500);
     };
+
+    // Helper to get unique ingredient names for Select
+    const uniqueInventoryNames = [...new Set(inventoryItems.map(i => i.name))].sort();
 
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
@@ -158,10 +206,9 @@ const AdminRecipes = () => {
                                     </div>
                                 </div>
                                 <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: '#64748b' }}>
-                                    {recipe.ingredients.slice(0, 3).map((ing, i) => {
-                                        const item = inventoryItems.find(inv => inv.id == ing.itemId);
-                                        return <li key={i}>• {item ? item.name : 'Item șters'} ({ing.qty} {ing.unit})</li>
-                                    })}
+                                    {recipe.ingredients.slice(0, 3).map((ing, i) => (
+                                        <li key={i}>• {ing.itemName || 'Nume lipsă'} ({ing.qty} {ing.unit})</li>
+                                    ))}
                                     {recipe.ingredients.length > 3 && <li>... (+{recipe.ingredients.length - 3} altele)</li>}
                                 </ul>
                             </div>
@@ -174,7 +221,7 @@ const AdminRecipes = () => {
             {activeTab === 'calculator' && (
                 <div>
                     <div className="calculator-panel" style={{ background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                        <h3>Calculator Producție</h3>
+                        <h3>Calculator Producție (FIFO)</h3>
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: '200px' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Alege Produsul / Rețeta</label>
@@ -214,7 +261,7 @@ const AdminRecipes = () => {
                                         <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
                                             <th style={{ padding: '1rem' }}>Ingredient</th>
                                             <th style={{ padding: '1rem' }}>Necesar</th>
-                                            <th style={{ padding: '1rem' }}>Disponibil în Stoc</th>
+                                            <th style={{ padding: '1rem' }}>Disponibil Total (Toate Loturile)</th>
                                             <th style={{ padding: '1rem' }}>Status</th>
                                         </tr>
                                     </thead>
@@ -285,17 +332,20 @@ const AdminRecipes = () => {
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ingrediente (per 1 porție)</label>
                                 {recipeForm.ingredients.map((ing, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <select
-                                            value={ing.itemId}
-                                            onChange={e => handleIngredientChange(i, 'itemId', e.target.value)}
+                                        <input
+                                            list={`ingredient-list-${i}`}
+                                            type="text"
+                                            placeholder="Nume Ingredient (ex: Făină)"
+                                            value={ing.itemName}
+                                            onChange={e => handleIngredientChange(i, 'itemName', e.target.value)}
                                             style={{ flex: 2, padding: '0.3rem' }}
                                             required
-                                        >
-                                            <option value="">Alege Ingredient...</option>
-                                            {inventoryItems.map(item => (
-                                                <option key={item.id} value={item.id}>{item.name} ({item.unit})</option>
+                                        />
+                                        <datalist id={`ingredient-list-${i}`}>
+                                            {uniqueInventoryNames.map(name => (
+                                                <option key={name} value={name} />
                                             ))}
-                                        </select>
+                                        </datalist>
                                         <input
                                             type="number"
                                             step="0.001"
