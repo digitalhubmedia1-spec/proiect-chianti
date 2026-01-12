@@ -10,9 +10,10 @@ const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { products, loading } = useMenu();
+    const { products, loading, fetchRecommendations } = useMenu();
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
+    const [recommendations, setRecommendations] = useState([]);
     const [isOpen, setIsOpen] = useState(true);
 
     useEffect(() => {
@@ -21,6 +22,8 @@ const ProductDetails = () => {
         const foundProduct = products.find(p => p.id === parseInt(id));
         if (foundProduct) {
             setProduct(foundProduct);
+            // Fetch recommendations
+            fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
         } else {
             navigate('/produse');
         }
@@ -75,6 +78,37 @@ const ProductDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Recommended Products Section */}
+            {recommendations.length > 0 && (
+                <div className="recommendations-section" style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid #eee' }}>
+                    <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>Îți recomandăm și...</h2>
+                    <div className="recommendations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                        {recommendations.map(rec => (
+                            <div key={rec.id} className="rec-card" style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s', border: '1px solid #f0f0f0' }}>
+                                <div style={{ height: '140px', overflow: 'hidden' }}>
+                                    <img src={rec.image} alt={rec.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                                <div style={{ padding: '1rem' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.5rem', height: '40px', overflow: 'hidden' }}>{rec.name}</h3>
+                                    <p style={{ color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '1rem' }}>{rec.price.toFixed(2)} Lei</p>
+                                    <button
+                                        onClick={() => {
+                                            addToCart(rec, 1);
+                                            // Optional: simple alert or toast
+                                        }}
+                                        className="btn btn-sm btn-outline-primary"
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                        disabled={!isOpen}
+                                    >
+                                        <Plus size={16} /> Adaugă
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

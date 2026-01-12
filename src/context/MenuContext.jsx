@@ -437,6 +437,62 @@ export const MenuProvider = ({ children }) => {
         }
     };
 
+    // --- Recommendation Logic (Extras) ---
+    const fetchRecommendations = async (productId) => {
+        if (!supabase) return [];
+        try {
+            const { data, error } = await supabase
+                .from('product_recommendations')
+                .select(`
+                    id,
+                    recommended_product_id,
+                    products:recommended_product_id (*)
+                `)
+                .eq('product_id', productId);
+
+            if (error) throw error;
+            // Flatten the structure: return the full 'products' object, but keep the relation 'id' if needed
+            // Actually, we usually just want the products list.
+            return data.map(item => item.products);
+        } catch (error) {
+            console.error("Error fetching recommendations:", error);
+            return [];
+        }
+    };
+
+    const addRecommendation = async (productId, recommendedProductId) => {
+        if (!supabase) return;
+        try {
+            const { error } = await supabase
+                .from('product_recommendations')
+                .insert([{ product_id: productId, recommended_product_id: recommendedProductId }]);
+
+            if (error) {
+                // Ignore unique constraint error (if already added)
+                if (error.code === '23505') return;
+                throw error;
+            }
+        } catch (error) {
+            console.error("Error adding recommendation:", error);
+            alert("Eroare la adăugarea recomandării: " + error.message);
+        }
+    };
+
+    const removeRecommendation = async (productId, recommendedProductId) => {
+        if (!supabase) return;
+        try {
+            const { error } = await supabase
+                .from('product_recommendations')
+                .delete()
+                .match({ product_id: productId, recommended_product_id: recommendedProductId });
+
+            if (error) throw error;
+        } catch (error) {
+            console.error("Error removing recommendation:", error);
+            alert("Eroare la ștergerea recomandării: " + error.message);
+        }
+    };
+
     const value = {
         products,
         categories,
@@ -455,7 +511,10 @@ export const MenuProvider = ({ children }) => {
         updateStep,
         addConfigProduct,
         updateConfigProduct,
-        deleteConfigProduct
+        deleteConfigProduct,
+        fetchRecommendations,
+        addRecommendation,
+        removeRecommendation
     };
 
     return (

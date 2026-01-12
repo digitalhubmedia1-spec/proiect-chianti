@@ -20,7 +20,8 @@ const AdminDashboard = () => {
     const {
         products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, moveCategory,
         bookedDates, toggleBooking,
-        configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct
+        configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct,
+        fetchRecommendations, addRecommendation, removeRecommendation
     } = useMenu();
     const [activeTab, setActiveTab] = useState('products');
 
@@ -60,6 +61,10 @@ const AdminDashboard = () => {
     const [editingConfigProduct, setEditingConfigProduct] = useState(null);
     const [configForm, setConfigForm] = useState({ title: '', desc: '', fullDesc: '', image: '' });
 
+    // Recommendation State
+    const [currentRecommendations, setCurrentRecommendations] = useState([]);
+    const [selectedRecId, setSelectedRecId] = useState("");
+
     // Handlers
     const handleProductSubmit = (e) => {
         e.preventDefault();
@@ -86,15 +91,35 @@ const AdminDashboard = () => {
         setIsCategoryModalOpen(false);
     };
 
-    const openProductModal = (product = null) => {
+    const openProductModal = async (product = null) => {
         if (product) {
             setEditingProduct(product);
             setProdForm(product);
+            // Fetch recommendations
+            const recs = await fetchRecommendations(product.id);
+            setCurrentRecommendations(recs);
         } else {
             setEditingProduct(null);
             setProdForm({ name: '', price: '', category: '', image: '', description: '', weight: '', ingredients: '' });
+            setCurrentRecommendations([]);
         }
         setIsProductModalOpen(true);
+    };
+
+    const handleAddRec = async () => {
+        if (!selectedRecId || !editingProduct) return;
+        await addRecommendation(editingProduct.id, selectedRecId);
+        // Refresh local list
+        const recs = await fetchRecommendations(editingProduct.id);
+        setCurrentRecommendations(recs);
+        setSelectedRecId("");
+    };
+
+    const handleRemoveRec = async (recId) => {
+        if (!editingProduct) return;
+        await removeRecommendation(editingProduct.id, recId);
+        // Refresh local list
+        setCurrentRecommendations(prev => prev.filter(r => r.id !== recId));
     };
 
     // ... (existing handlers)
@@ -630,6 +655,59 @@ const AdminDashboard = () => {
                                     <input type="text" className="form-control" value={prodForm.ingredients} onChange={e => setProdForm({ ...prodForm, ingredients: e.target.value })} />
                                 </div>
                             </div>
+
+                            {/* RECOMMENDATIONS SECTION (Only when editing existing product) */}
+                            {editingProduct && (
+                                <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Produse Recomandate (Extra)</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                        <select
+                                            className="form-control"
+                                            value={selectedRecId}
+                                            onChange={(e) => setSelectedRecId(e.target.value)}
+                                        >
+                                            <option value="">Alege un produs...</option>
+                                            {products
+                                                .filter(p => p.id !== editingProduct.id) // Exclude self
+                                                .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
+                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                .map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name} ({p.price} Lei)</option>
+                                                ))
+                                            }
+                                        </select>
+                                        <button type="button" className="btn btn-primary" onClick={handleAddRec} disabled={!selectedRecId}>
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
+
+                                    {/* List of current recommendations */}
+                                    <div className="recommendations-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        {currentRecommendations.map(rec => (
+                                            <div key={rec.id} style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                background: '#f8f9fa',
+                                                padding: '5px 10px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.9rem',
+                                                border: '1px solid #dee2e6'
+                                            }}>
+                                                <span>{rec.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveRec(rec.id)}
+                                                    style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', marginLeft: '8px', display: 'flex', alignItems: 'center' }}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {currentRecommendations.length === 0 && <small className="text-muted">Niciun produs recomandat.</small>}
+                                    </div>
+                                </div>
+                            )}
+
                             <button type="submit" className="btn btn-primary btn-block mt-2">Salvează</button>
                         </form>
                     </div>
