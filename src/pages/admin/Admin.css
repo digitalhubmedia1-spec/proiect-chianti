@@ -335,6 +335,7 @@
 
 .calendar-available {
     /* default style */
+    background-color: transparent;
 }
 
 /* Legend */
