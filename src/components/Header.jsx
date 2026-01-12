@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Menu, X, User, ShoppingCart, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -151,12 +151,12 @@ const Header = () => {
                 </div>
 
                 <nav className="drawer-nav">
-                    <Link to="/" className={`drawer-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
-                    <Link to="/produse" className={`drawer-link ${location.pathname === '/produse' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
-                    <Link to="/catering" className={`drawer-link ${location.pathname === '/catering' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
-                    <Link to="/saloane" className={`drawer-link ${location.pathname === '/saloane' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
-                    <Link to="/blog" className={`drawer-link ${location.pathname === '/blog' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
-                    <Link to="/contact" className={`drawer-link ${location.pathname === '/contact' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
+                    <NavLink to="/" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</NavLink>
+                    <NavLink to="/produse" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</NavLink>
+                    <NavLink to="/catering" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</NavLink>
+                    <NavLink to="/saloane" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</NavLink>
+                    <NavLink to="/blog" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</NavLink>
+                    <NavLink to="/contact" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</NavLink>
                 </nav>
 
                 {/* Mobile-only Auth in Drawer (Hidden on Desktop since they are in header) */}
