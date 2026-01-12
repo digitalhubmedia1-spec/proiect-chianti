@@ -222,3 +222,34 @@
     color: #666 !important;
     opacity: 0.7;
 }
+
+/* Unavailable Product State */
+.product-card.unavailable {
+    opacity: 0.8;
+    position: relative;
+    pointer-events: none;
+    /* Disable interactions */
+    filter: grayscale(100%);
+}
+
+.product-card.unavailable::after {
+    content: "INDISPONIBIL";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(128, 0, 32, 0.9);
+    /* Brand color dark */
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 1.2rem;
+    z-index: 10;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.product-card.unavailable button {
+    display: none;
+}
