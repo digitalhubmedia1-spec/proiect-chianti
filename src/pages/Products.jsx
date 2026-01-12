@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
 import { isRestaurantOpen, getScheduleMessage, isPreOrderPeriod } from '../utils/schedule';
-import { Search } from 'lucide-react';
+import { Search, Zap, UtensilsCrossed } from 'lucide-react';
 import SEO from '../components/SEO';
 import './Products.css';
 
@@ -16,12 +16,12 @@ const Products = () => {
     const [closedMessage, setClosedMessage] = useState("");
     const { addToCart } = useCart();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const viewMode = searchParams.get('view');
 
     // Search & Sort State
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
-
-
 
     useEffect(() => {
         // Helper to check and update status
@@ -55,6 +55,128 @@ const Products = () => {
 
     // Prevent filtering before data is loaded
     if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
+
+    // --- VIEW MODE: SELECTION SCREEN (Gateway) ---
+    if (viewMode !== 'catalog') {
+        return (
+            <div className="products-page">
+                <SEO
+                    title="Meniu Comandă Mâncare - Chianti Roman"
+                    description="Alege tipul de comandă: Livrare Rapidă pentru preparate calde sau Catering pentru evenimente speciale."
+                    canonical="/produse"
+                />
+
+                <div className="page-header" style={{ padding: '80px 0 40px' }}>
+                    <div className="container">
+                        <h1 className="page-title">Cum dorești să comanzi?</h1>
+                        <p className="page-subtitle">Alege opțiunea potrivită pentru tine</p>
+                    </div>
+                </div>
+
+                <div className="container" style={{ paddingBottom: '80px' }}>
+                    <div className="selection-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '2rem',
+                        maxWidth: '900px',
+                        margin: '0 auto'
+                    }}>
+                        {/* Option 1: Comenzi Rapide */}
+                        <div
+                            className="selection-card"
+                            onClick={() => navigate('/produse?view=catalog')}
+                            style={{
+                                background: 'white',
+                                padding: '3rem 2rem',
+                                borderRadius: '16px',
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                border: '2px solid transparent'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-10px)';
+                                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.12)';
+                                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
+                                e.currentTarget.style.borderColor = 'transparent';
+                            }}
+                        >
+                            <div className="icon-wrapper" style={{
+                                width: '80px',
+                                height: '80px',
+                                background: 'var(--color-accent-light)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1.5rem',
+                                color: 'var(--color-primary)'
+                            }}>
+                                <Zap size={40} />
+                            </div>
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'var(--color-secondary)' }}>Comenzi Rapide</h2>
+                            <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                Pizza, Paste, Burgeri și alte preparate calde cu livrare imediată la domiciliu sau birou.
+                            </p>
+                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi Meniul</button>
+                        </div>
+
+                        {/* Option 2: Catering */}
+                        <div
+                            className="selection-card"
+                            onClick={() => navigate('/catering')}
+                            style={{
+                                background: 'white',
+                                padding: '3rem 2rem',
+                                borderRadius: '16px',
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                border: '2px solid transparent'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-10px)';
+                                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.12)';
+                                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
+                                e.currentTarget.style.borderColor = 'transparent';
+                            }}
+                        >
+                            <div className="icon-wrapper" style={{
+                                width: '80px',
+                                height: '80px',
+                                background: '#fff1f2',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1.5rem',
+                                color: '#e11d48'
+                            }}>
+                                <UtensilsCrossed size={40} />
+                            </div>
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'var(--color-secondary)' }}>Comenzi Catering</h2>
+                            <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                Platouri și meniuri complete pentru evenimente. <br /><strong>Comandă cu minim 48h înainte.</strong>
+                            </p>
+                            <button className="btn btn-primary" style={{ marginTop: '2rem', background: '#e11d48', borderColor: '#e11d48' }}>Vezi Oferta Catering</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- VIEW MODE: CATALOG (Existing Logic) ---
 
     // Filter logic to show ONLY delivery products
     const deliveryCategories = categories.filter(cat => !cat.type || cat.type === 'delivery');
@@ -93,7 +215,7 @@ const Products = () => {
             <SEO
                 title="Meniul Nostru - Comandă Online Pizza & Paste Roman"
                 description="Explorează meniul nostru complet: pizza, paste, fructe de mare și deserturi. Livrare rapidă la domiciliu în Roman."
-                canonical="/meniu"
+                canonical="/produse?view=catalog"
             />
             {showPopup && ReactDOM.createPortal(
                 <div className="schedule-popup-overlay">
@@ -154,6 +276,26 @@ const Products = () => {
                         boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                         alignItems: 'center'
                     }}>
+                        {/* BACK BUTTON for easy return to mode selection */}
+                        <button
+                            onClick={() => navigate('/produse')}
+                            title="Înapoi la selecție"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                background: '#f8fafc',
+                                color: '#64748b',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <Zap size={20} />
+                        </button>
+
                         <div className="search-box" style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
                             <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                             <input
