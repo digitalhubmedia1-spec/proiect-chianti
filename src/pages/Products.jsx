@@ -21,8 +21,7 @@ const Products = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
 
-    // Prevent filtering before data is loaded
-    if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
+
 
     useEffect(() => {
         // Helper to check and update status
@@ -53,6 +52,9 @@ const Products = () => {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Prevent filtering before data is loaded
+    if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
 
     // Filter logic to show ONLY delivery products
     const deliveryCategories = categories.filter(cat => !cat.type || cat.type === 'delivery');
