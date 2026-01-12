@@ -20,7 +20,7 @@ const Account = () => {
 
     // Filter orders by current user's email
     // Note: In a real app we'd query API by userID, but here we filter the global context state
-    const userOrders = orders.filter(o => o.customer.email === user.email).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const userOrders = orders.filter(o => o.customer.email === user.email).sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
 
     const handleLogout = () => {
         logout();
@@ -56,7 +56,7 @@ const Account = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                             <span style={{ fontWeight: 'bold' }}>#{order.id.slice(-6)}</span>
                                             <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                                                {new Date(order.date).toLocaleDateString('ro-RO')} {new Date(order.date).toLocaleTimeString('ro-RO')}
+                                                {new Date(order.created_at || order.date).toLocaleDateString('ro-RO')} {new Date(order.created_at || order.date).toLocaleTimeString('ro-RO')}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

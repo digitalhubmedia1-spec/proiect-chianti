@@ -8,7 +8,13 @@ let supabaseInstance = null;
 
 try {
     if (supabaseUrl && supabaseKey) {
-        supabaseInstance = createClient(supabaseUrl, supabaseKey);
+        supabaseInstance = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
     } else {
         console.warn("Supabase credentials missing. App will likely fail.");
     }
