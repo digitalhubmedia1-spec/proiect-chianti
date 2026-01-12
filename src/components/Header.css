@@ -305,7 +305,8 @@
 .mobile-menu {
     background-color: white;
     padding: 6rem 2rem 2rem;
-    display: flex;
+    display: none;
+    /* Hidden by default */
     flex-direction: column;
     gap: 1.5rem;
     position: fixed;
@@ -313,13 +314,17 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: -1;
+    z-index: 1050;
+    /* Ensure visibility */
     overflow-y: auto;
     border-top: none;
     box-shadow: none;
-    animation: fadeIn 0.3s ease;
     align-items: center;
-    /* Center items for fuller look */
+}
+
+.mobile-menu.open {
+    display: flex;
+    animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -353,7 +358,8 @@
     }
 
     .mobile-menu-btn {
-        display: none;
+        display: block;
+        /* Show on desktop */
     }
 
     .desktop-only {
