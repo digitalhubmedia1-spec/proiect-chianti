@@ -30,7 +30,8 @@ const Header = () => {
 
     // On non-home pages, the header should always look "scrolled" (solid background, dark text)
     // or we can add a specific class. Let's reuse 'scrolled' for simplicity as it has the right styles.
-    const headerClass = (isHome && !isScrolled && !isMenuOpen) ? 'header transparent' : 'header scrolled';
+    // MODIFIED: User wants header to stay transparent on home top even if menu is open.
+    const headerClass = (isHome && !isScrolled) ? 'header transparent' : 'header scrolled';
 
     const getItemType = (item) => {
         const cat = categories.find(c => c.name === item.category);
