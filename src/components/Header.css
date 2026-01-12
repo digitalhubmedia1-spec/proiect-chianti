@@ -137,20 +137,36 @@
 }
 
 /* Side Drawer (Right Side) */
+/* Side Drawer */
 .side-drawer {
     position: fixed;
     top: 0;
     right: 0;
-    width: 300px;
+    width: 380px;
+    /* Restored premium width for desktop */
     height: 100vh;
     background: white;
     z-index: 1200;
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
     transform: translateX(100%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 2rem;
+    padding: 3rem;
     display: flex;
     flex-direction: column;
+}
+
+/* Hide Side Drawer on Mobile */
+@media (max-width: 900px) {
+    .desktop-only-drawer {
+        display: none !important;
+    }
+}
+
+/* Hide Mobile Menu on Desktop */
+@media (min-width: 900px) {
+    .mobile-menu {
+        display: none !important;
+    }
 }
 
 .side-drawer.open {

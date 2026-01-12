@@ -128,21 +128,45 @@ const Header = () => {
                         </div>
 
                         {/* Menu Toggle Button (Visible on both Desktop and Mobile now) */}
+                        {/* Mobile Menu Button - shows on both but triggers different menus via CSS/Media Queries */}
                         <button
-                            className="menu-toggle-btn"
+                            className="mobile-menu-btn"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
-                            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Side Drawer Overlay */}
-            <div className={`side-drawer-overlay ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)}></div>
+            {/* Mobile Menu Dropdown (Visible ONLY on Mobile) */}
+            <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
+                <div className="mobile-menu-inner">
+                    <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
+                    <Link to="/produse" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
+                    <Link to="/catering" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
+                    <Link to="/saloane" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
+                    <Link to="/blog" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
+                    <Link to="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
 
-            {/* Side Drawer Menu */}
-            <div className={`side-drawer ${isMenuOpen ? 'open' : ''}`}>
+                    <div className="mobile-auth">
+                        {user ? (
+                            <Link to="/contul-meu" className="mobile-btn mobile-account" onClick={() => setIsMenuOpen(false)}>
+                                <User size={18} style={{ marginRight: '8px' }} /> Contul Meu
+                            </Link>
+                        ) : (
+                            <>
+                                <Link to="/login" className="mobile-btn mobile-login" onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
+                                <Link to="/register" className="mobile-btn mobile-register" onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Side Drawer (Visible ONLY on Desktop) */}
+            <div className={`side-drawer-overlay desktop-only-drawer ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)}></div>
+            <div className={`side-drawer desktop-only-drawer ${isMenuOpen ? 'open' : ''}`}>
                 <div className="side-drawer-header">
                     <span className="drawer-title">Meniu</span>
                     <button className="drawer-close" onClick={() => setIsMenuOpen(false)}>
@@ -158,20 +182,6 @@ const Header = () => {
                     <NavLink to="/blog" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</NavLink>
                     <NavLink to="/contact" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</NavLink>
                 </nav>
-
-                {/* Mobile-only Auth in Drawer (Hidden on Desktop since they are in header) */}
-                <div className="drawer-footer mobile-only">
-                    {user ? (
-                        <Link to="/contul-meu" className="drawer-auth-btn" onClick={() => setIsMenuOpen(false)}>
-                            <User size={18} style={{ marginRight: '8px' }} /> Contul Meu
-                        </Link>
-                    ) : (
-                        <div className="drawer-auth-group">
-                            <Link to="/login" className="drawer-auth-btn login" onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
-                            <Link to="/register" className="drawer-auth-btn register" onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
-                        </div>
-                    )}
-                </div>
             </div>
         </header>
     );
