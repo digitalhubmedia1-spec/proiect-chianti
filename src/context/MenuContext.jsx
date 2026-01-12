@@ -333,7 +333,7 @@ export const MenuProvider = ({ children }) => {
             // 2. Fetch Products
             const { data: prodsData, error: prodsError } = await supabase
                 .from('configurator_products')
-                .select('*')
+                .select('id, step_id, name, description, full_description, image, price, is_active')
                 .eq('is_active', true);
 
             if (prodsError) throw prodsError;
@@ -342,7 +342,16 @@ export const MenuProvider = ({ children }) => {
             const prodMap = {};
             (prodsData || []).forEach(p => {
                 if (!prodMap[p.step_id]) prodMap[p.step_id] = [];
-                prodMap[p.step_id].push(p);
+                // Map DB schema to UI schema
+                // DB: name, description, full_description
+                // UI: title, desc, fullDesc
+                const uiProduct = {
+                    ...p,
+                    title: p.name,
+                    desc: p.description || '',
+                    fullDesc: p.full_description || ''
+                };
+                prodMap[p.step_id].push(uiProduct);
             });
             setConfiguratorProducts(prodMap);
 
@@ -383,15 +392,24 @@ export const MenuProvider = ({ children }) => {
     const addConfigProduct = async (stepId, product) => {
         if (!supabase) return;
         try {
-            const payload = {
+            const allowedCols = ['step_id', 'name', 'price', 'image', 'description', 'full_description', 'is_active'];
+            const safePayload = {
                 step_id: stepId,
-                name: product.name,
+                name: product.title || '',
                 price: parseFloat(product.price || 0),
                 image: product.image || '',
-                description: product.description || '',
+                description: product.desc || '',
+                full_description: product.fullDesc || '',
                 is_active: true
             };
-            const { data, error } = await supabase.from('configurator_products').insert([payload]).select();
+
+            // Final check to ensure no prototype leaking although unlikely here
+            const dbPayload = {};
+            Object.keys(safePayload).forEach(key => {
+                if (allowedCols.includes(key)) dbPayload[key] = safePayload[key];
+            });
+
+            const { data, error } = await supabase.from('configurator_products').insert([dbPayload]).select();
             if (error) throw error;
 
             if (data) {
@@ -410,7 +428,26 @@ export const MenuProvider = ({ children }) => {
     const updateConfigProduct = async (stepId, productId, updatedData) => {
         if (!supabase) return;
         try {
-            const { error } = await supabase.from('configurator_products').update(updatedData).eq('id', productId);
+            // Whitelist cleaning for safety
+            const allowedCols = ['step_id', 'name', 'price', 'image', 'description', 'full_description', 'is_active'];
+            const safePayload = {};
+
+            // Map legacy keys if present
+            if (updatedData.title && !updatedData.name) safePayload.name = updatedData.title;
+            if (updatedData.desc && !updatedData.description) safePayload.description = updatedData.desc;
+            if (updatedData.fullDesc && !updatedData.full_description) safePayload.full_description = updatedData.fullDesc;
+
+            // Copy explicit allowed keys
+            Object.keys(updatedData).forEach(key => {
+                if (allowedCols.includes(key)) safePayload[key] = updatedData[key];
+            });
+
+            // Ensure mapped keys are also kept if they match allowedCols (they do)
+            if (safePayload.name === undefined && updatedData.title) safePayload.name = updatedData.title;
+            if (safePayload.description === undefined && updatedData.desc) safePayload.description = updatedData.desc;
+            if (safePayload.full_description === undefined && updatedData.fullDesc) safePayload.full_description = updatedData.fullDesc;
+
+            const { error } = await supabase.from('configurator_products').update(safePayload).eq('id', productId);
             if (error) throw error;
 
             setConfiguratorProducts(prev => ({

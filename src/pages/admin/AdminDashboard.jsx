@@ -155,7 +155,12 @@ const AdminDashboard = () => {
     const openConfigModal = (product = null) => {
         if (product) {
             setEditingConfigProduct(product);
-            setConfigForm(product);
+            setConfigForm({
+                title: product.title || product.name || '',
+                desc: product.desc || product.description || '',
+                fullDesc: product.fullDesc || product.full_description || '',
+                image: product.image || ''
+            });
         } else {
             setEditingConfigProduct(null);
             setConfigForm({ title: '', desc: '', fullDesc: '', image: '' });
@@ -535,8 +540,8 @@ const AdminDashboard = () => {
                                         <td>
                                             <img src={p.image || 'https://via.placeholder.com/50'} alt={p.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
                                         </td>
-                                        <td>{p.title}</td>
-                                        <td><small>{p.desc}</small></td>
+                                        <td>{p.title || p.name}</td>
+                                        <td><small>{p.desc || p.description}</small></td>
                                         <td>
                                             <div className="admin-actions">
                                                 <button className="btn-icon edit" onClick={() => openConfigModal(p)} title="Editează"><Edit2 size={18} /></button>
