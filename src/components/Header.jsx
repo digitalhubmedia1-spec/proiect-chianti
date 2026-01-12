@@ -141,23 +141,28 @@ const Header = () => {
 
             {/* Mobile Menu Dropdown (Visible ONLY on Mobile) */}
             <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
-                <div className="mobile-menu-inner">
-                    <Link to="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Pagina Principală</Link>
-                    <Link to="/produse" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</Link>
-                    <Link to="/catering" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Catering</Link>
-                    <Link to="/saloane" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</Link>
-                    <Link to="/blog" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Blog & Informații</Link>
-                    <Link to="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact & Oferte</Link>
+                <div className="mobile-menu-inner" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                    <NavLink to="/" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</NavLink>
+                    <NavLink to="/produse" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</NavLink>
+                    <NavLink to="/catering" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</NavLink>
+                    <NavLink to="/saloane" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</NavLink>
+                    <NavLink to="/blog" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</NavLink>
+                    <NavLink to="/contact" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</NavLink>
 
-                    <div className="mobile-auth">
+                    <div className="mobile-auth" style={{ marginTop: '2rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+                        {/* Mobile Cart */}
+                        <Link to="/cos" className="mobile-btn mobile-login" style={{ borderColor: '#333', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '200px' }} onClick={() => setIsMenuOpen(false)}>
+                            <ShoppingCart size={18} style={{ marginRight: '8px' }} /> Coșul Meu {cartCount > 0 && `(${cartCount})`}
+                        </Link>
+
                         {user ? (
-                            <Link to="/contul-meu" className="mobile-btn mobile-account" onClick={() => setIsMenuOpen(false)}>
+                            <Link to="/contul-meu" className="mobile-btn mobile-account" style={{ width: '200px', justifyContent: 'center' }} onClick={() => setIsMenuOpen(false)}>
                                 <User size={18} style={{ marginRight: '8px' }} /> Contul Meu
                             </Link>
                         ) : (
                             <>
-                                <Link to="/login" className="mobile-btn mobile-login" onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
-                                <Link to="/register" className="mobile-btn mobile-register" onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
+                                <Link to="/login" className="mobile-btn mobile-login" style={{ width: '200px', justifyContent: 'center' }} onClick={() => setIsMenuOpen(false)}>Autentificare</Link>
+                                <Link to="/register" className="mobile-btn mobile-register" style={{ width: '200px', justifyContent: 'center' }} onClick={() => setIsMenuOpen(false)}>Înregistrare</Link>
                             </>
                         )}
                     </div>
