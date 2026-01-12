@@ -66,22 +66,33 @@ const AdminDashboard = () => {
     const [selectedRecId, setSelectedRecId] = useState("");
 
     // Handlers
-    const handleProductSubmit = (e) => {
+    const handleProductSubmit = async (e) => {
         e.preventDefault();
         const productData = {
             ...prodForm,
             price: parseFloat(prodForm.price),
-            id: editingProduct ? editingProduct.id : Date.now()
+            id: editingProduct ? editingProduct.id : undefined // Let DB generate ID if new
         };
 
         if (editingProduct) {
-            updateProduct(editingProduct.id, productData);
+            await updateProduct(editingProduct.id, productData);
+            // Updating recommendations happens immediately in UI for existing products, 
+            // but we could also batch save here if we changed logic. 
+            // For now, existing logic saves immediately on add/remove.
         } else {
-            addProduct(productData);
+            const newProduct = await addProduct(productData);
+            if (newProduct && currentRecommendations.length > 0) {
+                // Batch insert recommendations for the new product
+                for (const rec of currentRecommendations) {
+                    await addRecommendation(newProduct.id, rec.id);
+                }
+            }
         }
-        setIsProductModalOpen(false);
+
         setProdForm({ name: '', price: '', category: '', image: '', description: '', weight: '', ingredients: '' });
         setEditingProduct(null);
+        setIsProductModalOpen(false);
+        setCurrentRecommendations([]);
     };
 
     const handleCategorySubmit = (e) => {
@@ -107,19 +118,35 @@ const AdminDashboard = () => {
     };
 
     const handleAddRec = async () => {
-        if (!selectedRecId || !editingProduct) return;
-        await addRecommendation(editingProduct.id, selectedRecId);
-        // Refresh local list
-        const recs = await fetchRecommendations(editingProduct.id);
-        setCurrentRecommendations(recs);
+        if (!selectedRecId) return;
+
+        const selectedProduct = products.find(p => p.id === parseInt(selectedRecId) || p.id === selectedRecId);
+        if (!selectedProduct) return;
+
+        if (editingProduct) {
+            // Immediate save for existing products
+            await addRecommendation(editingProduct.id, selectedRecId);
+            // Refresh
+            const recs = await fetchRecommendations(editingProduct.id);
+            setCurrentRecommendations(recs);
+        } else {
+            // Local state only for new products
+            // Prevent duplicates
+            if (!currentRecommendations.some(r => r.id === selectedProduct.id)) {
+                setCurrentRecommendations([...currentRecommendations, selectedProduct]);
+            }
+        }
         setSelectedRecId("");
     };
 
     const handleRemoveRec = async (recId) => {
-        if (!editingProduct) return;
-        await removeRecommendation(editingProduct.id, recId);
-        // Refresh local list
-        setCurrentRecommendations(prev => prev.filter(r => r.id !== recId));
+        if (editingProduct) {
+            await removeRecommendation(editingProduct.id, recId);
+            setCurrentRecommendations(prev => prev.filter(r => r.id !== recId));
+        } else {
+            // Local state remove
+            setCurrentRecommendations(prev => prev.filter(r => r.id !== recId));
+        }
     };
 
     // ... (existing handlers)
@@ -656,57 +683,56 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* RECOMMENDATIONS SECTION (Only when editing existing product) */}
-                            {editingProduct && (
-                                <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                                    <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Produse Recomandate (Extra)</label>
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <select
-                                            className="form-control"
-                                            value={selectedRecId}
-                                            onChange={(e) => setSelectedRecId(e.target.value)}
-                                        >
-                                            <option value="">Alege un produs...</option>
-                                            {products
-                                                .filter(p => p.id !== editingProduct.id) // Exclude self
-                                                .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
-                                                .sort((a, b) => a.name.localeCompare(b.name))
-                                                .map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name} ({p.price} Lei)</option>
-                                                ))
-                                            }
-                                        </select>
-                                        <button type="button" className="btn btn-primary" onClick={handleAddRec} disabled={!selectedRecId}>
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
 
-                                    {/* List of current recommendations */}
-                                    <div className="recommendations-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        {currentRecommendations.map(rec => (
-                                            <div key={rec.id} style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                background: '#f8f9fa',
-                                                padding: '5px 10px',
-                                                borderRadius: '20px',
-                                                fontSize: '0.9rem',
-                                                border: '1px solid #dee2e6'
-                                            }}>
-                                                <span>{rec.name}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveRec(rec.id)}
-                                                    style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', marginLeft: '8px', display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {currentRecommendations.length === 0 && <small className="text-muted">Niciun produs recomandat.</small>}
-                                    </div>
+                            {/* RECOMMENDATIONS SECTION (Available for New and Edit) */}
+                            <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                                <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Produse Recomandate (Extra)</label>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    <select
+                                        className="form-control"
+                                        value={selectedRecId}
+                                        onChange={(e) => setSelectedRecId(e.target.value)}
+                                    >
+                                        <option value="">Alege un produs...</option>
+                                        {products
+                                            .filter(p => !editingProduct || p.id !== editingProduct.id) // Exclude self if editing
+                                            .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} ({p.price} Lei)</option>
+                                            ))
+                                        }
+                                    </select>
+                                    <button type="button" className="btn btn-primary" onClick={handleAddRec} disabled={!selectedRecId}>
+                                        <Plus size={18} />
+                                    </button>
                                 </div>
-                            )}
+
+                                {/* List of current recommendations */}
+                                <div className="recommendations-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {currentRecommendations.map(rec => (
+                                        <div key={rec.id} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            background: '#f8f9fa',
+                                            padding: '5px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.9rem',
+                                            border: '1px solid #dee2e6'
+                                        }}>
+                                            <span>{rec.name}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveRec(rec.id)}
+                                                style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', marginLeft: '8px', display: 'flex', alignItems: 'center' }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {currentRecommendations.length === 0 && <small className="text-muted">Niciun produs recomandat.</small>}
+                                </div>
+                            </div>
 
                             <button type="submit" className="btn btn-primary btn-block mt-2">Salvează</button>
                         </form>

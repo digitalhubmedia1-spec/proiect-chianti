@@ -81,10 +81,13 @@ export const MenuProvider = ({ children }) => {
             const { data, error } = await supabase.from('products').insert([payload]).select();
 
             if (error) throw error;
-            if (data) setProducts(prev => [...prev, data[0]]);
+            const newProduct = data ? data[0] : null;
+            if (newProduct) setProducts(prev => [...prev, newProduct]);
+            return newProduct;
         } catch (error) {
             console.error("Error adding product:", error);
             alert("Eroare la adăugarea produsului: " + error.message);
+            return null;
         }
     };
 
