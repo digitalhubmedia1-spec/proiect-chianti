@@ -121,6 +121,11 @@ const AdminDashboard = () => {
         setIsConfigModalOpen(false);
     };
 
+    const toggleAvailability = (product) => {
+        const currentStatus = product.is_available !== false; // Default true if undefined
+        updateProduct(product.id, { is_available: !currentStatus });
+    };
+
     // Generic Image Upload Handler
     const handleImageUpload = async (e, setFormState) => {
         const file = e.target.files[0];
@@ -228,6 +233,7 @@ const AdminDashboard = () => {
                                         <th>Nume</th>
                                         <th>Preț</th>
                                         <th>Categorie</th>
+                                        <th>Disponibil</th>
                                         <th>Acțiuni</th>
                                     </tr>
                                 </thead>
@@ -249,6 +255,16 @@ const AdminDashboard = () => {
                                                 <td>{product.price} Lei</td>
                                                 <td>{product.category}</td>
                                                 <td>
+                                                    <label className="switch">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={product.is_available !== false}
+                                                            onChange={() => toggleAvailability(product)}
+                                                        />
+                                                        <span className="slider"></span>
+                                                    </label>
+                                                </td>
+                                                <td>
                                                     <div className="admin-actions">
                                                         <button className="btn-icon edit" onClick={() => openProductModal(product)}><Edit2 size={18} /></button>
                                                         <button className="btn-icon delete" onClick={() => deleteProduct(product.id)}><Trash2 size={18} /></button>
@@ -262,7 +278,7 @@ const AdminDashboard = () => {
                                         return type === activeProductTabType;
                                     }).length === 0 && (
                                             <tr>
-                                                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
                                                     Nu există produse de {activeProductTabType} adăugate.
                                                 </td>
                                             </tr>
