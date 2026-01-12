@@ -154,13 +154,13 @@ const Products = () => {
                             <div className="icon-wrapper" style={{
                                 width: '80px',
                                 height: '80px',
-                                background: '#fff1f2',
+                                background: 'var(--color-accent-light)',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 margin: '0 auto 1.5rem',
-                                color: '#e11d48'
+                                color: 'var(--color-primary)'
                             }}>
                                 <UtensilsCrossed size={40} />
                             </div>
@@ -168,7 +168,7 @@ const Products = () => {
                             <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6' }}>
                                 Platouri și meniuri complete pentru evenimente. <br /><strong>Comandă cu minim 48h înainte.</strong>
                             </p>
-                            <button className="btn btn-primary" style={{ marginTop: '2rem', background: '#e11d48', borderColor: '#e11d48' }}>Vezi Oferta Catering</button>
+                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi Oferta Catering</button>
                         </div>
                     </div>
                 </div>
