@@ -293,7 +293,7 @@
     color: white;
     padding: 0.5rem;
     cursor: pointer;
-    margin-left: 1.5rem;
+    margin-left: 0;
     display: block;
     /* Always visible now */
 }
@@ -555,12 +555,18 @@
     border: 2px solid #222;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
 /* Auth Buttons Adjustments */
 .auth-buttons {
     display: flex;
     gap: 1.5rem;
     align-items: center;
-    margin-left: 1rem;
+    margin-left: 0;
 }
 
 @media (min-width: 900px) {
@@ -570,13 +576,13 @@
 }
 
 .btn-auth {
-    font-size: 1rem;
-    /* Increased to match sidebar style */
+    font-size: 0.75rem;
+    /* Reverted to old size (approx) */
     font-weight: 700;
     text-transform: uppercase;
     text-decoration: none;
-    padding: 0.6rem 1.2rem;
-    /* Increased padding */
+    padding: 0.5rem 1rem;
+    /* Standard padding */
     border-radius: 50px;
     transition: all 0.3s;
     letter-spacing: 0.5px;

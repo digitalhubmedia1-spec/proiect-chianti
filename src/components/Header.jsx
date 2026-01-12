@@ -73,7 +73,7 @@ const Header = () => {
 
                     {/* Desktop Menu - REMOVED as per request, replaced by Burger/Drawer */}
 
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="header-actions">
                         {/* Auth Buttons - Always visible now on Desktop */}
                         <div className="auth-buttons desktop-only">
                             <div className="cart-dropdown-wrapper">
