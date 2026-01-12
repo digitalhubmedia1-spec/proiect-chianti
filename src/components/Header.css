@@ -293,7 +293,7 @@
     color: white;
     padding: 0.5rem;
     cursor: pointer;
-    margin-left: 1rem;
+    margin-left: 1.5rem;
     display: block;
     /* Always visible now */
 }
@@ -558,9 +558,9 @@
 /* Auth Buttons Adjustments */
 .auth-buttons {
     display: flex;
-    gap: 0.8rem;
+    gap: 1.5rem;
     align-items: center;
-    margin-left: 0.5rem;
+    margin-left: 1rem;
 }
 
 @media (min-width: 900px) {
@@ -570,16 +570,16 @@
 }
 
 .btn-auth {
-    font-size: 0.65rem;
-    /* Reduced from 0.7rem */
+    font-size: 1rem;
+    /* Increased to match sidebar style */
     font-weight: 700;
     text-transform: uppercase;
     text-decoration: none;
-    padding: 0.4rem 0.8rem;
-    /* Reduced padding */
+    padding: 0.6rem 1.2rem;
+    /* Increased padding */
     border-radius: 50px;
     transition: all 0.3s;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
     white-space: nowrap;
 }
 
