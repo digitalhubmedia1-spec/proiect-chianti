@@ -144,7 +144,7 @@ const Header = () => {
                 <div className="mobile-menu-inner" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                     <NavLink to="/" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</NavLink>
                     <NavLink to="/produse" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</NavLink>
-                    <NavLink to="/catering" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</NavLink>
+                    <NavLink to="/catering" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Evenimente</NavLink>
                     <NavLink to="/saloane" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</NavLink>
                     <NavLink to="/blog" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</NavLink>
                     <NavLink to="/contact" className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</NavLink>
@@ -182,7 +182,7 @@ const Header = () => {
                 <nav className="drawer-nav">
                     <NavLink to="/" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Pagina Principală</NavLink>
                     <NavLink to="/produse" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Comandă Mâncare</NavLink>
-                    <NavLink to="/catering" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Catering</NavLink>
+                    <NavLink to="/catering" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Evenimente</NavLink>
                     <NavLink to="/saloane" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Servicii Rezervări</NavLink>
                     <NavLink to="/blog" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Blog & Informații</NavLink>
                     <NavLink to="/contact" className={({ isActive }) => `drawer-link ${isActive ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>Contact & Oferte</NavLink>
