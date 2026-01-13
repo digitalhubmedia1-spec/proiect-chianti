@@ -1,0 +1,76 @@
+.events-page {
+    padding-bottom: 4rem;
+    min-height: 80vh;
+}
+
+.events-hero {
+    background-color: #f8f9fa;
+    padding: 3rem 0;
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.events-title {
+    font-size: 2.5rem;
+    color: #800020;
+    /* Chianti Red */
+    margin: 0;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.events-content {
+    max-width: 800px;
+    /* Reading width */
+    margin: 0 auto;
+}
+
+.text-section p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: justify;
+    /* Or left, depending on preference */
+}
+
+.text-section p strong {
+    color: #800020;
+}
+
+.cta-section {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.cta-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 1.2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .cta-section {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .text-section p {
+        font-size: 1.2rem;
+    }
+}

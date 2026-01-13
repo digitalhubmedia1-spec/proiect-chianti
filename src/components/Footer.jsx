@@ -39,7 +39,7 @@ const Footer = () => {
                         <ul className="footer-links">
                             <li><a href="/">Pagina Principală</a></li>
                             <li><a href="/produse">Comandă Mâncare</a></li>
-                            <li><a href="/catering">Servicii Catering</a></li>
+                            <li><a href="/servicii-evenimente">Servicii Evenimente</a></li>
                             <li><a href="/configurator">Configurator Meniuri</a></li>
                             <li><a href="/saloane">Servicii Rezervări</a></li>
                             <li><a href="/blog">Blog & Informații</a></li>

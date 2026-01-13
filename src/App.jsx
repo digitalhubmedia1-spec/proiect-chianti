@@ -11,6 +11,7 @@ import Products from './pages/Products';
 import Catering from './pages/Catering';
 import MenuConfigurator from './pages/MenuConfigurator';
 import Saloane from './pages/Saloane';
+import EventsServices from './pages/EventsServices';
 import BlogList from './pages/blog/BlogList';
 import BlogPost from './pages/blog/BlogPost';
 import Contact from './pages/Contact';
@@ -56,6 +57,7 @@ function App() {
                   <Route path="/catering" element={<Layout><Catering /></Layout>} />
                   <Route path="/configurator" element={<Layout><MenuConfigurator /></Layout>} />
                   <Route path="/saloane" element={<Layout><Saloane /></Layout>} />
+                  <Route path="/servicii-evenimente" element={<Layout><EventsServices /></Layout>} />
                   <Route path="/blog" element={<Layout><BlogList /></Layout>} />
                   <Route path="/blog/:id" element={<Layout><BlogPost /></Layout>} />
                   <Route path="/contact" element={<Layout><Contact /></Layout>} />
