@@ -1,62 +1,99 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
+import heroBg from '../../assets/hero_wedding.png'; // Need to move files
+import partyImg from '../../assets/party_people.png';
+import cateringImg from '../../assets/catering_detail.png';
 import './EventsServices.css';
 
 const EventsServices = () => {
     const navigate = useNavigate();
 
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="events-page">
             <SEO
-                title="Servicii Evenimente Chianti"
-                description="Organizează evenimentul perfect la Casa Chianti sau prin serviciile noastre de catering premium la locația ta."
+                title="Servicii Evenimente Chianti - Momente de Neuitat"
+                description="Organizează evenimentul perfect la Casa Chianti sau bucură-te de servicii de catering premium la tine acasă. Nunți, botezuri, petreceri private."
                 canonical="/servicii-evenimente"
             />
 
-            <div className="events-hero">
-                <div className="container">
-                    <h1 className="events-title">SERVICII CATERING</h1>
+            {/* Hero Section */}
+            <div className="events-hero-section">
+                <div className="hero-overlay"></div>
+                <div className="hero-content">
+                    <h1 className="hero-title">SERVICII EVENIMENTE & CATERING</h1>
+                    <p className="hero-subtitle">Transformăm fiecare ocazie într-o amintire prețioasă.</p>
+                    <button className="btn btn-hero" onClick={() => navigate('/contact')}>Solicită Ofertă</button>
                 </div>
             </div>
 
-            <div className="container events-content">
-                <div className="text-section">
-                    <p>
-                        Vrei să îți organizezi evenimentul la <strong>Casa Chianti</strong> în unul dintre frumoasele noastre saloane sau vrei să venim noi la tine acasă și să îți livrăm acolo servicii complete de catering?
-                    </p>
-                    <p>
-                        Oricum ai alege, echipa noastră îți va pune la dispoziție meniuri diversificate și servicii de catering complete pentru o experiență de neuitat.
-                    </p>
-                    <p>
-                        <strong>Casa Chianti</strong> livrează meniuri pentru toate gusturile și buzunarele, rapid și în condiții sigure, oriunde ați dori să vă organizați un eveniment sau o masă în familie.
-                    </p>
-                    <p>
-                        Pentru noi, aspectul contează la fel de mult ca gustul. Îți construim farfurii sau platouri personalizate, de diferite forme și în combinații inedite de gust.
-                    </p>
-                    <p>
-                        Oferta de meniu se potrivește atât platourilor servite la masă, cât și bufeturilor.
-                    </p>
-                    <p>
-                        Putem livra oriunde în zonă, fără să îți faci griji în privința organizării și a serviciului.
-                    </p>
+            <div className="container events-container">
+
+                {/* Section 1: Intro with Image */}
+                <div className="event-section">
+                    <div className="event-image-wrapper inview-fade-right">
+                        <img src={partyImg} alt="Oameni fericiți la petrecere" className="event-img" />
+                    </div>
+                    <div className="event-text-wrapper inview-fade-left">
+                        <h2>Evenimentul Tău, Prioritatea Noastră</h2>
+                        <p>
+                            Vrei să îți organizezi evenimentul la <strong>Casa Chianti</strong> în unul dintre frumoasele noastre saloane sau vrei să venim noi la tine acasă și să îți livrăm acolo servicii complete de catering?
+                        </p>
+                        <p>
+                            Indiferent de alegere, echipa noastră îți pune la dispoziție meniuri diversificate și o organizare impecabilă pentru o experiență de neuitat. De la nunți de vis la petreceri private relaxate, suntem aici pentru tine.
+                        </p>
+                    </div>
                 </div>
 
-                <div className="cta-section">
-                    <button
-                        className="btn btn-primary btn-lg cta-btn"
-                        onClick={() => navigate('/saloane')}
-                    >
-                        Organizează evenimentul la Chianti
-                    </button>
-
-                    <button
-                        className="btn btn-outline-primary btn-lg cta-btn"
-                        onClick={() => navigate('/catering')}
-                    >
-                        Organizează evenimentul în altă locație
-                    </button>
+                {/* Section 2: Catering Details with Image */}
+                <div className="event-section reverse">
+                    <div className="event-image-wrapper inview-fade-left">
+                        <img src={cateringImg} alt="Platouri catering premium" className="event-img" />
+                    </div>
+                    <div className="event-text-wrapper inview-fade-right">
+                        <h2>Gust și Rafinament</h2>
+                        <p>
+                            <strong>Casa Chianti</strong> livrează meniuri pentru toate gusturile și buzunarele, rapid și în condiții sigure, oriunde ați dori să vă organizați un eveniment sau o masă în familie.
+                        </p>
+                        <p>
+                            Pentru noi, aspectul contează la fel de mult ca gustul. Îți construim farfurii sau platouri personalizate, de diferite forme și în combinații inedite de gusturi. Oferta noastră se potrivește perfect atât pentru servirea la masă, cât și pentru bufeturi suedeze elegante.
+                        </p>
+                    </div>
                 </div>
+
+                {/* Section 3: Final Info & CTAs */}
+                <div className="event-final-info text-center">
+                    <h3>Livrare și Organizare Fără Griji</h3>
+                    <p>Putem livra oriunde în zonă, fără să îți faci griji în privința organizării și a serviciului. Lasă detaliile în seama noastră și bucură-te de petrecere alături de invitații tăi.</p>
+
+                    <div className="cta-section-cards">
+                        <div className="cta-card">
+                            <h3>La Noi Acasă</h3>
+                            <p>Saloane elegante, atmosferă premium, servire ireproșabilă.</p>
+                            <button
+                                className="btn btn-primary cta-action-btn"
+                                onClick={() => navigate('/saloane')}
+                            >
+                                Organizează la Chianti
+                            </button>
+                        </div>
+                        <div className="cta-card secondary">
+                            <h3>La Tine Acasă</h3>
+                            <p>Nunta, botezul sau petrecerea ta, în locația aleasă de tine.</p>
+                            <button
+                                className="btn btn-outline-primary cta-action-btn"
+                                onClick={() => navigate('/catering')}
+                            >
+                                Organizează în Altă Locație
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
