@@ -8,6 +8,7 @@ import './EventWizard.css';
 const EventWizard = ({ isOpen, onClose, initialType }) => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
+    const [localSubmitted, setLocalSubmitted] = useState(false); // Track if local lead is sent
 
     // Form States
     const [contact, setContact] = useState({
@@ -66,6 +67,34 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
         setSelections(prev => ({ ...prev, [category]: value }));
     };
 
+    const handleSubmitLocal = async (e) => {
+        e.preventDefault();
+        try {
+            if (supabase) {
+                const { error } = await supabase.from('event_requests').insert([{
+                    salon: 'Cerere Saloane Chianti (Lead)',
+                    event_type: 'Nespecificat',
+                    date_primary: contact.data || null,
+                    guests: 0,
+                    name: `${contact.nume} ${contact.prenume}`,
+                    phone: contact.telefon,
+                    email: contact.email,
+                    message: JSON.stringify({
+                        type: 'Local Venue Interest',
+                        contact: { ...contact }
+                    })
+                }]);
+
+                if (error) throw error;
+            }
+            // Success - Move to redirect screen
+            setLocalSubmitted(true);
+        } catch (err) {
+            console.error('Error saving local lead:', err);
+            alert('A apărut o eroare. Te rugăm să încerci din nou sau să ne contactezi telefonic.');
+        }
+    };
+
     const handleSubmitRemote = async (e) => {
         e.preventDefault();
         const fullData = {
@@ -104,21 +133,63 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
 
     // --- Content Rendering ---
 
-    const renderLocalRedirect = () => (
-        <div className="wizard-step local-redirect-msg">
-            <h2>Organizează la Chianti</h2>
-            <p>
-                Pentru a organiza un eveniment în unul dintre saloanele noastre, te rugăm să vizitezi pagina dedicată
-                și să completezi formularul de rezervare specific de acolo.
-            </p>
-            <button
-                className="btn btn-primary"
-                onClick={() => navigate('/saloane')}
-            >
-                Mergi la Saloane
-            </button>
-        </div>
-    );
+    const renderLocalFlow = () => {
+        if (localSubmitted) {
+            return (
+                <div className="wizard-step local-redirect-msg">
+                    <div className="success-icon" style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                    <h2>Mulțumim! Datele au fost înregistrate.</h2>
+                    <p>
+                        Te rugăm să accesezi acum pagina <strong>Saloane</strong> pentru a vedea detaliile sălilor noastre
+                        și pentru a finaliza rezervarea specifică.
+                    </p>
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => navigate('/saloane')}
+                        style={{ marginTop: '1.5rem' }}
+                    >
+                        Mergi la Saloane
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="wizard-step step-form">
+                <h2>Date de Contact</h2>
+                <p className="step-subtitle">Lasă-ne datele tale și te vom ghida spre saloanele noastre.</p>
+                <form onSubmit={handleSubmitLocal} className="complex-form">
+                    <div className="form-row-2">
+                        <div className="form-group">
+                            <label>Nume</label>
+                            <input type="text" name="nume" value={contact.nume} onChange={handleContactChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Prenume</label>
+                            <input type="text" name="prenume" value={contact.prenume} onChange={handleContactChange} required />
+                        </div>
+                    </div>
+                    <div className="form-row-2">
+                        <div className="form-group">
+                            <label>Telefon</label>
+                            <input type="tel" name="telefon" value={contact.telefon} onChange={handleContactChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" value={contact.email} onChange={handleContactChange} required />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Data orientativă</label>
+                        <input type="date" name="data" value={contact.data} onChange={handleContactChange} required />
+                    </div>
+                    <button type="submit" className="button btn btn-primary btn-block" style={{ marginTop: '2rem' }}>
+                        Continuă spre Saloane
+                    </button>
+                </form>
+            </div>
+        );
+    };
 
     const renderRemoteForm = () => (
         <div className="wizard-step step-form">
@@ -391,7 +462,7 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
 
                 {/* Step 2: Depends on Type */}
                 {step === 2 && (
-                    initialType === 'local' ? renderLocalRedirect() : renderRemoteForm()
+                    initialType === 'local' ? renderLocalFlow() : renderRemoteForm()
                 )}
             </div>
         </div>,
