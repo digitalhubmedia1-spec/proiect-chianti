@@ -313,7 +313,7 @@ const MenuConfigurator = () => {
                                 <img src={product.image} alt={product.title} />
                             </div>
                             <h4>{product.title}</h4>
-                            <p>{product.desc}</p>
+                            <div className="product-desc-preview">{product.desc}</div>
                             <button className="btn-see-more" onClick={(e) => openModal(e, product)}>Vezi mai mult</button>
                         </div>
                     ))}
@@ -334,7 +334,7 @@ const MenuConfigurator = () => {
                         </div>
                         <div className="modal-content">
                             <h3>{modalProduct.title}</h3>
-                            <p className="modal-desc">{modalProduct.fullDesc}</p>
+                            <div className="modal-desc">{modalProduct.fullDesc}</div>
                             <div className="modal-actions">
                                 <button className="btn btn-primary" onClick={() => {
                                     if (!selections[currentStep]?.includes(modalProduct.id)) {
