@@ -144,6 +144,10 @@
 }
 
 /* Final Info & Cards */
+.event-final-info {
+    text-align: center;
+}
+
 .event-final-info h3 {
     font-size: 2rem;
     margin-bottom: 1.5rem;

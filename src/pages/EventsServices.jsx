@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import heroBg from '../assets/hero_wedding.png';
 import partyImg from '../assets/party_people.png';
 import cateringImg from '../assets/catering_detail.png';
+import EventWizard from '../components/EventWizard';
 import './EventsServices.css';
 
 const EventsServices = () => {
     const navigate = useNavigate();
+    const [wizardOpen, setWizardOpen] = useState(false);
+    const [wizardType, setWizardType] = useState(''); // 'local' or 'remote'
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -20,6 +23,10 @@ const EventsServices = () => {
         }
     };
 
+    const openWizard = (type) => {
+        setWizardType(type);
+        setWizardOpen(true);
+    };
 
     return (
         <div className="events-page">
@@ -81,26 +88,31 @@ const EventsServices = () => {
                     <div className="cta-section-cards">
                         <div className="cta-card">
                             <h3>La Noi Acasă</h3>
-                            <p>Saloane elegante, atmosferă premium, servire ireproșabilă.</p>
                             <button
                                 className="btn btn-primary cta-action-btn"
-                                onClick={() => navigate('/saloane')}
+                                onClick={() => openWizard('local')}
                             >
                                 Organizează la Chianti
                             </button>
                         </div>
                         <div className="cta-card secondary">
                             <h3>La Tine Acasă</h3>
-                            <p>Nunta, botezul sau petrecerea ta, în locația aleasă de tine.</p>
                             <button
                                 className="btn btn-outline-primary cta-action-btn"
-                                onClick={() => navigate('/catering')}
+                                onClick={() => openWizard('remote')}
                             >
                                 Organizează în Altă Locație
                             </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Wizard Component */}
+                <EventWizard
+                    isOpen={wizardOpen}
+                    onClose={() => setWizardOpen(false)}
+                    initialType={wizardType}
+                />
 
             </div>
         </div>
