@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../context/MenuContext';
 import {
     ChevronRight,
@@ -17,6 +18,7 @@ import autoTable from 'jspdf-autotable';
 import './MenuConfigurator.css';
 
 const MenuConfigurator = () => {
+    const navigate = useNavigate();
     const { configuratorSteps, configuratorProducts, loading } = useMenu();
 
     if (loading) {
@@ -381,6 +383,14 @@ const MenuConfigurator = () => {
                             disabled={currentStep === 1}
                         >
                             <ChevronLeft size={20} /> Înapoi
+                        </button>
+
+                        <button
+                            className="btn btn-primary nav-btn"
+                            style={{ backgroundColor: '#800020', borderColor: '#800020', marginLeft: '1rem' }}
+                            onClick={() => navigate('/saloane')}
+                        >
+                            Rezervă Salon
                         </button>
 
                         {currentStep < 8 ? (

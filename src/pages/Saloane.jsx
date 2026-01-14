@@ -59,7 +59,7 @@ const ImageCarousel = ({ images, alt }) => {
 const ReservationForm = () => {
     // State for Contact & Basic Info
     const [contact, setContact] = useState({
-        nume: '', prenume: '', telefon: '', email: '', adresa: '', data: ''
+        nume: '', prenume: '', telefon: '', email: '', data: ''
     });
 
     // State for Detailed Selections
@@ -186,10 +186,7 @@ const ReservationForm = () => {
                         <input type="email" className="form-control" name="email" value={contact.email} onChange={handleContactChange} required />
                     </div>
                 </div>
-                <div className="form-group">
-                    <label>Adresa <span className="required">*</span></label>
-                    <input type="text" className="form-control" name="adresa" value={contact.adresa} onChange={handleContactChange} placeholder="Adresa dumneavoastră..." required />
-                </div>
+
                 <div className="form-group">
                     <label>Data Dorită <span className="required">*</span></label>
                     <input type="date" className="form-control" name="data" value={contact.data} onChange={handleContactChange} required />
