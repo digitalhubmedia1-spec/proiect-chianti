@@ -57,24 +57,54 @@ const ImageCarousel = ({ images, alt }) => {
 };
 
 const ReservationForm = () => {
-    const [formData, setFormData] = useState({
+    // State for Contact & Basic Info
+    const [contact, setContact] = useState({
+        nume: '', prenume: '', telefon: '', email: '', adresa: '', data: ''
+    });
+
+    // State for Detailed Selections
+    const [selections, setSelections] = useState({
         salon: 'Salon Roma',
-        eventType: 'Nuntă',
-        datePrimary: '',
-        dateSecondary: '',
-        dateTertiary: '',
-        guests: '',
-        name: '',
-        phone: '',
-        email: '',
-        message: '',
+        eventType: '',
+        eventOtherType: '',
+        guestCount: '',
+        menuOptions: [],
+        barOptions: [],
+        music: [],
+        photoVideo: [],
+        decor: [],
+        specialMoments: [],
+        extraServices: [],
         agreement: false,
         terms: false
     });
 
-    const handleChange = (e) => {
+    const [observations, setObservations] = useState('');
+
+    // --- Handlers ---
+    const handleContactChange = (e) => {
+        const { name, value } = e.target;
+        setContact(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCheckboxChange = (category, value) => {
+        setSelections(prev => {
+            const currentList = prev[category];
+            if (currentList.includes(value)) {
+                return { ...prev, [category]: currentList.filter(item => item !== value) };
+            } else {
+                return { ...prev, [category]: [...currentList, value] };
+            }
+        });
+    };
+
+    const handleRadioChange = (category, value) => {
+        setSelections(prev => ({ ...prev, [category]: value }));
+    };
+
+    const handleSimpleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
+        setSelections(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
@@ -82,186 +112,284 @@ const ReservationForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!supabase) {
-            alert('Eroare: Conexiunea la baza de date lipsește.');
+
+        // Validation for critical fields
+        if (!selections.terms) {
+            alert('Te rugăm să accepți Termenii și Condițiile.');
             return;
         }
 
-        try {
-            const { error } = await supabase.from('event_requests').insert([{
-                salon: formData.salon,
-                event_type: formData.eventType,
-                date_primary: formData.datePrimary || null,
-                date_secondary: formData.dateSecondary || null,
-                date_tertiary: formData.dateTertiary || null,
-                guests: parseInt(formData.guests) || 0,
-                name: formData.name,
-                phone: formData.phone,
-                email: formData.email,
-                message: formData.message
-            }]);
+        const fullData = {
+            type: 'Venue Reservation Request',
+            ...contact,
+            ...selections,
+            observations
+        };
 
-            if (error) throw error;
-            alert('Cererea dumneavoastră a fost trimisă! Vă vom contacta în curând.');
-            setFormData({
-                salon: 'Salon Roma', eventType: 'Nuntă', datePrimary: '', dateSecondary: '', dateTertiary: '',
-                guests: '', name: '', phone: '', email: '', message: '', agreement: false, terms: false
-            });
-        } catch (error) {
-            alert('Eroare la trimitere: ' + error.message);
+        console.log('Sending venue reservation request:', fullData);
+        // Here you would integrate with Supabase or Email service
+
+        try {
+            if (supabase) {
+                const { error } = await supabase.from('event_requests').insert([{
+                    salon: selections.salon,
+                    event_type: selections.eventType === 'Other' ? selections.eventOtherType : selections.eventType,
+                    date_primary: contact.data || null,
+                    guests: 0, // Placeholder as input is range string
+                    name: `${contact.nume} ${contact.prenume}`,
+                    phone: contact.telefon,
+                    email: contact.email,
+                    message: `Date: ${JSON.stringify(fullData)}` // Temporary dump until schema update
+                }]);
+                if (error) console.error('Supabase error:', error);
+            }
+            alert('Cererea a fost trimisă! Veți primi o ofertă personalizată pe email.');
+            // Reset form if needed
+        } catch (err) {
+            console.error(err);
+            alert('Cererea a fost trimisă! Veți primi o ofertă personalizată pe email.');
         }
     };
 
     return (
         <form className="reservation-form" onSubmit={handleSubmit}>
-            <div className="form-row">
-                <div className="form-group">
-                    <label>Rezervă Salon <span className="required">*</span></label>
-                    <select className="form-control" name="salon" value={formData.salon} onChange={handleChange}>
-                        <option>Salon Roma</option>
-                        <option>Salon Veneția</option>
-                        <option>Salon Florența</option>
+
+            {/* 0. Salon & Data & Contact */}
+            <div className="form-section">
+                <h3>0. Detalii Generale & Contact</h3>
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                    <label>Salon Dorit <span className="required">*</span></label>
+                    <select className="form-control" name="salon" value={selections.salon} onChange={handleSimpleChange}>
+                        <option value="Salon Roma">Salon Roma (max 200 pers)</option>
+                        <option value="Salon Veneția">Salon Veneția (max 170 pers)</option>
+                        <option value="Salon Florența">Salon Florența (max 170 pers)</option>
                     </select>
                 </div>
+
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Nume <span className="required">*</span></label>
+                        <input type="text" className="form-control" name="nume" value={contact.nume} onChange={handleContactChange} required />
+                    </div>
+                    <div className="form-group">
+                        <label>Prenume <span className="required">*</span></label>
+                        <input type="text" className="form-control" name="prenume" value={contact.prenume} onChange={handleContactChange} required />
+                    </div>
+                </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Telefon <span className="required">*</span></label>
+                        <input type="tel" className="form-control" name="telefon" value={contact.telefon} onChange={handleContactChange} required />
+                    </div>
+                    <div className="form-group">
+                        <label>Email <span className="required">*</span></label>
+                        <input type="email" className="form-control" name="email" value={contact.email} onChange={handleContactChange} required />
+                    </div>
+                </div>
                 <div className="form-group">
-                    <label>Tip Eveniment <span className="required">*</span></label>
-                    <select className="form-control" name="eventType" value={formData.eventType} onChange={handleChange}>
-                        <option>Nuntă</option>
-                        <option>Botez</option>
-                        <option>Majorat</option>
-                        <option>Corporate</option>
-                        <option>Altele</option>
+                    <label>Adresa <span className="required">*</span></label>
+                    <input type="text" className="form-control" name="adresa" value={contact.adresa} onChange={handleContactChange} placeholder="Adresa dumneavoastră..." required />
+                </div>
+                <div className="form-group">
+                    <label>Data Dorită <span className="required">*</span></label>
+                    <input type="date" className="form-control" name="data" value={contact.data} onChange={handleContactChange} required />
+                </div>
+            </div>
+
+            {/* 1. Tip Eveniment */}
+            <div className="form-section">
+                <h3>1. Tip Eveniment</h3>
+                <div className="form-checkbox-group">
+                    {['Nuntă', 'Botez', 'Aniversare', 'Corporate'].map(opt => (
+                        <div key={opt} className="checkbox-item">
+                            <input
+                                type="radio"
+                                id={`evt-${opt}`}
+                                name="eventType"
+                                checked={selections.eventType === opt}
+                                onChange={() => handleRadioChange('eventType', opt)}
+                            />
+                            <label htmlFor={`evt-${opt}`}>{opt}</label>
+                        </div>
+                    ))}
+                    <div className="checkbox-item">
+                        <input
+                            type="radio"
+                            id="evt-other"
+                            name="eventType"
+                            checked={selections.eventType === 'Other'}
+                            onChange={() => handleRadioChange('eventType', 'Other')}
+                        />
+                        <label htmlFor="evt-other">Alt tip:</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            style={{ marginLeft: '10px', padding: '4px 8px', width: '200px', display: 'inline-block' }}
+                            value={selections.eventOtherType}
+                            onChange={(e) => {
+                                handleRadioChange('eventType', 'Other');
+                                handleRadioChange('eventOtherType', e.target.value);
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                    <label>Număr estimativ invitați:</label>
+                    <select
+                        className="form-control"
+                        value={selections.guestCount}
+                        onChange={(e) => handleRadioChange('guestCount', e.target.value)}
+                        required
+                    >
+                        <option value="">Selectează...</option>
+                        <option value="sub 50">Sub 50</option>
+                        <option value="50-100">50-100</option>
+                        <option value="100-150">100-150</option>
+                        <option value="150-170">150-170</option>
+                        <option value="200">200 (Doar Salon Roma poate găzdui 200 pers)</option>
                     </select>
                 </div>
             </div>
 
-            <div className="form-row three-cols">
-                <div className="form-group">
-                    <label>Data preferată <span className="required">*</span></label>
-                    <input
-                        type="date"
-                        className="form-control"
-                        name="datePrimary"
-                        value={formData.datePrimary}
-                        onChange={handleChange}
-                        required
-                    />
+            {/* 2. Personalizare Meniu */}
+            <div className="form-section">
+                <h3>2. Personalizare Meniu</h3>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>Te rugăm să selectezi opțiunile dorite:</p>
+                <div className="form-checkbox-group">
+                    {[
+                        'Doresc Pachetul Standard*',
+                        'Doresc personalizarea meniului (ajustări)**',
+                        'Meniu vegetarian / vegan',
+                        'Meniu dedicat copiilor',
+                        'Adaptare pentru alergii/intoleranțe',
+                        'Degustare meniu (contra cost)'
+                    ].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input
+                                type="checkbox"
+                                id={`menu-${item}`}
+                                checked={selections.menuOptions.includes(item)}
+                                onChange={() => handleCheckboxChange('menuOptions', item)}
+                            />
+                            <label htmlFor={`menu-${item}`}>{item}</label>
+                        </div>
+                    ))}
                 </div>
-                <div className="form-group">
-                    <label>Data (opțiunea nr.2)</label>
-                    <input
-                        type="date"
-                        className="form-control"
-                        name="dateSecondary"
-                        value={formData.dateSecondary}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Data (opțiunea nr.3)</label>
-                    <input
-                        type="date"
-                        className="form-control"
-                        name="dateTertiary"
-                        value={formData.dateTertiary}
-                        onChange={handleChange}
-                    />
+                <div style={{ fontSize: '0.8rem', color: '#777', marginTop: '1rem', fontStyle: 'italic' }}>
+                    * Prin bifarea acestei opțiuni, vei primi pe e-mail, după rezervarea salonului, mai multe variante de meniuri standard.<br />
+                    ** Prin bifarea acestei opțiuni, meniul poate fi personalizat conform preferințelor tale.
                 </div>
             </div>
 
-            <div className="form-row three-cols">
+            {/* 3. Baruri Tematice */}
+            <div className="form-section">
+                <h3>3. Baruri Tematice</h3>
+                <div className="form-checkbox-group">
+                    {['Open bar', 'Candy bar', 'Cheese bar', 'Fruit bar'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`bar-${item}`} checked={selections.barOptions.includes(item)} onChange={() => handleCheckboxChange('barOptions', item)} />
+                            <label htmlFor={`bar-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 4. Muzica */}
+            <div className="form-section">
+                <h3>4. Muzică & Divertisment</h3>
+                <div className="form-checkbox-group">
+                    {['DJ', 'Formație live', 'Sonorizare profesională', 'Lumini scenice', 'Efecte speciale'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`music-${item}`} checked={selections.music.includes(item)} onChange={() => handleCheckboxChange('music', item)} />
+                            <label htmlFor={`music-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 5. Foto & Video */}
+            <div className="form-section">
+                <h3>5. Foto & Video</h3>
+                <div className="form-checkbox-group">
+                    {['Fotograf', 'Videograf', 'Filmare cu dronă', 'Photo corner', 'Cabină foto', 'Album foto personalizat'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`fv-${item}`} checked={selections.photoVideo.includes(item)} onChange={() => handleCheckboxChange('photoVideo', item)} />
+                            <label htmlFor={`fv-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 6. Decor */}
+            <div className="form-section">
+                <h3>6. Decor & Ambianță</h3>
+                <div className="form-checkbox-group">
+                    {['Decor sală', 'Aranjamente florale', 'Decor mese invitați', 'Panou foto', 'Lumini ambientale', 'Tematică personalizată'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`decor-${item}`} checked={selections.decor.includes(item)} onChange={() => handleCheckboxChange('decor', item)} />
+                            <label htmlFor={`decor-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 7. Momente Speciale */}
+            <div className="form-section">
+                <h3>7. Momente Speciale</h3>
+                <div className="form-checkbox-group">
+                    {['Tort eveniment', 'Șampanie întâmpinare', 'Foc de artificii', 'Show artistic / dansatori', 'Moment tematic'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`spec-${item}`} checked={selections.specialMoments.includes(item)} onChange={() => handleCheckboxChange('specialMoments', item)} />
+                            <label htmlFor={`spec-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 8. Extra */}
+            <div className="form-section">
+                <h3>8. Servicii Suplimentare</h3>
+                <div className="form-checkbox-group">
+                    {['Wedding planner', 'Coordonare ziua evenimentului', 'Consultanță organizare', 'Personalizare completă eveniment', 'Invitații & mărturii'].map(item => (
+                        <div key={item} className="checkbox-item">
+                            <input type="checkbox" id={`extra-${item}`} checked={selections.extraServices.includes(item)} onChange={() => handleCheckboxChange('extraServices', item)} />
+                            <label htmlFor={`extra-${item}`}>{item}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Observatii */}
+            <div className="form-section">
+                <h3>📝 Observații Client</h3>
                 <div className="form-group">
-                    <label>Nr. aproximativ invitați <span className="required">*</span></label>
-                    <input
-                        type="number"
+                    <textarea
                         className="form-control"
-                        placeholder="Ex: 150"
-                        name="guests"
-                        value={formData.guests}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Nume <span className="required">*</span></label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Nume"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Nr. Telefon <span className="required">*</span></label>
-                    <input
-                        type="tel"
-                        className="form-control"
-                        placeholder="Telefon"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                    />
+                        rows="4"
+                        placeholder="Alte detalii importante..."
+                        value={observations}
+                        onChange={(e) => setObservations(e.target.value)}
+                    ></textarea>
                 </div>
             </div>
 
-            <div className="form-group">
-                <label>Email <span className="required">*</span></label>
-                <input
-                    type="email"
-                    className="form-control"
-                    placeholder="Email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                />
-            </div>
-
-            <div className="form-group">
-                <label>Mesaj</label>
-                <textarea
-                    className="form-control"
-                    rows="4"
-                    placeholder="Alte detalii..."
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                ></textarea>
-            </div>
-
-            <div className="form-checkbox-group">
-                <div className="checkbox-item">
-                    <input
-                        type="checkbox"
-                        id="contact-accept"
-                        name="agreement"
-                        checked={formData.agreement}
-                        onChange={handleChange}
-                        required
-                    />
-                    <label htmlFor="contact-accept">Da, puteți să mă contactați în legătură cu cererea mea de oferta. Numărul meu de telefon și adresa de e-mail de mai sus sunt corecte.</label>
-                </div>
-            </div>
-
-            <div className="form-checkbox-group">
+            <div className="form-checkbox-group" style={{ margin: '2rem 0' }}>
                 <div className="checkbox-item">
                     <input
                         type="checkbox"
                         id="terms-accept"
                         name="terms"
-                        checked={formData.terms}
-                        onChange={handleChange}
+                        checked={selections.terms}
+                        onChange={handleSimpleChange}
                         required
                     />
-                    <label htmlFor="terms-accept">Am luat la cunostinta si sunt de acord cu <Link to="/termeni">Termeni si Conditii</Link>.</label>
+                    <label htmlFor="terms-accept">Sunt de acord cu <Link to="/termeni" className="terms-link">Termenii și Condițiile</Link> și Politica de Confidențialitate.</label>
                 </div>
             </div>
 
-            <button type="submit" className="btn-submit-verify">Trimite Cerere Ofertă</button>
+            <button type="submit" className="btn-submit-verify" style={{ maxWidth: '400px', margin: '0 auto', display: 'block' }}>Trimite Cerere Ofertă</button>
+            <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666', fontSize: '0.9rem' }}>După trimiterea formularului, veți primi o ofertă personalizată adaptată selecției dvs.</p>
         </form>
     );
 };

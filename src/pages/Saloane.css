@@ -331,7 +331,7 @@
     transform: scale(1.2);
 }
 
-/* Availability Section - Split View */
+/* Availability Section - Stacked View */
 .availability-section {
     margin-top: 5rem;
     padding: 4rem 0;
@@ -350,24 +350,24 @@
     margin-bottom: 0.5rem;
 }
 
-.availability-header p {
-    color: #666;
-    margin-bottom: 2rem;
-}
-
 .availability-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 3rem;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-/* Left Column: Calendar & Selector */
+/* Calendar centered */
 .availability-left {
     background: white;
-    padding: 1.5rem;
+    padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 600px;
+    /* Limit calendar width */
 }
 
 .venue-selector-compact {
@@ -494,9 +494,36 @@
 /* Right Column: Reservation Form */
 .availability-right {
     background: white;
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+    color: var(--color-primary);
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    font-family: var(--font-heading);
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    resize: vertical;
 }
 
 .reservation-form {
