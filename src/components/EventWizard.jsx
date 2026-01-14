@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { X, Check } from 'lucide-react';
 import './EventWizard.css';
@@ -40,7 +41,7 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
         onClose();
     };
 
-    return (
+    return ReactDOM.createPortal(
         <div className="wizard-overlay">
             <div className="wizard-modal">
                 <button className="wizard-close" onClick={onClose}><X size={24} /></button>
@@ -126,7 +127,8 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
