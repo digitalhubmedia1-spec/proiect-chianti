@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../context/MenuContext';
 import {
     ChevronRight,
@@ -18,7 +17,6 @@ import autoTable from 'jspdf-autotable';
 import './MenuConfigurator.css';
 
 const MenuConfigurator = () => {
-    const navigate = useNavigate();
     const { configuratorSteps, configuratorProducts, loading } = useMenu();
 
     if (loading) {
@@ -251,10 +249,10 @@ const MenuConfigurator = () => {
                     </div>
 
                     <div className="pdf-actions">
-                        <p>Dacă ai finalizat configurarea meniului, te rugăm să mergi la pagina de saloane pentru a completa formularul de rezervare.</p>
-                        <button className="btn btn-primary btn-lg btn-pdf" onClick={() => navigate('/saloane')}>
-                            <CheckCircle size={20} style={{ marginRight: '8px' }} />
-                            Finalizează și Rezervă Salon
+                        <p>Dacă totul arată bine, descarcă oferta în format PDF pentru a o prezenta consultanților noștri.</p>
+                        <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
+                            <Download size={20} style={{ marginRight: '8px' }} />
+                            Descarcă Ofertă PDF
                         </button>
                     </div>
                 </div>
