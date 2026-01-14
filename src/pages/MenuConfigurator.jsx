@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../context/MenuContext';
 import {
     ChevronRight,
@@ -10,13 +11,15 @@ import {
     Wine,
     FileText,
     Cake,
-    Download
+    Download,
+    MapPin
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './MenuConfigurator.css';
 
 const MenuConfigurator = () => {
+    const navigate = useNavigate();
     const { configuratorSteps, configuratorProducts, loading } = useMenu();
 
     if (loading) {
@@ -213,7 +216,7 @@ const MenuConfigurator = () => {
             return (
                 <div className="pdf-preview-section">
                     <h3>Raport Final și Generare Ofertă</h3>
-                    <p>Mai jos poți vedea un rezumat al selecțiilor tale.</p>
+                    <p>Bravo! Ai configurat meniul perfect.</p>
 
                     <div className="report-summary-card">
                         <div className="summary-header">
@@ -249,11 +252,20 @@ const MenuConfigurator = () => {
                     </div>
 
                     <div className="pdf-actions">
-                        <p>Dacă totul arată bine, descarcă oferta în format PDF pentru a o prezenta consultanților noștri.</p>
-                        <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
-                            <Download size={20} style={{ marginRight: '8px' }} />
-                            Descarcă Ofertă PDF
-                        </button>
+                        <p style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+                            <strong>Pasul următor:</strong> Acum că ți-ai ales meniul, poți să îți alegi și salonul potrivit pentru evenimentul tău sau să descarci oferta în format PDF.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
+                                <Download size={20} style={{ marginRight: '8px' }} />
+                                Descarcă Ofertă PDF
+                            </button>
+
+                            <button className="btn btn-outline-primary btn-lg" onClick={() => navigate('/saloane')}>
+                                <MapPin size={20} style={{ marginRight: '8px' }} />
+                                Vezi Saloanele Chianti
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
