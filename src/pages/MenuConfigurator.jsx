@@ -11,8 +11,7 @@ import {
     Wine,
     FileText,
     Cake,
-    Download,
-    MapPin
+    Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -201,11 +200,6 @@ const MenuConfigurator = () => {
             // -- Save --
             doc.save("Oferta_Meniu_Chianti.pdf");
 
-            // Redirect to Saloane after specific time to allow download to start
-            setTimeout(() => {
-                navigate('/saloane');
-            }, 1500);
-
         } catch (error) {
             console.error("Error loading fonts:", error);
             alert("Eroare la încărcarea fonturilor. PDF-ul va fi generat cu font standard.");
@@ -221,7 +215,7 @@ const MenuConfigurator = () => {
             return (
                 <div className="pdf-preview-section">
                     <h3>Raport Final și Generare Ofertă</h3>
-                    <p>Bravo! Ai configurat meniul perfect.</p>
+                    <p>Mai jos poți vedea un rezumat al selecțiilor tale.</p>
 
                     <div className="report-summary-card">
                         <div className="summary-header">
@@ -257,11 +251,10 @@ const MenuConfigurator = () => {
                     </div>
 
                     <div className="pdf-actions">
-                        <p>Dacă totul arată bine, descarcă oferta în format PDF pentru a o prezenta consultanților noștri.</p>
-                        <p className="redirect-note"><small>(Veți fi redirecționat către pagina Saloane după descărcare)</small></p>
-                        <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
-                            <Download size={20} style={{ marginRight: '8px' }} />
-                            Descarcă Ofertă PDF
+                        <p>Dacă ai finalizat configurarea meniului, te rugăm să mergi la pagina de saloane pentru a completa formularul de rezervare.</p>
+                        <button className="btn btn-primary btn-lg btn-pdf" onClick={() => navigate('/saloane')}>
+                            <CheckCircle size={20} style={{ marginRight: '8px' }} />
+                            Finalizează și Rezervă Salon
                         </button>
                     </div>
                 </div>
@@ -310,7 +303,7 @@ const MenuConfigurator = () => {
                                 <img src={product.image} alt={product.title} />
                             </div>
                             <h4>{product.title}</h4>
-                            <div className="product-desc-preview">{product.desc}</div>
+                            <p>{product.desc}</p>
                             <button className="btn-see-more" onClick={(e) => openModal(e, product)}>Vezi mai mult</button>
                         </div>
                     ))}
@@ -331,7 +324,7 @@ const MenuConfigurator = () => {
                         </div>
                         <div className="modal-content">
                             <h3>{modalProduct.title}</h3>
-                            <div className="modal-desc">{modalProduct.fullDesc}</div>
+                            <p className="modal-desc">{modalProduct.fullDesc}</p>
                             <div className="modal-actions">
                                 <button className="btn btn-primary" onClick={() => {
                                     if (!selections[currentStep]?.includes(modalProduct.id)) {
