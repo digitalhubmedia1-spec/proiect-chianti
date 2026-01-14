@@ -201,6 +201,11 @@ const MenuConfigurator = () => {
             // -- Save --
             doc.save("Oferta_Meniu_Chianti.pdf");
 
+            // Redirect to Saloane after specific time to allow download to start
+            setTimeout(() => {
+                navigate('/saloane');
+            }, 1500);
+
         } catch (error) {
             console.error("Error loading fonts:", error);
             alert("Eroare la încărcarea fonturilor. PDF-ul va fi generat cu font standard.");
@@ -252,20 +257,12 @@ const MenuConfigurator = () => {
                     </div>
 
                     <div className="pdf-actions">
-                        <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-                            <strong>Pasul următor:</strong> Acum că ți-ai ales meniul, poți să îți alegi și salonul potrivit pentru evenimentul tău sau să descarci oferta în format PDF.
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
-                                <Download size={20} style={{ marginRight: '8px' }} />
-                                Descarcă Ofertă PDF
-                            </button>
-
-                            <button className="btn btn-outline-primary btn-lg" onClick={() => navigate('/saloane')}>
-                                <MapPin size={20} style={{ marginRight: '8px' }} />
-                                Vezi Saloanele Chianti
-                            </button>
-                        </div>
+                        <p>Dacă totul arată bine, descarcă oferta în format PDF pentru a o prezenta consultanților noștri.</p>
+                        <p className="redirect-note"><small>(Veți fi redirecționat către pagina Saloane după descărcare)</small></p>
+                        <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
+                            <Download size={20} style={{ marginRight: '8px' }} />
+                            Descarcă Ofertă PDF
+                        </button>
                     </div>
                 </div>
             );
@@ -279,13 +276,6 @@ const MenuConfigurator = () => {
             return <div>Loading step data...</div>;
         }
 
-        return (
-            <div className="step-content">
-                <h2>DEBUG MODE ACTIVATED</h2>
-                <p>If you see this, the error is in the product grid rendering.</p>
-            </div>
-        );
-        /*
         return (
             <div className="step-content">
                 <div className="step-header-group">
@@ -327,7 +317,6 @@ const MenuConfigurator = () => {
                 </div>
             </div>
         );
-        */
     };
 
     return (
