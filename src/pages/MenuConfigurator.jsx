@@ -21,13 +21,7 @@ const MenuConfigurator = () => {
     const navigate = useNavigate();
     const { configuratorSteps, configuratorProducts, loading } = useMenu();
 
-    if (loading) {
-        return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Loading...</div>;
-    }
-
-    // Sort steps by ID to ensure order
-    const STEPS = [...configuratorSteps].sort((a, b) => a.id - b.id);
-
+    // Hooks must be called unconditionally
     const [currentStep, setCurrentStep] = useState(1);
     const [selections, setSelections] = useState({
         1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []
@@ -47,6 +41,13 @@ const MenuConfigurator = () => {
     };
 
     const getIcon = (iconName) => IconMap[iconName] || Utensils;
+
+    if (loading) {
+        return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Loading...</div>;
+    }
+
+    // Sort steps by ID to ensure order
+    const STEPS = [...configuratorSteps].sort((a, b) => a.id - b.id);
 
 
     const handleNext = () => {
