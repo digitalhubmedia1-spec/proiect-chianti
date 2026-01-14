@@ -281,6 +281,13 @@ const MenuConfigurator = () => {
 
         return (
             <div className="step-content">
+                <h2>DEBUG MODE ACTIVATED</h2>
+                <p>If you see this, the error is in the product grid rendering.</p>
+            </div>
+        );
+        /*
+        return (
+            <div className="step-content">
                 <div className="step-header-group">
                     <h3>{currentStepData.title}</h3>
 
@@ -320,6 +327,7 @@ const MenuConfigurator = () => {
                 </div>
             </div>
         );
+        */
     };
 
     return (
