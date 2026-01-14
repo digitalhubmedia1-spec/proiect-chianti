@@ -252,9 +252,9 @@ const MenuConfigurator = () => {
                     </div>
 
                     <div className="pdf-actions">
-                        <p style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+                        <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
                             <strong>Pasul următor:</strong> Acum că ți-ai ales meniul, poți să îți alegi și salonul potrivit pentru evenimentul tău sau să descarci oferta în format PDF.
-                        </p>
+                        </div>
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <button className="btn btn-primary btn-lg btn-pdf" onClick={generatePDF}>
                                 <Download size={20} style={{ marginRight: '8px' }} />
