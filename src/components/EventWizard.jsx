@@ -1,51 +1,343 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import './EventWizard.css';
 
 const EventWizard = ({ isOpen, onClose, initialType }) => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
-    const [choice, setChoice] = useState(null); // 'configurator' or 'standard'
-    const [formData, setFormData] = useState({
-        nume: '',
-        prenume: '',
-        telefon: '',
-        email: ''
+
+    // Form States
+    const [contact, setContact] = useState({
+        nume: '', prenume: '', telefon: '', email: '', adresa: '', data: ''
     });
+
+    // Using Sets or Arrays for checks might be cleaner, but simple objects/arrays work too.
+    // We'll use a generic handler for checkboxes to keep code small.
+    const [selections, setSelections] = useState({
+        eventType: '',
+        eventOtherType: '',
+        guestCount: '',
+        menuOptions: [],
+        barOptions: [],
+        logistics: [],
+        staff: [],
+        music: [],
+        photoVideo: [],
+        decor: [],
+        specialMoments: [],
+        extraServices: [],
+    });
+
+    const [observations, setObservations] = useState('');
 
     if (!isOpen) return null;
 
+    // --- Handlers ---
+
     const handleChoice = (selectedChoice) => {
-        setChoice(selectedChoice);
         if (selectedChoice === 'configurator') {
-            // Redirect immediately to configurator
             navigate('/configurator');
         } else {
-            // Go to step 2 (Standard Offer Form)
+            // Standard Offer selected
             setStep(2);
         }
     };
 
-    const handleInputChange = (e) => {
+    const handleContactChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setContact(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmitStandard = (e) => {
+    const handleCheckboxChange = (category, value) => {
+        setSelections(prev => {
+            const currentList = prev[category];
+            if (currentList.includes(value)) {
+                return { ...prev, [category]: currentList.filter(item => item !== value) };
+            } else {
+                return { ...prev, [category]: [...currentList, value] };
+            }
+        });
+    };
+
+    const handleRadioChange = (category, value) => {
+        setSelections(prev => ({ ...prev, [category]: value }));
+    };
+
+    const handleSubmitRemote = (e) => {
         e.preventDefault();
-        // Here you would typically send data to backend
-        console.log('Sending standard offer request:', formData);
-        alert('Cererea a fost trimisă! Vă vom contacta în curând.');
+        const fullData = {
+            type: 'Remote Event Offer',
+            contact,
+            selections,
+            observations
+        };
+        console.log('Sending remote offer:', fullData);
+        alert('Formularul a fost trimis! Veți primi o ofertă personalizată pe email.');
         onClose();
     };
+
+    // --- Content Rendering ---
+
+    const renderLocalRedirect = () => (
+        <div className="wizard-step local-redirect-msg">
+            <h2>Organizează la Chianti</h2>
+            <p>
+                Pentru a organiza un eveniment în unul dintre saloanele noastre, te rugăm să vizitezi pagina dedicată
+                și să completezi formularul de rezervare specific de acolo.
+            </p>
+            <button
+                className="btn btn-primary"
+                onClick={() => navigate('/saloane')}
+            >
+                Mergi la Saloane
+            </button>
+        </div>
+    );
+
+    const renderRemoteForm = () => (
+        <div className="wizard-step step-form">
+            <h2>Detalii Eveniment & Ofertă</h2>
+            <p className="step-subtitle">Configurează pachetul perfect pentru locația ta.</p>
+
+            <form onSubmit={handleSubmitRemote} className="complex-form">
+
+                {/* 0. Contact Info */}
+                <div className="form-section">
+                    <h3>0. Date de Contact</h3>
+                    <div className="form-row-2">
+                        <div className="form-group">
+                            <label>Nume</label>
+                            <input type="text" name="nume" value={contact.nume} onChange={handleContactChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Prenume</label>
+                            <input type="text" name="prenume" value={contact.prenume} onChange={handleContactChange} required />
+                        </div>
+                    </div>
+                    <div className="form-row-2">
+                        <div className="form-group">
+                            <label>Telefon</label>
+                            <input type="tel" name="telefon" value={contact.telefon} onChange={handleContactChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" value={contact.email} onChange={handleContactChange} required />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Adresa Locației Evenimentului</label>
+                        <input type="text" name="adresa" value={contact.adresa} onChange={handleContactChange} required placeholder="Strada, Număr, Localitate..." />
+                    </div>
+                    <div className="form-group">
+                        <label>Data Dorită</label>
+                        <input type="date" name="data" value={contact.data} onChange={handleContactChange} required />
+                    </div>
+                </div>
+
+                {/* 1. Tip Eveniment */}
+                <div className="form-section">
+                    <h3>1. Tip Eveniment</h3>
+                    <div className="checkbox-group">
+                        {['Nuntă', 'Botez', 'Aniversare', 'Corporate'].map(opt => (
+                            <label key={opt} className="checkbox-label">
+                                <input
+                                    type="radio"
+                                    name="eventType"
+                                    checked={selections.eventType === opt}
+                                    onChange={() => handleRadioChange('eventType', opt)}
+                                /> {opt}
+                            </label>
+                        ))}
+                        <label className="checkbox-label">
+                            <input
+                                type="radio"
+                                name="eventType"
+                                checked={selections.eventType === 'Other'}
+                                onChange={() => handleRadioChange('eventType', 'Other')}
+                            /> Alt tip:
+                            <input
+                                type="text"
+                                style={{ marginLeft: '10px', padding: '2px 5px', width: '200px' }}
+                                value={selections.eventOtherType}
+                                onChange={(e) => {
+                                    handleRadioChange('eventType', 'Other');
+                                    handleRadioChange('eventOtherType', e.target.value);
+                                }}
+                            />
+                        </label>
+                    </div>
+                    <div className="form-group" style={{ marginTop: '1rem' }}>
+                        <label>Număr estimativ invitați:</label>
+                        <select
+                            value={selections.guestCount}
+                            onChange={(e) => handleRadioChange('guestCount', e.target.value)}
+                            required
+                        >
+                            <option value="">Selectează...</option>
+                            <option value="sub 50">Sub 50</option>
+                            <option value="50-100">50-100</option>
+                            <option value="100-150">100-150</option>
+                            <option value="150-170">150-170</option>
+                            <option value="200">200 (Info: Doar Salon Roma poate la sediu)</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* 2. Personalizare Meniu */}
+                <div className="form-section">
+                    <h3>2. Personalizare Meniu</h3>
+                    <div className="checkbox-group">
+                        {[
+                            'Doresc Pachetul Standard*',
+                            'Doresc personalizarea meniului (ajustări)**',
+                            'Meniu vegetarian / vegan',
+                            'Meniu dedicat copiilor',
+                            'Adaptare pentru alergii/intoleranțe',
+                            'Degustare meniu (contra cost)'
+                        ].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={selections.menuOptions.includes(item)}
+                                    onChange={() => handleCheckboxChange('menuOptions', item)}
+                                /> {item}
+                            </label>
+                        ))}
+                    </div>
+                    <div className="section-note">
+                        * Prin bifarea acestei opțiuni, vei primi variante standard pe email.<br />
+                        ** Prin bifarea acestei opțiuni, meniul poate fi personalizat ulterior.
+                    </div>
+                </div>
+
+                {/* 3. Baruri Tematice */}
+                <div className="form-section">
+                    <h3>3. Baruri Tematice</h3>
+                    <div className="checkbox-group">
+                        {['Open bar', 'Candy bar', 'Cheese bar', 'Fruit bar'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.barOptions.includes(item)} onChange={() => handleCheckboxChange('barOptions', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 4. Logistica (ONLY REMOTE) */}
+                {initialType === 'remote' && (
+                    <div className="form-section">
+                        <h3>4. Logistică & Echipamente</h3>
+                        <div className="checkbox-group">
+                            {['Mese & scaune', 'Fețe de masă & huse', 'Veselă completă', 'Bar mobil', 'Generator curent', 'Transport & montaj'].map(item => (
+                                <label key={item} className="checkbox-label">
+                                    <input type="checkbox" checked={selections.logistics.includes(item)} onChange={() => handleCheckboxChange('logistics', item)} /> {item}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. Personal (ONLY REMOTE) */}
+                {initialType === 'remote' && (
+                    <div className="form-section">
+                        <h3>5. Personal Eveniment</h3>
+                        <div className="checkbox-group">
+                            {['Bucătari', 'Ospătari', 'Barmani', 'Coordonator eveniment', 'Personal curățenie'].map(item => (
+                                <label key={item} className="checkbox-label">
+                                    <input type="checkbox" checked={selections.staff.includes(item)} onChange={() => handleCheckboxChange('staff', item)} /> {item}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 6. Muzica */}
+                <div className="form-section">
+                    <h3>6. Muzică & Divertisment</h3>
+                    <div className="checkbox-group">
+                        {['DJ', 'Formație live', 'Sonorizare profesională', 'Lumini scenice', 'Efecte speciale'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.music.includes(item)} onChange={() => handleCheckboxChange('music', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 7. Foto & Video */}
+                <div className="form-section">
+                    <h3>7. Foto & Video</h3>
+                    <div className="checkbox-group">
+                        {['Fotograf', 'Videograf', 'Filmare cu dronă', 'Photo corner', 'Cabină foto', 'Album foto personalizat'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.photoVideo.includes(item)} onChange={() => handleCheckboxChange('photoVideo', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 8. Decor */}
+                <div className="form-section">
+                    <h3>8. Decor & Ambianță</h3>
+                    <div className="checkbox-group">
+                        {['Decor sală', 'Aranjamente florale', 'Decor mese invitați', 'Panou foto', 'Lumini ambientale', 'Tematică personalizată'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.decor.includes(item)} onChange={() => handleCheckboxChange('decor', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 9. Momente Speciale */}
+                <div className="form-section">
+                    <h3>9. Momente Speciale</h3>
+                    <div className="checkbox-group">
+                        {['Tort eveniment', 'Șampanie întâmpinare', 'Foc de artificii', 'Show artistic / dansatori', 'Moment tematic'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.specialMoments.includes(item)} onChange={() => handleCheckboxChange('specialMoments', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 10. Suplimentare */}
+                <div className="form-section">
+                    <h3>10. Servicii Suplimentare</h3>
+                    <div className="checkbox-group">
+                        {['Wedding planner', 'Coordonare ziua evenimentului', 'Consultanță organizare', 'Personalizare completă eveniment', 'Invitații & mărturii'].map(item => (
+                            <label key={item} className="checkbox-label">
+                                <input type="checkbox" checked={selections.extraServices.includes(item)} onChange={() => handleCheckboxChange('extraServices', item)} /> {item}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Observatii */}
+                <div className="form-section">
+                    <h3>📝 Observații Client</h3>
+                    <div className="form-group">
+                        <textarea
+                            placeholder="Alte detalii importante pentru noi..."
+                            value={observations}
+                            onChange={(e) => setObservations(e.target.value)}
+                        ></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" className="button btn btn-primary btn-block">
+                    Trimite Solicitarea
+                </button>
+
+            </form>
+        </div>
+    );
 
     return ReactDOM.createPortal(
         <div className="wizard-overlay">
             <div className="wizard-modal">
                 <button className="wizard-close" onClick={onClose}><X size={24} /></button>
 
+                {/* Step 1: Choice */}
                 {step === 1 && (
                     <div className="wizard-step step-choice">
                         <h2>Cum dorești să procedezi?</h2>
@@ -73,58 +365,9 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
                     </div>
                 )}
 
-                {step === 2 && choice === 'standard' && (
-                    <div className="wizard-step step-form">
-                        <h2>Date de Contact</h2>
-                        <p className="step-subtitle">Pentru a îți trimite oferta standard, avem nevoie de câteva detalii.</p>
-
-                        <form onSubmit={handleSubmitStandard}>
-                            <div className="form-group">
-                                <label>Nume</label>
-                                <input
-                                    type="text"
-                                    name="nume"
-                                    value={formData.nume}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Prenume</label>
-                                <input
-                                    type="text"
-                                    name="prenume"
-                                    value={formData.prenume}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Telefon</label>
-                                <input
-                                    type="tel"
-                                    name="telefon"
-                                    value={formData.telefon}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <button type="submit" className="btn btn-primary btn-block">
-                                Trimite Cererea
-                            </button>
-                        </form>
-                    </div>
+                {/* Step 2: Depends on Type */}
+                {step === 2 && (
+                    initialType === 'local' ? renderLocalRedirect() : renderRemoteForm()
                 )}
             </div>
         </div>,
