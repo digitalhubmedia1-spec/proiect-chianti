@@ -166,30 +166,47 @@
 
 .cta-card {
     background: white;
-    padding: 2.5rem;
+    padding: 3rem 2rem;
     border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    /* Slightly stronger shadow */
     flex: 1;
     min-width: 300px;
     max-width: 450px;
-    transition: transform 0.3s ease;
-    border: 1px solid #eee;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #f0f0f0;
+
+    /* Flex column for consistent height and spacing */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center content horizontally */
+    text-align: center;
+    height: 100%;
+    /* Ensure they stretch */
 }
 
 .cta-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(128, 0, 32, 0.15);
+    /* Red tinted shadow on hover */
+    border-color: #ffe6e6;
 }
 
 .cta-card h3 {
     color: #800020;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     font-size: 1.8rem;
+    font-weight: 700;
 }
 
 .cta-card p {
-    margin-bottom: 2rem;
-    font-size: 1rem;
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+    color: #666;
+    line-height: 1.6;
+    flex-grow: 1;
+    /* Pushes button to bottom */
 }
 
 .cta-action-btn {

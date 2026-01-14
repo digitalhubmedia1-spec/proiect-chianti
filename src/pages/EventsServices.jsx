@@ -13,6 +13,14 @@ const EventsServices = () => {
         window.scrollTo(0, 0);
     }, []);
 
+    const scrollToOffer = () => {
+        const element = document.getElementById('oferta');
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+
     return (
         <div className="events-page">
             <SEO
@@ -27,7 +35,7 @@ const EventsServices = () => {
                 <div className="hero-content">
                     <h1 className="hero-title">SERVICII EVENIMENTE & CATERING</h1>
                     <p className="hero-subtitle">Transformăm fiecare ocazie într-o amintire prețioasă.</p>
-                    <button className="btn btn-hero" onClick={() => navigate('/contact')}>Solicită Ofertă</button>
+                    <button className="btn btn-hero" onClick={scrollToOffer}>Solicită Ofertă</button>
                 </div>
             </div>
 
@@ -66,7 +74,7 @@ const EventsServices = () => {
                 </div>
 
                 {/* Section 3: Final Info & CTAs */}
-                <div className="event-final-info text-center">
+                <div className="event-final-info text-center" id="oferta">
                     <h3>Livrare și Organizare Fără Griji</h3>
                     <p>Putem livra oriunde în zonă, fără să îți faci griji în privința organizării și a serviciului. Lasă detaliile în seama noastră și bucură-te de petrecere alături de invitații tăi.</p>
 
