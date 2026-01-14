@@ -139,7 +139,7 @@ const ReservationForm = () => {
                     name: `${contact.nume} ${contact.prenume}`,
                     phone: contact.telefon,
                     email: contact.email,
-                    message: `Date: ${JSON.stringify(fullData)}` // Temporary dump until schema update
+                    message: JSON.stringify(fullData) // Clean JSON for admin parsing
                 }]);
                 if (error) console.error('Supabase error:', error);
             }

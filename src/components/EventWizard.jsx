@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 import './EventWizard.css';
 
 const EventWizard = ({ isOpen, onClose, initialType }) => {
@@ -65,7 +66,7 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
         setSelections(prev => ({ ...prev, [category]: value }));
     };
 
-    const handleSubmitRemote = (e) => {
+    const handleSubmitRemote = async (e) => {
         e.preventDefault();
         const fullData = {
             type: 'Remote Event Offer',
@@ -73,9 +74,32 @@ const EventWizard = ({ isOpen, onClose, initialType }) => {
             selections,
             observations
         };
-        console.log('Sending remote offer:', fullData);
-        alert('Formularul a fost trimis! Veți primi o ofertă personalizată pe email.');
-        onClose();
+
+        try {
+            if (supabase) {
+                const { error } = await supabase.from('event_requests').insert([{
+                    salon: 'Remote (Altă Locație)',
+                    event_type: selections.eventType === 'Other' ? selections.eventOtherType : selections.eventType,
+                    date_primary: contact.data || null,
+                    guests: 0, // Should parse logic but 0 for now as it's a string range
+                    name: `${contact.nume} ${contact.prenume}`,
+                    phone: contact.telefon,
+                    email: contact.email,
+                    message: JSON.stringify(fullData)
+                }]);
+
+                if (error) {
+                    console.error('Supabase error:', error);
+                    alert('Eroare la salvarea cererii: ' + error.message);
+                    return;
+                }
+            }
+            alert('Formularul a fost trimis! Veți primi o ofertă personalizată pe email.');
+            onClose();
+        } catch (err) {
+            console.error(err);
+            alert('A apărut o eroare neașteptată.');
+        }
     };
 
     // --- Content Rendering ---
