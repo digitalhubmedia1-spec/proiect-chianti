@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
-import heroBg from '../../assets/hero_wedding.png'; // Need to move files
-import partyImg from '../../assets/party_people.png';
-import cateringImg from '../../assets/catering_detail.png';
+import heroBg from '../assets/hero_wedding.png';
+import partyImg from '../assets/party_people.png';
+import cateringImg from '../assets/catering_detail.png';
 import './EventsServices.css';
 
 const EventsServices = () => {

@@ -10,7 +10,7 @@
     position: relative;
     height: 60vh;
     min-height: 400px;
-    background-image: url('../../assets/hero_wedding.png');
+    background-image: url('../assets/hero_wedding.png');
     /* Will be placed here */
     background-size: cover;
     background-position: center;
