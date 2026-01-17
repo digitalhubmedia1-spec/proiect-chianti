@@ -13,7 +13,8 @@ import DriverApplications from './DriverApplications';
 import AdminOperators from './components/AdminOperators';
 import AdminLogs from './components/AdminLogs';
 import OrderHistory from './components/OrderHistory';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History } from 'lucide-react';
+import StockHistory from './components/StockHistory';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -54,6 +55,9 @@ const AdminDashboard = () => {
         if (!adminRole) return false;
         if (adminRole === 'admin_app') return true;
 
+        if (adminRole === 'operator') {
+            return true;
+        }
         if (adminRole === 'operator') {
             return true;
         }
@@ -278,6 +282,7 @@ const AdminDashboard = () => {
                 {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}
                 {canAccess('operators') && <button className={`tab-btn ${activeTab === 'operators' ? 'active' : ''}`} onClick={() => setActiveTab('operators')}>Operatori</button>}
                 {canAccess('logs') && <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Loguri</button>}
+                {canAccess('stock_logs') && <button className={`tab-btn ${activeTab === 'stock_logs' ? 'active' : ''}`} onClick={() => setActiveTab('stock_logs')}>Loguri Stocuri</button>}
                 {canAccess('history') && <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Istoric Comenzi</button>}
             </div>
 
@@ -298,6 +303,12 @@ const AdminDashboard = () => {
                 {activeTab === 'logs' && (
                     <div className="tab-content">
                         <AdminLogs />
+                    </div>
+                )}
+                {/* STOCK LOGS TAB */}
+                {activeTab === 'stock_logs' && (
+                    <div className="tab-content">
+                        <StockHistory />
                     </div>
                 )}
                 {/* HISTORY TAB */}

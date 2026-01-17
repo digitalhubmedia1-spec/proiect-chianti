@@ -64,6 +64,25 @@ export const InventoryProvider = ({ children }) => {
         }
     };
 
+    // Helper to log stock movement
+    const logStockMovement = async (item, operation, quantity = 0) => {
+        if (!supabase) return;
+        const adminName = localStorage.getItem('admin_name') || 'Admin';
+
+        try {
+            await supabase.from('stock_history').insert([{
+                item_name: item.name,
+                category: item.category,
+                quantity: parseFloat(quantity),
+                unit: item.unit,
+                operation: operation,
+                operator: adminName
+            }]);
+        } catch (e) {
+            console.error("Failed to log stock movement", e);
+        }
+    };
+
     // Actions - Categories
     const addCategory = async (name) => {
         if (categories.includes(name)) return;
@@ -112,6 +131,7 @@ export const InventoryProvider = ({ children }) => {
                 const newItem = { ...data[0], entryDate: data[0].entry_date };
                 setItems(prev => [...prev, newItem]);
                 logAction('INVENTAR', `Produs nou: ${newItem.name} (${newItem.stock} ${newItem.unit})`);
+                logStockMovement(newItem, 'INTRARE', newItem.stock);
             }
         } catch (error) {
             console.error("Error adding item:", error);
@@ -150,12 +170,16 @@ export const InventoryProvider = ({ children }) => {
 
     const deleteItem = async (id) => {
         if (!supabase) return;
+        // Find item to log before deletion
+        const itemToDelete = items.find(i => i.id === id);
+
         if (!window.confirm("Ștergi acest element?")) return;
         try {
             const { error } = await supabase.from('inventory_items').delete().eq('id', id);
             if (error) throw error;
             setItems(prev => prev.filter(item => item.id !== id));
             logAction('INVENTAR', `Produs șters #${id}`);
+            if (itemToDelete) logStockMovement(itemToDelete, 'STERGERE', itemToDelete.stock);
         } catch (error) {
             console.error("Error deleting item:", error);
         }
