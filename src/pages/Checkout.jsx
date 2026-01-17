@@ -315,7 +315,7 @@ const Checkout = () => {
 
                         {/* 3. Date & Time Selection */}
                         <div className="form-group">
-                            <label>Ora {hasCateringItems ? "Evenimentului" : "de Livrare / Ridicare"} *</label>
+                            <label>Ora {hasCateringItems ? "Livrare" : "de Livrare / Ridicare"} *</label>
                             <select name="deliveryTime" required onChange={handleChange} value={formData.deliveryTime}>
                                 <option value="" disabled>Selectează ora...</option>
                                 <option value="11:00">11:00</option>
@@ -350,7 +350,7 @@ const Checkout = () => {
                         {(formData.deliveryMethod === 'delivery' || formData.deliveryMethod === 'event-location') && (
                             <div className="address-section slide-down">
                                 <h3 className="section-subtitle">
-                                    {formData.deliveryMethod === 'event-location' ? "Adresa Locației Evenimentului" : "Adresa de Livrare"}
+                                    {formData.deliveryMethod === 'event-location' ? "Adresa Locației" : "Adresa de Livrare"}
                                 </h3>
 
                                 <div className="form-row two-cols">
