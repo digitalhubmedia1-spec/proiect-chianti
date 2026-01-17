@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
 import { Lock } from 'lucide-react';
 import './Admin.css';
 import Captcha from '../../components/Captcha';
@@ -11,7 +12,7 @@ const AdminLogin = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
 
         if (!isCaptchaValid) {
@@ -19,13 +20,32 @@ const AdminLogin = () => {
             return;
         }
 
-        // Hardcoded secure credentials as requested
-        // Strong credentials as requested
-        if (username === 'admin_chianti_secure_2026' && password === 'Xy9#mP2$Lk@8qR5!zVw4') {
-            localStorage.setItem('admin_token', 'true');
-            navigate('/admin/dashboard');
-        } else {
-            setError('Date de autentificare incorecte.');
+        if (!supabase) {
+            setError('Eroare conexiune server.');
+            return;
+        }
+
+        try {
+            // Check credentials against admin_users table
+            const { data, error } = await supabase
+                .from('admin_users')
+                .select('*')
+                .eq('username', username.trim())
+                .eq('password', password.trim()) // Plain text comparison as requested
+                .single();
+
+            if (error || !data) {
+                setError('Date de autentificare incorecte.');
+            } else {
+                // Successful Login
+                localStorage.setItem('admin_token', 'true');
+                localStorage.setItem('admin_role', data.role);
+                localStorage.setItem('admin_name', data.name);
+                navigate('/admin/dashboard');
+            }
+        } catch (err) {
+            console.error("Login error:", err);
+            setError('A apărut o eroare la autentificare.');
         }
     };
 

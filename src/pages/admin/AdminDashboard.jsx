@@ -10,7 +10,8 @@ import AdminMessages from './components/AdminMessages';
 import AdminRequests from './components/AdminRequests';
 import AdminPromoCodes from './components/AdminPromoCodes';
 import DriverApplications from './DriverApplications';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen } from 'lucide-react';
+import AdminOperators from './components/AdminOperators';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -23,7 +24,52 @@ const AdminDashboard = () => {
         configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct,
         fetchRecommendations, addRecommendation, removeRecommendation
     } = useMenu();
-    const [activeTab, setActiveTab] = useState('products');
+    const [activeTab, setActiveTab] = useState('orders'); // Default to orders as it's common
+    const navigate = useNavigate();
+
+    // Role Management
+    const [adminRole, setAdminRole] = useState(null);
+    const [adminName, setAdminName] = useState('');
+
+    useEffect(() => {
+        const role = localStorage.getItem('admin_role');
+        const name = localStorage.getItem('admin_name');
+        setAdminRole(role || 'operator'); // Default to operator if missing
+        setAdminName(name || 'Admin');
+
+        // Chef restriction: Force 'orders' tab
+        if (role === 'chef') {
+            setActiveTab('orders');
+        } else {
+            if (activeTab === 'orders' && role !== 'chef') {
+                // Optimization: let users default to products if they want? 
+                // For now, order list is good default.
+            }
+        }
+    }, []);
+
+    const canAccess = (tab) => {
+        if (!adminRole) return false;
+        if (adminRole === 'admin_app') return true;
+
+        if (adminRole === 'chef') {
+            return tab === 'orders';
+        }
+
+        if (adminRole === 'operator') {
+            return true;
+        }
+        return false;
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_role');
+        localStorage.removeItem('admin_name');
+        navigate('/admin-login');
+    };
+
+
 
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -211,27 +257,25 @@ const AdminDashboard = () => {
                     <h1>Panou Administrare</h1>
                     <p>Bun venit, Operator</p>
                 </div>
-                <button className="btn-logout" onClick={() => {
-                    localStorage.removeItem('admin_token');
-                    window.location.href = '/login';
-                }}>
+                <button className="btn-logout" onClick={handleLogout}>
                     <LogOut size={18} /> Deconectare
                 </button>
             </div>
 
             <div className="admin-tabs">
-                <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Comenzi</button>
-                <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>Produse</button>
-                <button className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categorii</button>
-                <button className={`tab-btn ${activeTab === 'availability' ? 'active' : ''}`} onClick={() => setActiveTab('availability')}>Disponibilitate</button>
-                <button className={`tab-btn ${activeTab === 'configurator' ? 'active' : ''}`} onClick={() => setActiveTab('configurator')}>Configurator</button>
-                <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Stocuri</button>
-                <button className={`tab-btn ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => setActiveTab('recipes')}>Rețete</button>
-                <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>
-                <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>
-                <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>
-                <button className={`tab-btn ${activeTab === 'promocodes' ? 'active' : ''}`} onClick={() => setActiveTab('promocodes')}>Coduri Reducere</button>
-                <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>
+                {canAccess('orders') && <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Comenzi</button>}
+                {canAccess('products') && <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>Produse</button>}
+                {canAccess('categories') && <button className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categorii</button>}
+                {canAccess('availability') && <button className={`tab-btn ${activeTab === 'availability' ? 'active' : ''}`} onClick={() => setActiveTab('availability')}>Disponibilitate</button>}
+                {canAccess('configurator') && <button className={`tab-btn ${activeTab === 'configurator' ? 'active' : ''}`} onClick={() => setActiveTab('configurator')}>Configurator</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Stocuri</button>}
+                {canAccess('recipes') && <button className={`tab-btn ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => setActiveTab('recipes')}>Rețete</button>}
+                {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
+                {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
+                {canAccess('requests') && <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>}
+                {canAccess('promocodes') && <button className={`tab-btn ${activeTab === 'promocodes' ? 'active' : ''}`} onClick={() => setActiveTab('promocodes')}>Coduri Reducere</button>}
+                {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}
+                {canAccess('operators') && <button className={`tab-btn ${activeTab === 'operators' ? 'active' : ''}`} onClick={() => setActiveTab('operators')}>Operatori</button>}
             </div>
 
             <div className="tab-content-container">
@@ -239,6 +283,12 @@ const AdminDashboard = () => {
                 {activeTab === 'promocodes' && (
                     <div className="tab-content">
                         <AdminPromoCodes />
+                    </div>
+                )}
+                {/* OPERATORS TAB */}
+                {activeTab === 'operators' && (
+                    <div className="tab-content">
+                        <AdminOperators />
                     </div>
                 )}
                 {/* MESSAGES TAB */}
