@@ -65,6 +65,9 @@ const AdminDashboard = () => {
     const [currentRecommendations, setCurrentRecommendations] = useState([]);
     const [selectedRecId, setSelectedRecId] = useState("");
 
+    // Image Preview State
+    const [previewImage, setPreviewImage] = useState(null);
+
     // Handlers
     const handleProductSubmit = async (e) => {
         e.preventDefault();
@@ -306,7 +309,12 @@ const AdminDashboard = () => {
                                         .map(product => (
                                             <tr key={product.id}>
                                                 <td>
-                                                    <img src={product.image || 'https://via.placeholder.com/50'} alt={product.name} className="product-thumb" />
+                                                    <img
+                                                        src={product.image || 'https://via.placeholder.com/50'}
+                                                        alt={product.name}
+                                                        className="product-thumb"
+                                                        onClick={() => setPreviewImage(product.image)}
+                                                    />
                                                 </td>
                                                 <td>{product.name}</td>
                                                 <td>{product.price} Lei</td>
@@ -538,7 +546,12 @@ const AdminDashboard = () => {
                                 {(configuratorProducts[selectedStepId] || []).map(p => (
                                     <tr key={p.id}>
                                         <td>
-                                            <img src={p.image || 'https://via.placeholder.com/50'} alt={p.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                                            <img
+                                                src={p.image || 'https://via.placeholder.com/50'}
+                                                alt={p.title}
+                                                style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px', cursor: 'zoom-in' }}
+                                                onClick={() => setPreviewImage(p.image)}
+                                            />
                                         </td>
                                         <td>{p.title || p.name}</td>
                                         <td><small>{p.desc || p.description}</small></td>
@@ -761,6 +774,15 @@ const AdminDashboard = () => {
                             </div>
                             <button type="submit" className="btn btn-primary btn-block mt-2">Adaugă</button>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* IMAGE PREVIEW LIGHTBOX */}
+            {previewImage && (
+                <div className="lightbox-overlay" onClick={() => setPreviewImage(null)}>
+                    <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+                        <button className="lightbox-close" onClick={() => setPreviewImage(null)}>&times;</button>
+                        <img src={previewImage} alt="Preview" className="lightbox-image" />
                     </div>
                 </div>
             )}
