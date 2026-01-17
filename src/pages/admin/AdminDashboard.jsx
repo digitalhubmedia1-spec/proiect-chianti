@@ -11,7 +11,8 @@ import AdminRequests from './components/AdminRequests';
 import AdminPromoCodes from './components/AdminPromoCodes';
 import DriverApplications from './DriverApplications';
 import AdminOperators from './components/AdminOperators';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog } from 'lucide-react';
+import AdminLogs from './components/AdminLogs';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -276,6 +277,7 @@ const AdminDashboard = () => {
                 {canAccess('promocodes') && <button className={`tab-btn ${activeTab === 'promocodes' ? 'active' : ''}`} onClick={() => setActiveTab('promocodes')}>Coduri Reducere</button>}
                 {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}
                 {canAccess('operators') && <button className={`tab-btn ${activeTab === 'operators' ? 'active' : ''}`} onClick={() => setActiveTab('operators')}>Operatori</button>}
+                {canAccess('logs') && <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Loguri</button>}
             </div>
 
             <div className="tab-content-container">
@@ -289,6 +291,12 @@ const AdminDashboard = () => {
                 {activeTab === 'operators' && (
                     <div className="tab-content">
                         <AdminOperators />
+                    </div>
+                )}
+                {/* LOGS TAB */}
+                {activeTab === 'logs' && (
+                    <div className="tab-content">
+                        <AdminLogs />
                     </div>
                 )}
                 {/* MESSAGES TAB */}

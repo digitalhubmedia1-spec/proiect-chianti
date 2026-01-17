@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { logAction } from '../utils/adminLogger';
 
 const OrderContext = createContext();
 
@@ -82,12 +83,14 @@ export const OrderProvider = ({ children }) => {
     const updateOrderStatus = async (orderId, newStatus) => {
         if (!supabase) return;
         await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+        logAction('STATUS COMANDĂ', `Comanda #${orderId} -> ${newStatus}`);
     };
 
     const deleteOrder = async (orderId) => {
         if (!supabase) return;
         if (window.confirm('Ești sigur că vrei să ștergi această comandă? (Arhivare)')) {
             await supabase.from('orders').update({ archived: true }).eq('id', orderId);
+            logAction('ȘTERGERE COMANDĂ', `Comanda #${orderId} arhivată`);
         }
     };
 
@@ -101,6 +104,7 @@ export const OrderProvider = ({ children }) => {
             assigned_driver_id: driverId,
             driver_status: 'assigned'
         }).eq('id', orderId);
+        logAction('ASIGNARE LIVRATOR', `Livrator #${driverId} -> Comanda #${orderId}`);
     };
 
     const getDriverOrders = (driverId) => {

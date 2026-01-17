@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { logAction } from '../utils/adminLogger';
+import { logAction } from '../utils/adminLogger';
 import { SEED_STEPS, SEED_PRODUCTS } from '../data/configuratorData';
 import { PRODUCTS as INITIAL_PRODUCTS, CATEGORIES as INITIAL_CATEGORIES } from '../data/products';
 
@@ -83,7 +85,10 @@ export const MenuProvider = ({ children }) => {
 
             if (error) throw error;
             const newProduct = data ? data[0] : null;
-            if (newProduct) setProducts(prev => [...prev, newProduct]);
+            if (newProduct) {
+                setProducts(prev => [...prev, newProduct]);
+                logAction('ADĂUGARE PRODUS', `Produs: ${newProduct.name} (${newProduct.price} RON)`);
+            }
             return newProduct;
         } catch (error) {
             console.error("Error adding product:", error);
@@ -101,6 +106,7 @@ export const MenuProvider = ({ children }) => {
             const { error } = await supabase.from('products').update(updatedData).eq('id', id);
             if (error) throw error;
             setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
+            logAction('ACTUALIZARE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error updating product:", error);
             alert("Eroare la actualizare: " + error.message);
@@ -118,6 +124,7 @@ export const MenuProvider = ({ children }) => {
             const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id);
             if (error) throw error;
             setProducts(prev => prev.filter(p => p.id !== id));
+            logAction('ȘTERGERE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error deleting product:", error);
             alert("Eroare: " + error.message);
@@ -138,7 +145,10 @@ export const MenuProvider = ({ children }) => {
             }]).select();
 
             if (error) throw error;
-            if (data) setCategories(prev => [...prev, data[0]]);
+            if (data) {
+                setCategories(prev => [...prev, data[0]]);
+                logAction('ADĂUGARE CATEGORIE', `Categorie: ${name}`);
+            }
         } catch (error) {
             alert('Eroare la adăugarea categoriei: ' + error.message);
         }
@@ -159,6 +169,7 @@ export const MenuProvider = ({ children }) => {
             const { error } = await supabase.from('categories').delete().eq('id', cat.id);
             if (error) throw error;
             setCategories(prev => prev.filter(c => c.id !== cat.id));
+            logAction('ȘTERGERE CATEGORIE', `Categorie: ${categoryName}`);
         } catch (error) {
             console.error("Error deleting category:", error);
             alert("Eroare: " + error.message);
@@ -183,6 +194,7 @@ export const MenuProvider = ({ children }) => {
 
             // Update local state
             setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: newName, type: type || c.type } : c));
+            logAction('ACTUALIZERE CATEGORIE', `Din "${oldName}" în "${newName}"`);
 
             // Also update products if name changed (since we store category name in products table as per schema)
             // Ideally should normalize DB to use category_id, but staying compatible with current logic
