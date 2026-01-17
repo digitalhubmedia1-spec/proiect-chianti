@@ -117,6 +117,13 @@ export const InventoryProvider = ({ children }) => {
 
     const updateItem = async (id, updatedData) => {
         if (!supabase) return;
+
+        // Auto-delete if stock becomes 0 or less
+        if (updatedData.stock !== undefined && parseFloat(updatedData.stock) <= 0) {
+            await deleteItem(id);
+            return;
+        }
+
         const payload = {};
         if (updatedData.name) payload.name = updatedData.name;
         if (updatedData.category) payload.category = updatedData.category;

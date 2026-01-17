@@ -166,7 +166,7 @@ const AdminInventory = () => {
                                 <td>
                                     <span className="stock-value">{item.stock} {item.unit}</span>
                                 </td>
-                                <td>{item.entryDate}</td>
+                                <td>{new Date(item.entryDate).toLocaleDateString('ro-RO')}</td>
                                 <td>
                                     <div className="action-buttons">
                                         <button className="btn-icon" onClick={() => openModal(item)}>
