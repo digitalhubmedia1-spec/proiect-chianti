@@ -61,7 +61,7 @@ const Cart = () => {
                 <div className="cart-items">
                     {deliveryItems.length > 0 && (
                         <div className="cart-section mb-4">
-                            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#800020', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px', fontSize: '1.1rem' }}>
+                            <h3 className="cart-section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#800020', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px', fontSize: '1.1rem' }}>
                                 <Truck size={20} style={{ flexShrink: 0 }} />
                                 <span>Produse Livrare Regulară</span>
                             </h3>
@@ -71,7 +71,7 @@ const Cart = () => {
 
                     {cateringItems.length > 0 && (
                         <div className="cart-section">
-                            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#800020', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px', fontSize: '1.1rem' }}>
+                            <h3 className="cart-section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#800020', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px', fontSize: '1.1rem' }}>
                                 <Users size={20} style={{ flexShrink: 0 }} />
                                 <span>Produse Catering</span>
                             </h3>
