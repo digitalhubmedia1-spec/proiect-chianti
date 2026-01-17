@@ -196,7 +196,7 @@ const Checkout = () => {
 
             <div className="checkout-grid">
                 <div className="checkout-form-section">
-                    <h2>Detalii {hasCateringItems ? "Eveniment" : "Livrare"}</h2>
+                    <h2>{hasCateringItems ? "Detalii" : "Detalii Livrare"}</h2>
                     <form id="checkout-form" onSubmit={handleSubmit}>
 
                         {/* 1. Delivery/Event Method */}

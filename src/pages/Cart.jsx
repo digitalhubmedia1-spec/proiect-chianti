@@ -73,7 +73,7 @@ const Cart = () => {
                         <div className="cart-section">
                             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#800020', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px', fontSize: '1.1rem' }}>
                                 <Users size={20} style={{ flexShrink: 0 }} />
-                                <span>Produse Catering & Evenimente</span>
+                                <span>Produse Catering</span>
                             </h3>
                             <div className="alert-info-light" style={{ background: '#fff8f8', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #fee2e2', fontSize: '0.9rem', color: '#b91c1c' }}>
                                 <strong>Notă:</strong> Produsele de catering necesită comandă cu 48h înainte.
