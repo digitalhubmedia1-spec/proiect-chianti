@@ -141,7 +141,7 @@ const ProductDetails = () => {
                 <div className="lightbox-overlay" onClick={closeImageModal}>
                     <div className="lightbox-content" onClick={e => e.stopPropagation()}>
                         <button className="lightbox-close" onClick={closeImageModal}>&times;</button>
-                        <img src={product.image} alt={product.name} className="lightbox-image" />
+                        <img src={activeImage || product.image} alt={product.name} className="lightbox-image" />
                     </div>
                 </div>
             )}

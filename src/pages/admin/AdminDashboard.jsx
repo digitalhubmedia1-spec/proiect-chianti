@@ -613,7 +613,14 @@ const AdminDashboard = () => {
                                     onChange={e => setConfigForm({ ...configForm, image: e.target.value })}
                                     placeholder="https://..."
                                 />
-                                {configForm.image && <img src={configForm.image} alt="Preview" style={{ height: '60px', marginTop: '10px', borderRadius: '4px' }} />}
+                                {configForm.image && (
+                                    <img
+                                        src={configForm.image}
+                                        alt="Preview"
+                                        style={{ width: '80px', height: '80px', marginTop: '10px', borderRadius: '4px', objectFit: 'cover', cursor: 'zoom-in', border: '1px solid #ddd' }}
+                                        onClick={() => setPreviewImage(configForm.image)}
+                                    />
+                                )}
                             </div>
                             <div className="form-group">
                                 <label>Descriere Scurtă</label>
@@ -684,7 +691,14 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <input type="text" className="form-control" value={prodForm.image} onChange={e => setProdForm({ ...prodForm, image: e.target.value })} required />
-                                {prodForm.image && <img src={prodForm.image} alt="Preview" style={{ height: '80px', marginTop: '10px', borderRadius: '4px' }} />}
+                                {prodForm.image && (
+                                    <img
+                                        src={prodForm.image}
+                                        alt="Preview"
+                                        style={{ width: '80px', height: '80px', marginTop: '10px', borderRadius: '4px', objectFit: 'cover', cursor: 'zoom-in', border: '1px solid #ddd' }}
+                                        onClick={() => setPreviewImage(prodForm.image)}
+                                    />
+                                )}
                             </div>
 
                             {/* GALLERY SECTION */}
@@ -717,7 +731,12 @@ const AdminDashboard = () => {
                                 <div className="gallery-preview" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
                                     {(prodForm.gallery || []).map((img, idx) => (
                                         <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
-                                            <img src={img} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd' }} />
+                                            <img
+                                                src={img}
+                                                alt={`Gallery ${idx}`}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd', cursor: 'zoom-in' }}
+                                                onClick={() => setPreviewImage(img)}
+                                            />
                                             <button
                                                 type="button"
                                                 onClick={() => {
