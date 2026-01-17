@@ -114,6 +114,21 @@ const ReservationForm = () => {
         e.preventDefault();
 
         // Validation for critical fields
+        if (!selections.eventType) {
+            alert('Te rugăm să selectezi Tipul Evenimentului (Secțiunea 1).');
+            return;
+        }
+
+        if (selections.eventType === 'Other' && !selections.eventOtherType.trim()) {
+            alert('Te rugăm să specifici tipul evenimentului (Secțiunea 1).');
+            return;
+        }
+
+        if (selections.menuOptions.length === 0) {
+            alert('Te rugăm să selectezi cel puțin o opțiune pentru Meniu (Secțiunea 2).');
+            return;
+        }
+
         if (!selections.terms) {
             alert('Te rugăm să accepți Termenii și Condițiile.');
             return;
@@ -195,7 +210,7 @@ const ReservationForm = () => {
 
             {/* 1. Tip Eveniment */}
             <div className="form-section">
-                <h3>1. Tip Eveniment</h3>
+                <h3>1. Tip Eveniment <span className="required">*</span></h3>
                 <div className="form-checkbox-group">
                     {['Nuntă', 'Botez', 'Aniversare', 'Corporate'].map(opt => (
                         <div key={opt} className="checkbox-item">
@@ -251,7 +266,7 @@ const ReservationForm = () => {
 
             {/* 2. Personalizare Meniu */}
             <div className="form-section">
-                <h3>2. Personalizare Meniu</h3>
+                <h3>2. Personalizare Meniu <span className="required">*</span></h3>
                 <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>Te rugăm să selectezi opțiunile dorite:</p>
                 <div className="form-checkbox-group">
                     {[
