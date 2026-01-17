@@ -63,8 +63,8 @@ const Home = () => {
                         <Link to="/produse" className="btn btn-primary btn-lg pulse-anim">
                             Comandă Mâncare
                         </Link>
-                        <Link to="/catering" className="btn btn-outline btn-lg">
-                            Oferte Catering
+                        <Link to="/saloane" className="btn btn-outline btn-lg">
+                            Rezervă Salon
                         </Link>
                     </div>
                 </div>
@@ -76,9 +76,9 @@ const Home = () => {
                     <h2 className="section-title">Serviciile Noastre</h2>
                     <div className="services-grid">
                         <div className="service-card">
-                            <h3>Servicii Catering</h3>
+                            <h3>Servicii Evenimente</h3>
                             <p>Selectează serviciile preferate și cere o ofertă personalizată pentru evenimentul dorit.</p>
-                            <Link to="/catering" className="btn btn-ghost">Vezi mai mult &rarr;</Link>
+                            <Link to="/servicii-evenimente" className="btn btn-ghost">Vezi mai mult &rarr;</Link>
                         </div>
                         <div className="service-card">
                             <h3>Comandă Mâncare</h3>
