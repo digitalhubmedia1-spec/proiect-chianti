@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { logAction } from '../utils/adminLogger';
-import { logAction } from '../utils/adminLogger';
+
 import { SEED_STEPS, SEED_PRODUCTS } from '../data/configuratorData';
 import { PRODUCTS as INITIAL_PRODUCTS, CATEGORIES as INITIAL_CATEGORIES } from '../data/products';
 
