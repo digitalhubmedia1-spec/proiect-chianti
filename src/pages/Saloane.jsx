@@ -381,7 +381,7 @@ const ReservationForm = () => {
                         onChange={handleSimpleChange}
                         required
                     />
-                    <label htmlFor="terms-accept">Sunt de acord cu <Link to="/termeni" className="terms-link">Termenii și Condițiile</Link> și Politica de Confidențialitate.</label>
+                    <label htmlFor="terms-accept">Sunt de acord cu <Link to="/termeni" className="terms-link">Termenii și Condițiile</Link> și <Link to="/confidentialitate" className="terms-link">Politica de Confidențialitate</Link>.</label>
                 </div>
             </div>
 
