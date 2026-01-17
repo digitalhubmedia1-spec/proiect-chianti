@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
 import { Plus, Trash2, Edit2, Save, X, MapPin } from 'lucide-react';
-import './AdminLogs.css'; // Reusing generic admin styles if possible, else inline
+// import './AdminLogs.css'; // Reusing generic admin styles if possible, else inline
 
 const AdminDelivery = () => {
     const [zones, setZones] = useState([]);
