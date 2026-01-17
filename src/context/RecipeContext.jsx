@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { logAction } from '../utils/adminLogger';
 
 const RecipeContext = createContext();
 
@@ -17,14 +18,17 @@ export const RecipeProvider = ({ children }) => {
     const addRecipe = (recipe) => {
         const newRecipe = { ...recipe, id: Date.now().toString() };
         setRecipes([...recipes, newRecipe]);
+        logAction('REȚETAR', `Rețetă nouă: ${recipe.name}`);
     };
 
     const updateRecipe = (id, updatedData) => {
         setRecipes(recipes.map(r => r.id === id ? { ...r, ...updatedData } : r));
+        logAction('REȚETAR', `Actualizare rețetă #${id}`);
     };
 
     const deleteRecipe = (id) => {
         setRecipes(recipes.filter(r => r.id !== id));
+        logAction('REȚETAR', `Ștergere rețetă #${id}`);
     };
 
     return (

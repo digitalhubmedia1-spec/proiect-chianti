@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { logAction } from '../utils/adminLogger';
 
 const InventoryContext = createContext();
 
@@ -72,6 +73,7 @@ export const InventoryProvider = ({ children }) => {
             const { error } = await supabase.from('inventory_categories').insert([{ name }]);
             if (error) throw error;
             setCategories(prev => [...prev, name]);
+            logAction('INVENTAR', `Categorie nouă: ${name}`);
         } catch (error) {
             console.error("Error adding category:", error);
             alert("Eroare: " + error.message);
@@ -86,6 +88,7 @@ export const InventoryProvider = ({ children }) => {
             const { error } = await supabase.from('inventory_categories').delete().eq('name', name);
             if (error) throw error;
             setCategories(prev => prev.filter(c => c !== name));
+            logAction('INVENTAR', `Categorie ștearsă: ${name}`);
         } catch (error) {
             console.error("Error deleting category:", error);
         }
@@ -108,6 +111,7 @@ export const InventoryProvider = ({ children }) => {
             if (data) {
                 const newItem = { ...data[0], entryDate: data[0].entry_date };
                 setItems(prev => [...prev, newItem]);
+                logAction('INVENTAR', `Produs nou: ${newItem.name} (${newItem.stock} ${newItem.unit})`);
             }
         } catch (error) {
             console.error("Error adding item:", error);
@@ -151,6 +155,7 @@ export const InventoryProvider = ({ children }) => {
             const { error } = await supabase.from('inventory_items').delete().eq('id', id);
             if (error) throw error;
             setItems(prev => prev.filter(item => item.id !== id));
+            logAction('INVENTAR', `Produs șters #${id}`);
         } catch (error) {
             console.error("Error deleting item:", error);
         }

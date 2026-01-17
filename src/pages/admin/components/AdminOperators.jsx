@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Eye, EyeOff, Edit2, Check, X, Trash2 } from 'lucide-react';
 
 const AdminOperators = () => {
@@ -61,6 +62,7 @@ const AdminOperators = () => {
         } else {
             setOperators(prev => prev.map(op => op.id === id ? { ...op, name: editName } : op));
             setEditingId(null);
+            logAction('OPERATORI', `Actualizare nume #${id} -> ${editName}`);
         }
     };
 

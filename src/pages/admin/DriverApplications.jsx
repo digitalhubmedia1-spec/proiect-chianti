@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Truck, Calendar, User, Phone, Mail, FileText, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { logAction } from '../../utils/adminLogger';
 
 const DriverApplications = () => {
     const { getDriverApplications, approveDriverApplication, rejectDriverApplication, deleteDriverApplication, getDrivers } = useAuth();
@@ -96,6 +97,7 @@ const DriverApplications = () => {
                 }
 
                 await loadData();
+                logAction('LIVRATORI', `Aplicație aprobată: ${app.name || app.email}`);
             }
         }
     };
@@ -113,6 +115,7 @@ const DriverApplications = () => {
                 }
 
                 await loadData();
+                logAction('LIVRATORI', `Aplicație respinsă: ${app.name || app.email}`);
             }
         }
     };
@@ -132,6 +135,7 @@ const DriverApplications = () => {
             localStorage.setItem('chianti_driver_applications', JSON.stringify(updatedLegacy));
 
             loadData(); // Sync with DB
+            logAction('LIVRATORI', `Aplicație ștearsă #${id}`);
         }
     };
 

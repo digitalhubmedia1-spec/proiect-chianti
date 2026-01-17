@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { logAction } from '../utils/adminLogger';
 
 const BlogContext = createContext();
 
@@ -32,7 +33,10 @@ export const BlogProvider = ({ children }) => {
         try {
             const { data, error } = await supabase.from('blog_posts').insert([newPost]).select();
             if (error) throw error;
-            if (data) setPosts(prev => [data[0], ...prev]);
+            if (data) {
+                setPosts(prev => [data[0], ...prev]);
+                logAction('BLOG', `Articol nou: ${newPost.title}`);
+            }
         } catch (error) {
             console.error("Error adding post:", error);
             alert("Eroare la adăugarea articolului: " + error.message);
@@ -45,6 +49,7 @@ export const BlogProvider = ({ children }) => {
             const { error } = await supabase.from('blog_posts').update(updatedPost).eq('id', id);
             if (error) throw error;
             setPosts(prev => prev.map(post => post.id === id ? { ...post, ...updatedPost } : post));
+            logAction('BLOG', `Actualizare articol: ${updatedPost.title || '#' + id}`);
         } catch (error) {
             console.error("Error updating post:", error);
             alert("Eroare la actualizarea articolului: " + error.message);
@@ -58,6 +63,7 @@ export const BlogProvider = ({ children }) => {
             const { error } = await supabase.from('blog_posts').delete().eq('id', id);
             if (error) throw error;
             setPosts(prev => prev.filter(post => post.id !== id));
+            logAction('BLOG', `Ștergere articol #${id}`);
         } catch (error) {
             console.error("Error deleting post:", error);
             alert("Eroare la ștergerea articolului: " + error.message);

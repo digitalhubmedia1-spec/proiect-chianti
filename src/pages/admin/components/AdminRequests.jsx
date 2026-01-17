@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Mail, Phone, Calendar, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 const RequestCard = ({ req, onDelete, onMarkMarkRead }) => {
@@ -168,9 +169,8 @@ const AdminRequests = () => {
     const deleteRequest = async (id) => {
         if (!window.confirm('Ești sigur că vrei să ștergi această cerere?')) return;
         const { error } = await supabase.from('event_requests').delete().eq('id', id);
-        if (!error) {
-            setRequests(prev => prev.filter(r => r.id !== id));
-        }
+        setRequests(prev => prev.filter(r => r.id !== id));
+        logAction('CERERI', `Cerere ștearsă #${id}`);
     };
 
     const markAsRead = async (id, currentStatus) => {

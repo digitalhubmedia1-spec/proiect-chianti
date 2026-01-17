@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Mail, Phone, Calendar, Trash2, CheckCircle, XCircle } from 'lucide-react';
 
 const AdminMessages = () => {
@@ -31,6 +32,7 @@ const AdminMessages = () => {
         const { error } = await supabase.from('contact_messages').delete().eq('id', id);
         if (!error) {
             setMessages(prev => prev.filter(m => m.id !== id));
+            logAction('MESAJE', `Mesaj șters #${id}`);
         }
     };
 

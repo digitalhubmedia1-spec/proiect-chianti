@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Trash2, Plus, Tag } from 'lucide-react';
 
 const AdminPromoCodes = () => {
@@ -43,6 +44,7 @@ const AdminPromoCodes = () => {
         } else {
             setCodes([data[0], ...codes]);
             setNewCode({ code: '', discount_percent: '', expires_at: '' });
+            logAction('PROMO', `Cod nou: ${newCode.code.toUpperCase()} (-${newCode.discount_percent}%)`);
         }
     };
 
@@ -51,6 +53,7 @@ const AdminPromoCodes = () => {
         const { error } = await supabase.from('promo_codes').delete().eq('id', id);
         if (!error) {
             setCodes(codes.filter(c => c.id !== id));
+            logAction('PROMO', `Cod șters #${id}`);
         }
     };
 
@@ -58,6 +61,7 @@ const AdminPromoCodes = () => {
         const { error } = await supabase.from('promo_codes').update({ active: !currentStatus }).eq('id', id);
         if (!error) {
             setCodes(codes.map(c => c.id === id ? { ...c, active: !currentStatus } : c));
+            logAction('PROMO', `Cod #${id} ${!currentStatus ? 'activat' : 'dezactivat'}`);
         }
     };
 

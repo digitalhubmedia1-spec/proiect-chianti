@@ -310,12 +310,14 @@ export const MenuProvider = ({ children }) => {
                     .delete()
                     .match({ venue, date: dateStr });
                 if (error) throw error;
+                logAction('EVENIMENTE', `Anulare rezervare: ${venue} - ${dateStr}`);
             } else {
                 // Insert
                 const { error } = await supabase
                     .from('venue_bookings')
                     .insert([{ venue, date: dateStr }]);
                 if (error) throw error;
+                logAction('EVENIMENTE', `Rezervare: ${venue} - ${dateStr}`);
             }
         } catch (error) {
             console.error("Error toggling booking:", error);
@@ -397,6 +399,7 @@ export const MenuProvider = ({ children }) => {
             const { error } = await supabase.from('configurator_steps').update({ title: newTitle }).eq('id', id);
             if (error) throw error;
             setConfiguratorSteps(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
+            logAction('CONFIGURATOR', `Redenumire pas: ${newTitle}`);
         } catch (error) {
             alert("Eroare la actualizare pas: " + error.message);
         }
@@ -431,6 +434,7 @@ export const MenuProvider = ({ children }) => {
                     ...prev,
                     [stepId]: [...(prev[stepId] || []), newProd]
                 }));
+                logAction('CONFIGURATOR', `Produs nou: ${newProd.name}`);
             }
         } catch (error) {
             console.error("Error adding config product:", error);
@@ -467,6 +471,7 @@ export const MenuProvider = ({ children }) => {
                 ...prev,
                 [stepId]: prev[stepId].map(p => p.id === productId ? { ...p, ...updatedData } : p)
             }));
+            logAction('CONFIGURATOR', `Actualizare produs #${productId}`);
         } catch (error) {
             console.error("Error updating config product:", error);
             alert("Eroare: " + error.message);
@@ -484,6 +489,7 @@ export const MenuProvider = ({ children }) => {
                 ...prev,
                 [stepId]: prev[stepId].filter(p => p.id !== productId)
             }));
+            logAction('CONFIGURATOR', `Ștergere produs #${productId}`);
         } catch (error) {
             console.error("Error deleting config product:", error);
             alert("Eroare: " + error.message);
