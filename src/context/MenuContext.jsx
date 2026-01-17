@@ -71,6 +71,7 @@ export const MenuProvider = ({ children }) => {
                 price: parseFloat(prodData.price),
                 category: prodData.category,
                 image: prodData.image || '',
+                gallery: prodData.gallery || [],
                 description: prodData.description || '',
                 weight: prodData.weight || '',
                 ingredients: prodData.ingredients || '',

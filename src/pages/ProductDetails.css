@@ -38,6 +38,41 @@
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-md);
+    aspect-ratio: 1;
+    /* Keep it square if possible, or consistent */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+}
+
+.product-gallery-thumbnails {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.gallery-thumb {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.gallery-thumb.active {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.gallery-thumb:hover {
+    transform: translateY(-2px);
 }
 
 .product-image-large img {

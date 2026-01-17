@@ -17,12 +17,15 @@ const ProductDetails = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
+    const [activeImage, setActiveImage] = useState('');
+
     useEffect(() => {
         if (loading) return;
         setIsOpen(isRestaurantOpen());
         const foundProduct = products.find(p => p.id === parseInt(id));
         if (foundProduct) {
             setProduct(foundProduct);
+            setActiveImage(foundProduct.image); // Default to main image
             // Fetch recommendations
             fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
         } else {
@@ -41,6 +44,9 @@ const ProductDetails = () => {
     const openImageModal = () => setIsImageModalOpen(true);
     const closeImageModal = () => setIsImageModalOpen(false);
 
+    // Combine main image and gallery for the list
+    const allImages = [product.image, ...(product.gallery || [])].filter(Boolean);
+
     return (
         <div className="product-details-page container">
             <button onClick={() => navigate(-1)} className="btn-back">
@@ -48,8 +54,24 @@ const ProductDetails = () => {
             </button>
 
             <div className="product-details-grid">
-                <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in' }}>
-                    <img src={product.image} alt={product.name} />
+                <div className="product-image-section">
+                    <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in' }}>
+                        <img src={activeImage || product.image} alt={product.name} />
+                    </div>
+                    {/* Gallery Thumbnails */}
+                    {allImages.length > 1 && (
+                        <div className="product-gallery-thumbnails">
+                            {allImages.map((img, idx) => (
+                                <img
+                                    key={idx}
+                                    src={img}
+                                    alt={`Thumbnail ${idx}`}
+                                    className={`gallery-thumb ${activeImage === img ? 'active' : ''}`}
+                                    onClick={() => setActiveImage(img)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="product-info-detailed">

@@ -28,7 +28,7 @@ const AdminDashboard = () => {
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', description: '', weight: '', ingredients: '' });
+    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
     const [activeProductTabType, setActiveProductTabType] = useState('delivery');
 
     // Category State
@@ -92,7 +92,7 @@ const AdminDashboard = () => {
             }
         }
 
-        setProdForm({ name: '', price: '', category: '', image: '', description: '', weight: '', ingredients: '' });
+        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
         setEditingProduct(null);
         setIsProductModalOpen(false);
         setCurrentRecommendations([]);
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
             setCurrentRecommendations(recs);
         } else {
             setEditingProduct(null);
-            setProdForm({ name: '', price: '', category: '', image: '', description: '', weight: '', ingredients: '' });
+            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
             setCurrentRecommendations([]);
         }
         setIsProductModalOpen(true);
@@ -685,6 +685,59 @@ const AdminDashboard = () => {
                                 </div>
                                 <input type="text" className="form-control" value={prodForm.image} onChange={e => setProdForm({ ...prodForm, image: e.target.value })} required />
                                 {prodForm.image && <img src={prodForm.image} alt="Preview" style={{ height: '80px', marginTop: '10px', borderRadius: '4px' }} />}
+                            </div>
+
+                            {/* GALLERY SECTION */}
+                            <div className="form-group">
+                                <label>Galerie Imagini (Secundare)</label>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        className="form-control"
+                                        onChange={async (e) => {
+                                            const files = Array.from(e.target.files);
+                                            for (const file of files) {
+                                                try {
+                                                    const base64 = await compressImage(file, 800, 0.6);
+                                                    setProdForm(prev => ({
+                                                        ...prev,
+                                                        gallery: [...(prev.gallery || []), base64]
+                                                    }));
+                                                } catch (err) {
+                                                    console.error("Error uploading gallery image", err);
+                                                }
+                                            }
+                                        }}
+                                        style={{ width: 'auto' }}
+                                    />
+                                    <span style={{ fontSize: '0.8rem', color: '#666' }}>Max 800px</span>
+                                </div>
+                                <div className="gallery-preview" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                                    {(prodForm.gallery || []).map((img, idx) => (
+                                        <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                            <img src={img} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd' }} />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setProdForm(prev => ({
+                                                        ...prev,
+                                                        gallery: prev.gallery.filter((_, i) => i !== idx)
+                                                    }));
+                                                }}
+                                                style={{
+                                                    position: 'absolute', top: -5, right: -5,
+                                                    background: 'red', color: 'white', borderRadius: '50%',
+                                                    width: '20px', height: '20px', border: 'none', cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                                                }}
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Descriere</label>
