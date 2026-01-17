@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Search, Filter, History, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
-import './AdminLogs.css'; // Reusing styles from Logs
+// import './AdminLogs.css'; // Removed: Styles use global Admin.css
 
 const StockHistory = () => {
     const [logs, setLogs] = useState([]);
