@@ -14,7 +14,8 @@ import AdminOperators from './components/AdminOperators';
 import AdminLogs from './components/AdminLogs';
 import OrderHistory from './components/OrderHistory';
 import StockHistory from './components/StockHistory';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2 } from 'lucide-react';
+import AdminDelivery from './components/AdminDelivery';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -278,7 +279,8 @@ const AdminDashboard = () => {
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
                 {canAccess('requests') && <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>}
-                {canAccess('promocodes') && <button className={`tab-btn ${activeTab === 'promocodes' ? 'active' : ''}`} onClick={() => setActiveTab('promocodes')}>Coduri Reducere</button>}
+                {canAccess('promo') && <button className={`tab-btn ${activeTab === 'promo' ? 'active' : ''}`} onClick={() => setActiveTab('promo')}>Promoții</button>}
+                {canAccess('promo') && <button className={`tab-btn ${activeTab === 'delivery_zones' ? 'active' : ''}`} onClick={() => setActiveTab('delivery_zones')}>Livrare</button>}
                 {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}
                 {canAccess('operators') && <button className={`tab-btn ${activeTab === 'operators' ? 'active' : ''}`} onClick={() => setActiveTab('operators')}>Operatori</button>}
                 {canAccess('logs') && <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Loguri</button>}
@@ -309,6 +311,12 @@ const AdminDashboard = () => {
                 {activeTab === 'stock_logs' && (
                     <div className="tab-content">
                         <StockHistory />
+                    </div>
+                )}
+                {/* DELIVERY ZONES TAB */}
+                {activeTab === 'delivery_zones' && (
+                    <div className="tab-content">
+                        <AdminDelivery />
                     </div>
                 )}
                 {/* HISTORY TAB */}

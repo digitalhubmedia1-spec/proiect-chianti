@@ -9,21 +9,7 @@ import { useOrder } from '../context/OrderContext';
 import { supabase } from '../supabaseClient';
 import './Checkout.css';
 
-const DELIVERY_COSTS = {
-    'Roman': 0,
-    'Horia': 15,
-    'Trifești': 20,
-    'Dulcești': 20,
-    'Cordun': 15,
-    'Sagna': 25,
-    'Gădinți': 20,
-    'Săbăoani': 25,
-    'Tămășeni': 30,
-    'Adjudeni': 30,
-    'Răchiteni': 35,
-    'Bozienii de Sus': 40,
-    'Iugani': 35
-};
+// DELIVERY_COSTS removed - fetched from DB now
 
 const Checkout = () => {
     const { cartItems, cartTotal, clearCart } = useCart();
@@ -52,6 +38,18 @@ const Checkout = () => {
     const [deliveryCost, setDeliveryCost] = useState(0);
     const [promoCode, setPromoCode] = useState('');
     const [discount, setDiscount] = useState(null); // { code: '...', percent: 10 }
+
+    // Dynamic Zones State
+    const [deliveryZones, setDeliveryZones] = useState([]);
+
+    useEffect(() => {
+        const fetchZones = async () => {
+            if (!supabase) return;
+            const { data } = await supabase.from('delivery_zones').select('*');
+            if (data) setDeliveryZones(data);
+        };
+        fetchZones();
+    }, []);
 
     // Check for Catering Items
     const hasCateringItems = cartItems.some(item => {
@@ -102,12 +100,23 @@ const Checkout = () => {
     // Calculate Delivery Cost
     useEffect(() => {
         const isDelivery = formData.deliveryMethod === 'delivery' || formData.deliveryMethod === 'event-location';
-        if (isDelivery && formData.city && DELIVERY_COSTS[formData.city] !== undefined) {
-            setDeliveryCost(DELIVERY_COSTS[formData.city]);
+
+        if (isDelivery && formData.city) {
+            // Find logic: case insensitive match
+            const zone = deliveryZones.find(z => z.city.toLowerCase() === formData.city.toLowerCase());
+
+            if (zone) {
+                setDeliveryCost(Number(zone.price));
+            } else {
+                // Default fallback if not found? Or 0? Or maybe Roman default?
+                // Keeping 0 but maybe we should warn user if they type unknown city.
+                // For now, if "Roman" is typed and exists in DB, it works.
+                setDeliveryCost(0);
+            }
         } else {
             setDeliveryCost(0);
         }
-    }, [formData.city, formData.deliveryMethod]);
+    }, [formData.city, formData.deliveryMethod, deliveryZones]);
 
     if (cartItems.length === 0) {
         navigate('/cos');
