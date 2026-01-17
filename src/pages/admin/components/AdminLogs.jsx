@@ -17,7 +17,7 @@ const AdminLogs = () => {
                 .from('admin_logs')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(100); // Limit to last 100 for performance
+                .limit(100);
 
             if (error) throw error;
             setLogs(data || []);
@@ -31,7 +31,6 @@ const AdminLogs = () => {
     useEffect(() => {
         fetchLogs();
 
-        // Realtime subscription
         const channel = supabase
             .channel('public:admin_logs')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, (payload) => {
@@ -56,32 +55,43 @@ const AdminLogs = () => {
 
     const uniqueActions = [...new Set(logs.map(log => log.action))];
 
+    const getRoleBadgeStyle = (role) => {
+        switch (role) {
+            case 'admin_app': return { backgroundColor: '#fee2e2', color: '#dc2626', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' };
+            case 'operator': return { backgroundColor: '#dbeafe', color: '#2563eb', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' };
+            case 'chef': return { backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' };
+            default: return { backgroundColor: '#f1f5f9', color: '#64748b', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' };
+        }
+    };
+
     return (
         <div className="admin-logs-container">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Jurnal Activitate (Loguri)</h2>
-                <button onClick={fetchLogs} className="btn-icon" title="Reîmprospătează">
+            <div className="actions-bar">
+                <h3>Jurnal Activitate (Loguri)</h3>
+                <button onClick={fetchLogs} className="btn-icon" title="Reîmprospătează" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                     <RefreshCw size={20} />
                 </button>
             </div>
 
-            <div className="search-filter-bar flex gap-4 mb-6">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            <div className="search-filter-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
+                    <Search className="absolute" size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                     <input
                         type="text"
                         placeholder="Caută după nume sau detalii..."
-                        className="pl-10 p-2 border rounded-lg w-full"
+                        className="form-control"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
+                        style={{ paddingLeft: '40px' }}
                     />
                 </div>
-                <div className="relative w-64">
-                    <Filter className="absolute left-3 top-3 text-gray-400" size={18} />
+                <div style={{ minWidth: '200px', position: 'relative' }}>
+                    <Filter className="absolute" size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                     <select
-                        className="pl-10 p-2 border rounded-lg w-full appearance-none"
+                        className="form-control"
                         value={filterAction}
                         onChange={e => setFilterAction(e.target.value)}
+                        style={{ paddingLeft: '40px' }}
                     >
                         <option value="">Toate Acțiunile</option>
                         {uniqueActions.map(action => (
@@ -91,46 +101,43 @@ const AdminLogs = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-sm">
+            <div className="admin-table-wrapper">
+                <table className="admin-table">
+                    <thead>
                         <tr>
-                            <th className="p-4 border-b">Data / Ora</th>
-                            <th className="p-4 border-b">Utilizator</th>
-                            <th className="p-4 border-b">Rol</th>
-                            <th className="p-4 border-b">Acțiune</th>
-                            <th className="p-4 border-b">Detalii</th>
+                            <th>Data / Ora</th>
+                            <th>Utilizator</th>
+                            <th>Rol</th>
+                            <th>Acțiune</th>
+                            <th>Detalii</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody>
                         {loading ? (
-                            <tr><td colSpan="5" className="p-8 text-center text-gray-500">Se încarcă logurile...</td></tr>
+                            <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Se încarcă logurile...</td></tr>
                         ) : filteredLogs.length === 0 ? (
-                            <tr><td colSpan="5" className="p-8 text-center text-gray-500">Nu există activitate înregistrată.</td></tr>
+                            <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Nu există activitate înregistrată.</td></tr>
                         ) : (
                             filteredLogs.map(log => (
-                                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-4 text-sm text-gray-500">
+                                <tr key={log.id}>
+                                    <td style={{ color: '#64748b', fontSize: '0.9rem' }}>
                                         {new Date(log.created_at).toLocaleString('ro-RO')}
                                     </td>
-                                    <td className="p-4 font-medium text-gray-800">
+                                    <td style={{ fontWeight: '600', color: '#1e293b' }}>
                                         {log.admin_name}
                                     </td>
-                                    <td className="p-4 text-sm">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold 
-                                            ${log.admin_role === 'admin_app' ? 'bg-purple-100 text-purple-700' :
-                                                log.admin_role === 'operator' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-gray-100 text-gray-700'}`}>
+                                    <td>
+                                        <span style={getRoleBadgeStyle(log.admin_role)}>
                                             {log.admin_role === 'admin_app' ? 'Admin' :
                                                 log.admin_role === 'operator' ? 'Operator' :
                                                     log.admin_role === 'chef' ? 'Bucătar' : log.admin_role}
                                         </span>
                                     </td>
-                                    <td className="p-4 font-semibold text-gray-700">
+                                    <td style={{ fontWeight: '600', color: '#334155' }}>
                                         {log.action}
                                     </td>
-                                    <td className="p-4 text-sm text-gray-600 max-w-md truncate" title={log.details}>
-                                        {log.details}
+                                    <td style={{ color: '#475569', fontSize: '0.9rem', maxWidth: '400px' }} title={log.details}>
+                                        {log.details && log.details.length > 80 ? log.details.substring(0, 80) + '...' : log.details}
                                     </td>
                                 </tr>
                             ))
