@@ -180,7 +180,7 @@ const Products = () => {
 
     // Filter logic to show ONLY delivery products
     const deliveryCategories = categories.filter(cat => !cat.type || cat.type === 'delivery');
-    const deliveryProducts = products.filter(p => deliveryCategories.some(c => c.name === p.category));
+    const deliveryProducts = products.filter(p => deliveryCategories.some(c => c.name === p.category) && p.is_available !== false);
 
     // Filter Logic based on active category
     let filteredProducts = activeCategory === "Toate"

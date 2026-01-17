@@ -50,8 +50,8 @@ const Catering = () => {
 
     // Filter Logic
     let filteredProducts = activeCategory === "Toate"
-        ? products.filter(p => cateringCategories.some(c => c.name === p.category))
-        : products.filter(p => p.category === activeCategory);
+        ? products.filter(p => cateringCategories.some(c => c.name === p.category) && p.is_available !== false)
+        : products.filter(p => p.category === activeCategory && p.is_available !== false);
 
     // Search Filter
     if (searchQuery) {
