@@ -461,15 +461,16 @@ const VenueAvailability = () => {
                         </div>
                     </div>
 
+                    {/* CTA Inserted Middle */}
+                    <div className="configurator-cta">
+                        <p>Ai găsit data perfectă? Configurează meniul evenimentului&nbsp;tău!</p>
+                        <Link to="/configurator-meniu" className="btn btn-primary btn-lg">Configurează Meniu Eveniment</Link>
+                    </div>
+
                     {/* Right Column: Form */}
                     <div className="availability-right">
                         <ReservationForm />
                     </div>
-                </div>
-
-                <div className="configurator-cta">
-                    <p>Ai găsit data perfectă? Configurează meniul evenimentului&nbsp;tău!</p>
-                    <a href="/meniuri" className="btn btn-primary btn-lg">Configurează Meniu Eveniment</a>
                 </div>
             </div>
         </div>
