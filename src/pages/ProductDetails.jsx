@@ -15,6 +15,7 @@ const ProductDetails = () => {
     const [product, setProduct] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [isOpen, setIsOpen] = useState(true);
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
     useEffect(() => {
         if (loading) return;
@@ -37,6 +38,9 @@ const ProductDetails = () => {
         alert('Produs adăugat în coș!');
     };
 
+    const openImageModal = () => setIsImageModalOpen(true);
+    const closeImageModal = () => setIsImageModalOpen(false);
+
     return (
         <div className="product-details-page container">
             <button onClick={() => navigate(-1)} className="btn-back">
@@ -44,7 +48,7 @@ const ProductDetails = () => {
             </button>
 
             <div className="product-details-grid">
-                <div className="product-image-large">
+                <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in' }}>
                     <img src={product.image} alt={product.name} />
                 </div>
 
@@ -106,6 +110,16 @@ const ProductDetails = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Image Modal */}
+            {isImageModalOpen && (
+                <div className="lightbox-overlay" onClick={closeImageModal}>
+                    <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+                        <button className="lightbox-close" onClick={closeImageModal}>&times;</button>
+                        <img src={product.image} alt={product.name} className="lightbox-image" />
                     </div>
                 </div>
             )}
