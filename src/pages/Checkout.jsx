@@ -216,7 +216,7 @@ const Checkout = () => {
                                                 checked={formData.deliveryMethod === 'event-restaurant'}
                                                 onChange={handleChange}
                                             />
-                                            <span>La Restaurant (Chianti)</span>
+                                            <span>Ridicare Personală</span>
                                         </label>
                                         <label className={`radio-card ${formData.deliveryMethod === 'event-location' ? 'active' : ''}`}>
                                             <input
@@ -226,7 +226,7 @@ const Checkout = () => {
                                                 checked={formData.deliveryMethod === 'event-location'}
                                                 onChange={handleChange}
                                             />
-                                            <span>Altă Locație (Livrare)</span>
+                                            <span>Livrare la Domiciliu</span>
                                         </label>
                                     </>
                                 ) : (
