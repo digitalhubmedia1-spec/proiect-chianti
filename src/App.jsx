@@ -33,6 +33,7 @@ import DriverApplication from './pages/careers/DriverApplication';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import ScrollToTop from './components/ScrollToTop';
+import PageTitleUpdater from './components/PageTitleUpdater';
 import './index.css';
 
 const ProtectedAdminRoute = ({ children }) => {
@@ -49,6 +50,7 @@ function App() {
             <BlogProvider>
               <Router>
                 <ScrollToTop />
+                <PageTitleUpdater />
                 <Routes>
                   {/* Public Routes with Layout */}
                   <Route path="/" element={<Layout><Home /></Layout>} />
