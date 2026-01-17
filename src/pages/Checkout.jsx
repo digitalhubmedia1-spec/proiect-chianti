@@ -156,10 +156,7 @@ const Checkout = () => {
         // Let's assume standard check applies for now unless it breaks assumptions.
         // Actually, for catering "48h before", the restaurant might be closed NOW but open THEN.
         // However, keeping simple logic:
-        if (!isOpen && !hasCateringItems) {
-            alert(getScheduleMessage());
-            return;
-        }
+
 
         const finalTotal = cartTotal + deliveryCost;
 

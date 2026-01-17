@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
-import { isRestaurantOpen, getScheduleMessage, isPreOrderPeriod } from '../utils/schedule';
+import { isRestaurantOpen, getScheduleStatus } from '../utils/schedule';
 import { Search, Zap, UtensilsCrossed } from 'lucide-react';
 import SEO from '../components/SEO';
 import './Products.css';
@@ -22,36 +22,26 @@ const Products = () => {
     // Search & Sort State
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
+    const [popupContent, setPopupContent] = useState({ title: "", message: "" });
 
     useEffect(() => {
-        // Helper to check and update status
         const updateStatus = () => {
-            const currentStatus = isRestaurantOpen();
-            const currentPreOrder = isPreOrderPeriod();
-            setIsOpen(currentStatus.isOpen);
-            setClosedMessage(getScheduleMessage());
-            return { isOpen: currentStatus.isOpen, preOrder: currentPreOrder };
-        };
-
-        // Initial check on mount
-        const initial = updateStatus();
-
-        // Show popup if closed OR if in pre-order period, on mount
-        if (!initial.isOpen || initial.preOrder) {
-            setShowPopup(true);
-        }
-
-        // Periodic check for status updates
-        const interval = setInterval(() => {
-            const current = updateStatus();
-            // Auto-close popup if restaurant opens while user is on page
-            if (current.isOpen && !current.preOrder) {
+            const status = getScheduleStatus();
+            setIsOpen(status.isOpen);
+            if (status.showWarning) {
+                setPopupContent({ title: status.title, message: status.message });
+                setShowPopup(true);
+            } else {
                 setShowPopup(false);
             }
-        }, 60000);
+        };
 
+        updateStatus();
+        const interval = setInterval(updateStatus, 60000);
         return () => clearInterval(interval);
     }, []);
+
+
 
     // Prevent filtering before data is loaded
     if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
@@ -220,8 +210,8 @@ const Products = () => {
             {showPopup && ReactDOM.createPortal(
                 <div className="schedule-popup-overlay">
                     <div className="schedule-popup">
-                        <h2>{!isOpen ? "Restaurant Închis Momentan" : " informații Comenzi"}</h2>
-                        <p>{getScheduleMessage()}</p>
+                        <h2>{popupContent.title}</h2>
+                        <p>{popupContent.message}</p>
                         <button className="btn-close-popup" onClick={() => setShowPopup(false)}>Am înțeles</button>
                     </div>
                 </div>,

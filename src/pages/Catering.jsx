@@ -38,14 +38,9 @@ const Catering = () => {
     // State for the 48h advance notice popup
     const [showInfoPopup, setShowInfoPopup] = useState(true);
 
+    // Always open for catering pre-orders, no popup needed
     useEffect(() => {
-        const open = isRestaurantOpen();
-        const preOrder = isPreOrderPeriod();
-        setIsOpen(open);
-
-        if (!open || preOrder) {
-            setShowPopup(true);
-        }
+        setIsOpen(true);
     }, []);
 
     // Filter Logic
