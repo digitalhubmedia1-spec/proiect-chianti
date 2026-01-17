@@ -173,16 +173,7 @@ const Contact = () => {
                             </div>
                         </div>
 
-                        {/* Row 4: Catering Packages */}
-                        <div className="form-group">
-                            <label className="group-label">Alege unul dintre pachetele de servicii de catering predefinite (vezi variantele de mai jos)</label>
-                            <div className="checkbox-grid horizontal">
-                                <label className="cb-item"><input type="checkbox" value="Baza" onChange={(e) => handleCheckboxChange(e, 'packages')} /> PACHET DE BAZĂ</label>
-                                <label className="cb-item"><input type="checkbox" value="Standard" onChange={(e) => handleCheckboxChange(e, 'packages')} /> PACHET STANDARD</label>
-                                <label className="cb-item"><input type="checkbox" value="Premium" onChange={(e) => handleCheckboxChange(e, 'packages')} /> PACHET PREMIUM</label>
-                                <label className="cb-item"><input type="checkbox" value="Deluxe" onChange={(e) => handleCheckboxChange(e, 'packages')} /> PACHET DELUXE</label>
-                            </div>
-                        </div>
+
 
                         {/* Row 5: Message */}
                         <div className="form-group">
