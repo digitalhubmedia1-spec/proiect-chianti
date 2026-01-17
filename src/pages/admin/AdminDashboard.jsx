@@ -29,7 +29,10 @@ const AdminDashboard = () => {
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
+
     const [activeProductTabType, setActiveProductTabType] = useState('delivery');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
 
     // Category State
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -285,6 +288,35 @@ const AdminDashboard = () => {
                                 <Plus size={18} /> Adaugă Produs ({activeProductTabType === 'delivery' ? 'Livrări' : 'Catering'})
                             </button>
                         </div>
+
+                        {/* Search and Filter Bar */}
+                        <div className="search-filter-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Caută produs după nume..."
+                                    className="form-control"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div style={{ minWidth: '200px' }}>
+                                <select
+                                    className="form-control"
+                                    value={filterCategory}
+                                    onChange={(e) => setFilterCategory(e.target.value)}
+                                    style={{ width: '100%' }}
+                                >
+                                    <option value="">Toate Categoriile</option>
+                                    {categories
+                                        .filter(c => (!c.type || c.type === 'delivery') === (activeProductTabType === 'delivery'))
+                                        .map(cat => (
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                        ))}
+                                </select>
+                            </div>
+                        </div>
                         <div className="admin-table-wrapper">
                             <table className="admin-table">
                                 <thead>
@@ -301,10 +333,17 @@ const AdminDashboard = () => {
                                     {products
                                         .filter(p => {
                                             const cat = categories.find(c => c.name === p.category);
-                                            // If category not found, default to delivery (safe fallback)
-                                            // If cat found, use its type. If cat has no type, default to delivery.
+                                            // 1. Filter by Type (Delivery/Catering)
                                             const type = cat ? (cat.type || 'delivery') : 'delivery';
-                                            return type === activeProductTabType;
+                                            if (type !== activeProductTabType) return false;
+
+                                            // 2. Filter by Category Select
+                                            if (filterCategory && p.category !== filterCategory) return false;
+
+                                            // 3. Filter by Search Term
+                                            if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+                                            return true;
                                         })
                                         .map(product => (
                                             <tr key={product.id}>
@@ -340,7 +379,10 @@ const AdminDashboard = () => {
                                     {products.filter(p => {
                                         const cat = categories.find(c => c.name === p.category);
                                         const type = cat ? (cat.type || 'delivery') : 'delivery';
-                                        return type === activeProductTabType;
+                                        if (type !== activeProductTabType) return false;
+                                        if (filterCategory && p.category !== filterCategory) return false;
+                                        if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                                        return true;
                                     }).length === 0 && (
                                             <tr>
                                                 <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
