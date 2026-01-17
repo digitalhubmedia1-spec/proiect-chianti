@@ -197,7 +197,7 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
 };
 
 const KanbanBoard = () => {
-    const { orders, updateOrderStatus, deleteOrder, assignDriverToOrder } = useOrder();
+    const { getActiveOrders, updateOrderStatus, deleteOrder, assignDriverToOrder } = useOrder();
     const { getDrivers } = useAuth();
     const [drivers, setDrivers] = React.useState([]);
 
@@ -211,11 +211,13 @@ const KanbanBoard = () => {
         fetchDrivers();
     }, [getDrivers]);
 
-    // Filter orders by status and ensure they are NOT archived
-    const preparing = orders.filter(o => o.status === 'preparing' && !o.archived);
-    const delivering = orders.filter(o => o.status === 'delivering' && !o.archived);
-    const completed = orders.filter(o => o.status === 'completed' && !o.archived);
-    const cancelled = orders.filter(o => o.status === 'cancelled' && !o.archived);
+    const activeOrders = getActiveOrders();
+
+    // Filter active orders by status and ensure they are NOT archived
+    const preparing = activeOrders.filter(o => o.status === 'preparing' && !o.archived);
+    const delivering = activeOrders.filter(o => o.status === 'delivering' && !o.archived);
+    const completed = activeOrders.filter(o => o.status === 'completed' && !o.archived);
+    const cancelled = activeOrders.filter(o => o.status === 'cancelled' && !o.archived);
 
     const handleMove = (orderId, nextStatus) => {
         updateOrderStatus(orderId, nextStatus);

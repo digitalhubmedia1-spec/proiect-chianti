@@ -119,12 +119,48 @@ export const OrderProvider = ({ children }) => {
         await supabase.from('orders').update(updatePayload).eq('id', orderId);
     };
 
+    const getActiveOrders = () => {
+        // Today at 00:00:00
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return orders.filter(order => {
+            if (order.archived) return false;
+
+            // Always show pending orders (regardless of date)
+            if (order.status === 'pending') return true;
+
+            // For other statuses, check if created today
+            const orderDate = new Date(order.created_at);
+            return orderDate >= today;
+        });
+    };
+
+    const getHistoryOrders = () => {
+        // Today at 00:00:00
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return orders.filter(order => {
+            if (order.archived) return true; // Archived always history? Or just separate tab? User said "Historic Orders".
+
+            // If it's pending, it's ACTIVE, not history (unless archived)
+            if (order.status === 'pending') return false;
+
+            // If created before today, it's history
+            const orderDate = new Date(order.created_at);
+            return orderDate < today;
+        });
+    };
+
     return (
         <OrderContext.Provider value={{
             orders,
             addOrder,
             updateOrderStatus,
             deleteOrder,
+            getActiveOrders,
+            getHistoryOrders,
             getOrdersByStatus,
             assignDriverToOrder,
             getDriverOrders,
