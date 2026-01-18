@@ -8,6 +8,7 @@ const AdminMenuPlanner = () => {
     const { products, categories, loading: menuLoading } = useMenu();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeItems, setActiveItems] = useState(new Set()); // Set of Product IDs
+    const [stockValues, setStockValues] = useState({}); // Map of Product ID -> Stock Count
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [filterCategory, setFilterCategory] = useState("Toate");
@@ -22,21 +23,25 @@ const AdminMenuPlanner = () => {
     // Fetch config for selected date
     const fetchConfig = async () => {
         setLoading(true);
-        setActiveItems(new Set()); // Reset first
+        setActiveItems(new Set());
+        setStockValues({});
 
         const { data, error } = await supabase
             .from('daily_menu_items')
-            .select('product_id')
+            .select('product_id, stock')
             .eq('date', dateStr);
 
         if (error) {
             console.error("Error fetching menu:", error);
         } else if (data) {
-            const ids = new Set(data.map(i => i.product_id));
-
-            // If empty, verify if it's because it wasn't set or just empty. 
-            // For UI, if empty set, means nothing checked.
+            const ids = new Set();
+            const stocks = {};
+            data.forEach(i => {
+                ids.add(i.product_id);
+                stocks[i.product_id] = i.stock;
+            });
             setActiveItems(ids);
+            setStockValues(stocks);
         }
         setLoading(false);
     };
@@ -86,7 +91,8 @@ const AdminMenuPlanner = () => {
         const itemsToInsert = Array.from(activeItems).map(id => ({
             date: dateStr,
             product_id: id,
-            is_available: true
+            is_available: true,
+            stock: stockValues[id] === '' || stockValues[id] === undefined ? null : parseInt(stockValues[id])
         }));
 
         if (itemsToInsert.length > 0) {
@@ -116,14 +122,20 @@ const AdminMenuPlanner = () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('daily_menu_items')
-            .select('product_id')
+            .select('product_id, stock')
             .eq('date', yStr);
 
         if (error) {
             alert("Eroare la copiere: " + error.message);
         } else if (data) {
-            const ids = new Set(data.map(i => i.product_id));
+            const ids = new Set();
+            const stocks = {};
+            data.forEach(i => {
+                ids.add(i.product_id);
+                stocks[i.product_id] = i.stock;
+            });
             setActiveItems(ids);
+            setStockValues(stocks);
             alert(`Copiat ${ids.size} produse de la ${yStr}. Nu uita să salvezi!`);
         }
         setLoading(false);
@@ -153,7 +165,7 @@ const AdminMenuPlanner = () => {
             <div className="actions-bar">
                 <h3>Planificator Meniu</h3>
                 <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                    Selectează produsele disponibile pentru fiecare zi.
+                    Selectează produsele disponibile și setează numărul de porții (opțional).
                 </div>
             </div>
 
@@ -275,10 +287,35 @@ const AdminMenuPlanner = () => {
                                 <img src={product.image} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
                             )}
 
-                            <div style={{ overflow: 'hidden' }}>
+                            <div style={{ overflow: 'hidden', flex: 1 }}>
                                 <div style={{ fontWeight: '600', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
                             </div>
+
+                            {activeItems.has(product.id) && (
+                                <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Număr de porții (Lasă gol pentru nelimitat)"
+                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                >
+                                    <span style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Porții</span>
+                                    <input
+                                        type="number"
+                                        placeholder="∞"
+                                        min="0"
+                                        style={{
+                                            width: '60px',
+                                            padding: '4px',
+                                            borderRadius: '4px',
+                                            border: '1px solid #cbd5e1',
+                                            textAlign: 'center',
+                                            fontSize: '0.9rem'
+                                        }}
+                                        value={stockValues[product.id] ?? ''}
+                                        onChange={(e) => setStockValues({ ...stockValues, [product.id]: e.target.value })}
+                                    />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
