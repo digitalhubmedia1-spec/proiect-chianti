@@ -26,7 +26,7 @@ const Products = () => {
 
     // Date Selection State
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [dailyMenuIds, setDailyMenuIds] = useState(null); // null = not loaded yet, [] = empty
+    const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
 
     // Helper to get YYYY-MM-DD in LOCAL time
     const formatDate = (date) => {
@@ -43,8 +43,8 @@ const Products = () => {
             // But we are in the same component.
             if (fetchDailyMenu) {
                 const dateStr = formatDate(selectedDate);
-                const ids = await fetchDailyMenu(dateStr);
-                setDailyMenuIds(ids);
+                const data = await fetchDailyMenu(dateStr);
+                setDailyMenuData(data);
             }
         };
         loadDailyMenu();
