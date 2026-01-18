@@ -213,26 +213,50 @@ const Products = () => {
     // Filter logic to show ONLY delivery products
     // Filter Logic
     let filteredProducts = products.filter(product => {
-        // 1. Delivery Check (Must NOT be catering)
-        const cat = categories.find(c => c.name === product.category);
-        if (cat?.type === 'catering') return false;
-
-        // 2. Availability Check (is_available flag)
-        if (product.is_available === false) return false;
-
-        // 3. Daily Menu Check (If configured)
+        // 3. Daily Menu Check (If configured) - THIS IS PRIMARY
         if (dailyMenuData !== null) {
             const isToday = formatDate(selectedDate) === formatDate(new Date());
             if (dailyMenuData.length > 0) {
                 // Explicit configuration exists
-                // Check if product is in the map
-                if (dailyMenuMap[product.id] === undefined) return false;
+                // Check if product is in the map. If it IS, we force inclusion (ignoring global disabled) unless catered?
+                // Actually, let's keep it safe: 
+                // If it IS in the menu, we return true (or continue logic).
+                // If it is NOT in the menu, we return false.
+
+                if (dailyMenuMap[product.id] !== undefined) {
+                    // OPTIONAL: Filter out catering types if needed, but if Admin added it, display it.
+                    // We SKIP the global availability check effectively by not returning false earlier if we structured it right.
+                    // But we returned early above. We need to restructure.
+                    return true;
+                }
+                return false;
             } else {
                 // No configuration found
                 if (!isToday) return false; // Future empty date -> Show nothing
-                // Today empty -> Show Everything (Backup for safety)
             }
         }
+
+        // Standard Checks (Only if no Daily Menu override active for this specific item?)
+        // Wait, the logic above returns false if Daily Menu is active but item not found.
+        // If Daily Menu IS active and item IS found, we returned true.
+        // So we need to move the Standard Checks INTO the "else" of "Daily Menu exists" OR run them before but allow override?
+
+        // BETTER LOGIC:
+        // 1. Catering Check (Always enforce?)
+        const cat = categories.find(c => c.name === product.category);
+        if (cat?.type === 'catering') return false;
+
+        // 2. Daily Menu Logic
+        if (dailyMenuData !== null && dailyMenuData.length > 0) {
+            // If Menu Configured: ONLY show if in menu.
+            // If in menu -> SHOW (ignore global is_available)
+            return dailyMenuMap[product.id] !== undefined;
+        }
+
+        // 3. Fallback (Standard Catalog)
+        // If no daily menu configured (or today empty fallback):
+        // Enforce is_available
+        if (product.is_available === false) return false;
 
         // 4. Category Filter
         if (activeCategory !== "Toate" && product.category !== activeCategory) {
