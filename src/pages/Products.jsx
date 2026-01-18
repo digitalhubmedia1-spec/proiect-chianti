@@ -77,6 +77,14 @@ const Products = () => {
 
 
 
+    // Build map for efficient lookup
+    const dailyMenuMap = {};
+    if (dailyMenuData) {
+        dailyMenuData.forEach(item => {
+            dailyMenuMap[item.id] = item.stock;
+        });
+    }
+
     // Prevent filtering before data is loaded
     if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
 
@@ -213,11 +221,12 @@ const Products = () => {
         if (product.is_available === false) return false;
 
         // 3. Daily Menu Check (If configured)
-        if (dailyMenuIds !== null) {
+        if (dailyMenuData !== null) {
             const isToday = formatDate(selectedDate) === formatDate(new Date());
-            if (dailyMenuIds.length > 0) {
+            if (dailyMenuData.length > 0) {
                 // Explicit configuration exists
-                if (!dailyMenuIds.includes(product.id)) return false;
+                // Check if product is in the map
+                if (dailyMenuMap[product.id] === undefined) return false;
             } else {
                 // No configuration found
                 if (!isToday) return false; // Future empty date -> Show nothing
@@ -431,27 +440,56 @@ const Products = () => {
 
                     <div className="products-grid">
                         {filteredProducts.length > 0 ? (
-                            filteredProducts.map(product => (
-                                <div key={product.id} className={`product-card ${product.is_available === false ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}`)} style={{ cursor: 'pointer' }}>
-                                    <div className="product-image">
-                                        <img src={product.image} alt={product.name} />
-                                    </div>
-                                    <div className="product-info">
-                                        <h3 className="product-name">{product.name}</h3>
-                                        <p className="product-desc">{product.description}</p>
-                                        <div className="product-footer">
-                                            <span className="product-price">{product.price.toFixed(2)} Lei</span>
-                                            <button
-                                                className="btn btn-sm btn-primary"
-                                                onClick={(e) => handleAddToCart(e, product)}
-                                                title="Adaugă în coș"
-                                            >
-                                                Adaugă
-                                            </button>
+                            filteredProducts.map(product => {
+                                let stock = dailyMenuMap[product.id];
+                                if (stock !== null && stock !== undefined) stock = parseInt(stock);
+
+                                const isOutOfStock = stock === 0;
+                                const isLowStock = stock !== null && stock !== undefined && stock <= 10 && stock > 0;
+
+                                return (
+                                    <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}`)} style={{ cursor: 'pointer', position: 'relative' }}>
+                                        {isLowStock && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                right: '10px',
+                                                background: '#ef4444',
+                                                color: 'white',
+                                                padding: '4px 8px',
+                                                borderRadius: '12px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'bold',
+                                                zIndex: 10
+                                            }}>
+                                                Ultimele {stock} porții
+                                            </div>
+                                        )}
+                                        <div className="product-image">
+                                            <img src={product.image} alt={product.name} style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
+                                        </div>
+                                        <div className="product-info">
+                                            <h3 className="product-name">{product.name}</h3>
+                                            <p className="product-desc">{product.description}</p>
+                                            <div className="product-footer">
+                                                <span className="product-price">{product.price.toFixed(2)} Lei</span>
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddToCart(e, product);
+                                                    }}
+                                                    disabled={isOutOfStock}
+                                                    title={isOutOfStock ? "Stoc epuizat" : "Adaugă în coș"}
+                                                    style={isOutOfStock ? { background: '#94a3b8', cursor: 'not-allowed' } : {}}
+                                                >
+                                                    {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="no-products" style={{ width: '100%' }}>
                                 <p>Nu am găsit produse conform criteriilor selectate.</p>
