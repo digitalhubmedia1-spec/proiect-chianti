@@ -185,12 +185,51 @@ const AdminMenuPlanner = () => {
                     ))}
                 </select>
 
-                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-                    <button className="action-btn" onClick={copyFromYesterday} style={{ background: '#64748b', color: 'white', fontSize: '0.85rem' }}>
-                        <Copy size={16} style={{ marginRight: 4 }} /> Copiază de Ieri
+                <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
+                    <button
+                        onClick={copyFromYesterday}
+                        style={{
+                            background: '#f8fafc',
+                            color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            padding: '10px 20px',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                        onMouseOut={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    >
+                        <Copy size={18} /> Copiază de Ieri
                     </button>
-                    <button className="action-btn" onClick={saveConfiguration} disabled={saving} style={{ background: '#16a34a', color: 'white', fontSize: '0.85rem' }}>
-                        {saving ? 'Se salvează...' : <><Save size={16} style={{ marginRight: 4 }} /> Salvează Configurația</>}
+                    <button
+                        onClick={saveConfiguration}
+                        disabled={saving}
+                        style={{
+                            background: '#16a34a',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 24px',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)',
+                            transition: 'all 0.2s',
+                            opacity: saving ? 0.7 : 1
+                        }}
+                        onMouseOver={(e) => !saving && (e.currentTarget.style.background = '#15803d')}
+                        onMouseOut={(e) => !saving && (e.currentTarget.style.background = '#16a34a')}
+                    >
+                        {saving ? 'Se salvează...' : <><Save size={18} /> Salvează Configurația</>}
                     </button>
                 </div>
             </div>
