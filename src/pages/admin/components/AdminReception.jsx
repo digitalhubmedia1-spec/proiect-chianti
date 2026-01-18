@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Trash2, Save, Calendar, Search, FileText } from 'lucide-react';
+import { Plus, Trash2, Save, FileText } from 'lucide-react';
+import './AdminReception.css';
 
 const AdminReception = () => {
     const [suppliers, setSuppliers] = useState([]);
@@ -141,20 +142,20 @@ const AdminReception = () => {
     };
 
     return (
-        <div className="admin-reception p-4 bg-gray-50 rounded-xl">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <FileText className="text-blue-600" /> Recepție Marfă (NIR)
+        <div className="admin-reception-container">
+            <h2 className="reception-header-title">
+                <FileText size={32} className="text-primary" /> Recepție Marfă (NIR)
             </h2>
 
             {loading && <p>Se încarcă nomenclatoarele...</p>}
 
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <form onSubmit={handleSubmit} className="reception-card">
                 {/* Header Factură */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Furnizor *</label>
+                <div className="invoice-header-grid">
+                    <div className="form-group">
+                        <label>Furnizor *</label>
                         <select
-                            className="w-full p-2 border rounded-lg"
+                            className="form-control"
                             value={invoiceData.supplier_id}
                             onChange={(e) => setInvoiceData({ ...invoiceData, supplier_id: e.target.value })}
                         >
@@ -162,31 +163,32 @@ const AdminReception = () => {
                             {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nr. Document *</label>
+                    <div className="form-group">
+                        <label>Nr. Document *</label>
                         <input
                             type="text"
-                            className="w-full p-2 border rounded-lg"
+                            className="form-control"
                             placeholder="ex: FF 12345"
                             value={invoiceData.document_number}
                             onChange={(e) => setInvoiceData({ ...invoiceData, document_number: e.target.value })}
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                    <div className="form-group">
+                        <label>Data *</label>
                         <input
                             type="date"
-                            className="w-full p-2 border rounded-lg"
+                            className="form-control"
                             value={invoiceData.document_date}
                             onChange={(e) => setInvoiceData({ ...invoiceData, document_date: e.target.value })}
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Recepție în Gestiunea *</label>
+                    <div className="form-group">
+                        <label>Recepție în Gestiunea *</label>
                         <select
-                            className="w-full p-2 border rounded-lg bg-blue-50"
+                            className="form-control"
                             value={invoiceData.location_id}
                             onChange={(e) => setInvoiceData({ ...invoiceData, location_id: e.target.value })}
+                            style={{ backgroundColor: '#f0f9ff' }}
                         >
                             <option value="">Alege Gestiune</option>
                             {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -195,22 +197,22 @@ const AdminReception = () => {
                 </div>
 
                 {/* Tabel Linii */}
-                <div className="mb-4">
-                    <div className="grid grid-cols-12 gap-2 mb-2 font-medium text-gray-500 text-sm px-2">
-                        <div className="col-span-3">Articol</div>
-                        <div className="col-span-1">Cant.</div>
-                        <div className="col-span-1">Preț (RON)</div>
-                        <div className="col-span-2">Lot (Batch)</div>
-                        <div className="col-span-2">Expiră La</div>
-                        <div className="col-span-2">Total Linie</div>
-                        <div className="col-span-1"></div>
+                <div className="invoice-lines-section">
+                    <div className="lines-header">
+                        <div>Articol</div>
+                        <div>Cant.</div>
+                        <div>Preț (RON)</div>
+                        <div>Lot (Batch)</div>
+                        <div>Expiră La</div>
+                        <div style={{ textAlign: 'right' }}>Total Linie</div>
+                        <div></div>
                     </div>
 
                     {rows.map((row, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-2 mb-2 items-center bg-gray-50 p-2 rounded-lg">
-                            <div className="col-span-3">
+                        <div key={index} className="line-row">
+                            <div>
                                 <select
-                                    className="w-full p-2 border rounded"
+                                    className="form-control"
                                     value={row.item_id}
                                     onChange={(e) => handleRowChange(index, 'item_id', e.target.value)}
                                 >
@@ -218,46 +220,46 @@ const AdminReception = () => {
                                     {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                                 </select>
                             </div>
-                            <div className="col-span-1">
+                            <div>
                                 <input
                                     type="number"
-                                    className="w-full p-2 border rounded"
+                                    className="form-control"
                                     placeholder="0"
                                     value={row.quantity}
                                     onChange={(e) => handleRowChange(index, 'quantity', e.target.value)}
                                 />
                             </div>
-                            <div className="col-span-1">
+                            <div>
                                 <input
                                     type="number"
-                                    className="w-full p-2 border rounded"
+                                    className="form-control"
                                     placeholder="0.00"
                                     value={row.price}
                                     onChange={(e) => handleRowChange(index, 'price', e.target.value)}
                                 />
                             </div>
-                            <div className="col-span-2">
+                            <div>
                                 <input
                                     type="text"
-                                    className="w-full p-2 border rounded bg-yellow-50"
+                                    className="form-control bg-warn"
                                     placeholder="ex: LOT-A1"
                                     value={row.batch_number}
                                     onChange={(e) => handleRowChange(index, 'batch_number', e.target.value)}
                                 />
                             </div>
-                            <div className="col-span-2">
+                            <div>
                                 <input
                                     type="date"
-                                    className="w-full p-2 border rounded bg-red-50"
+                                    className="form-control"
                                     value={row.expiration_date}
                                     onChange={(e) => handleRowChange(index, 'expiration_date', e.target.value)}
                                 />
                             </div>
-                            <div className="col-span-2 font-bold text-right px-2">
+                            <div className="line-total">
                                 {(row.quantity && row.price ? (parseFloat(row.quantity) * parseFloat(row.price)).toFixed(2) : '0.00')} RON
                             </div>
-                            <div className="col-span-1 text-center">
-                                <button type="button" onClick={() => handleRemoveRow(index)} className="text-red-500 hover:text-red-700">
+                            <div style={{ textAlign: 'center' }}>
+                                <button type="button" onClick={() => handleRemoveRow(index)} className="btn-remove-line" title="Șterge rând">
                                     <Trash2 size={18} />
                                 </button>
                             </div>
@@ -265,24 +267,24 @@ const AdminReception = () => {
                     ))}
                 </div>
 
-                <div className="flex justify-between items-center mt-4">
+                <div className="reception-footer">
                     <button
                         type="button"
                         onClick={handleAddRow}
-                        className="flex items-center gap-2 text-blue-600 font-medium hover:bg-blue-50 px-4 py-2 rounded-lg"
+                        className="btn-add-line"
                     >
                         <Plus size={18} /> Adaugă Linie
                     </button>
-                    <div className="text-xl font-bold">
+                    <div className="total-general">
                         Total General: {rows.reduce((acc, r) => acc + (parseFloat(r.quantity || 0) * parseFloat(r.price || 0)), 0).toFixed(2)} RON
                     </div>
                 </div>
 
-                <div className="mt-8 flex justify-end">
+                <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 flex items-center gap-2 shadow-lg shadow-green-200"
+                        className="btn-save-reception"
                     >
                         <Save size={20} /> Salvează Recepția (NIR)
                     </button>
