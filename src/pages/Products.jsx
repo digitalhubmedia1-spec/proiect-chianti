@@ -231,8 +231,8 @@ const Products = () => {
                 }
                 return false;
             } else {
-                // No configuration found
-                if (!isToday) return false; // Future empty date -> Show nothing
+                // No configuration found -> SHOW NOTHING (User request: strict mode)
+                return false;
             }
         }
 
