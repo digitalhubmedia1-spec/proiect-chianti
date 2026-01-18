@@ -280,7 +280,7 @@ const AdminDashboard = () => {
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
                 {canAccess('requests') && <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>}
-                {canAccess('promo') && <button className={`tab-btn ${activeTab === 'promo' ? 'active' : ''}`} onClick={() => setActiveTab('promo')}>Promoții</button>}
+
                 {canAccess('products') && <button className={`tab-btn ${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Planificator Meniu</button>}
                 {canAccess('promo') && <button className={`tab-btn ${activeTab === 'delivery_zones' ? 'active' : ''}`} onClick={() => setActiveTab('delivery_zones')}>Livrare</button>}
                 {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}

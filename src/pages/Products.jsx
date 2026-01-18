@@ -145,9 +145,9 @@ const Products = () => {
                             </div>
                             <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'var(--color-secondary)' }}>Comenzi Rapide</h2>
                             <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6' }}>
-                                Pizza, Paste, Burgeri și alte preparate calde cu livrare imediată la domiciliu sau birou.
+                                Comandă simplu și rapid. Livrarea preparatelor gătite proaspăt se face zilnic, de luni până vineri, între orele 11:00 și 15:00.
                             </p>
-                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi Meniul</button>
+                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi produsele noastre</button>
                         </div>
 
                         {/* Option 2: Catering */}
@@ -188,11 +188,11 @@ const Products = () => {
                             }}>
                                 <UtensilsCrossed size={40} />
                             </div>
-                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'var(--color-secondary)' }}>Comenzi Catering</h2>
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'var(--color-secondary)' }}>Precomenzi Platouri</h2>
                             <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6' }}>
-                                Platouri și meniuri complete pentru evenimente. <br /><strong>Comandă cu minim 48h înainte.</strong>
+                                Livrăm platouri și preparate savuroase, gătite cu atenție pentru tine, prieteni și familie. Comandă cu cel puțin 48 de ore înainte.
                             </p>
-                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi Oferta Catering</button>
+                            <button className="btn btn-primary" style={{ marginTop: '2rem' }}>Vezi preparatele noastre</button>
                         </div>
                     </div>
                 </div>
