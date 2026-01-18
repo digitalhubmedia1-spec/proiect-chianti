@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import OrderList from './components/OrderList';
 import KanbanBoard from './components/KanbanBoard';
 import AdminBlog from './components/AdminBlog';
-import AdminInventory from './components/AdminInventory';
 import AdminRecipes from './components/AdminRecipes';
 import AdminMessages from './components/AdminMessages';
 import AdminRequests from './components/AdminRequests';
@@ -13,7 +12,6 @@ import DriverApplications from './DriverApplications';
 import AdminOperators from './components/AdminOperators';
 import AdminLogs from './components/AdminLogs';
 import OrderHistory from './components/OrderHistory';
-import StockHistory from './components/StockHistory';
 import AdminDelivery from './components/AdminDelivery';
 import AdminMenuPlanner from './components/AdminMenuPlanner';
 import AdminSuppliers from './components/AdminSuppliers';
@@ -283,7 +281,6 @@ const AdminDashboard = () => {
                 {canAccess('categories') && <button className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categorii</button>}
                 {canAccess('availability') && <button className={`tab-btn ${activeTab === 'availability' ? 'active' : ''}`} onClick={() => setActiveTab('availability')}>Disponibilitate</button>}
                 {canAccess('configurator') && <button className={`tab-btn ${activeTab === 'configurator' ? 'active' : ''}`} onClick={() => setActiveTab('configurator')}>Configurator</button>}
-                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Stocuri (Live)</button>}
                 {canAccess('recipes') && <button className={`tab-btn ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => setActiveTab('recipes')}>Rețete</button>}
 
                 {/* ERP Nomenclatures */}
@@ -307,7 +304,6 @@ const AdminDashboard = () => {
                 {canAccess('drivers') && <button className={`tab-btn ${activeTab === 'drivers_apps' ? 'active' : ''}`} onClick={() => setActiveTab('drivers_apps')}>Aplicații Livratori</button>}
                 {canAccess('operators') && <button className={`tab-btn ${activeTab === 'operators' ? 'active' : ''}`} onClick={() => setActiveTab('operators')}>Operatori</button>}
                 {canAccess('logs') && <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Loguri</button>}
-                {canAccess('stock_logs') && <button className={`tab-btn ${activeTab === 'stock_logs' ? 'active' : ''}`} onClick={() => setActiveTab('stock_logs')}>Loguri Stocuri</button>}
                 {canAccess('history') && <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Istoric Comenzi</button>}
             </div>
 
@@ -328,12 +324,6 @@ const AdminDashboard = () => {
                 {activeTab === 'logs' && (
                     <div className="tab-content">
                         <AdminLogs />
-                    </div>
-                )}
-                {/* STOCK LOGS TAB */}
-                {activeTab === 'stock_logs' && (
-                    <div className="tab-content">
-                        <StockHistory />
                     </div>
                 )}
                 {/* SUPPLIERS TAB */}
@@ -640,12 +630,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* INVENTORY TAB */}
-                {activeTab === 'inventory' && (
-                    <div className="tab-pane">
-                        <AdminInventory />
-                    </div>
-                )}
+
 
                 {/* RECIPES TAB */}
                 {activeTab === 'recipes' && (
