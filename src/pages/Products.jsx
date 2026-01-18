@@ -222,8 +222,34 @@ const Products = () => {
                 <div className="container">
                     <h1 className="page-title">Meniul Nostru</h1>
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
-                    <p className="current-date-header" style={{ color: '#aaa', marginTop: '5px', fontSize: '0.95rem' }}>
-                        {new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1)}, {new Date().toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+
+                    {/* Date Navigation */}
+                    <div className="date-tabs" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
+                        <button
+                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date()) ? 'active' : ''}`}
+                            onClick={() => setSelectedDate(new Date())}
+                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date()) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date()) ? 'white' : '#333', cursor: 'pointer' }}
+                        >
+                            Azi
+                        </button>
+                        <button
+                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'active' : ''}`}
+                            onClick={() => changeDate(1)}
+                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'white' : '#333', cursor: 'pointer' }}
+                        >
+                            Mâine
+                        </button>
+                        <button
+                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? 'active' : ''}`}
+                            onClick={() => changeDate(2)}
+                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? 'white' : '#333', cursor: 'pointer' }}
+                        >
+                            {new Date(new Date().setDate(new Date().getDate() + 2)).toLocaleDateString('ro-RO', { weekday: 'long' })}
+                        </button>
+                    </div>
+
+                    <p className="current-date-header" style={{ color: '#aaa', marginTop: '10px', fontSize: '1rem', fontWeight: 'bold' }}>
+                        Meniu pentru: {selectedDate.toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + selectedDate.toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1)}, {selectedDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </p>
 
                 </div>
