@@ -16,6 +16,8 @@ import OrderHistory from './components/OrderHistory';
 import StockHistory from './components/StockHistory';
 import AdminDelivery from './components/AdminDelivery';
 import AdminMenuPlanner from './components/AdminMenuPlanner';
+import AdminSuppliers from './components/AdminSuppliers';
+import AdminInventoryItems from './components/AdminInventoryItems';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -275,8 +277,13 @@ const AdminDashboard = () => {
                 {canAccess('categories') && <button className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>Categorii</button>}
                 {canAccess('availability') && <button className={`tab-btn ${activeTab === 'availability' ? 'active' : ''}`} onClick={() => setActiveTab('availability')}>Disponibilitate</button>}
                 {canAccess('configurator') && <button className={`tab-btn ${activeTab === 'configurator' ? 'active' : ''}`} onClick={() => setActiveTab('configurator')}>Configurator</button>}
-                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Stocuri</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Stocuri (Live)</button>}
                 {canAccess('recipes') && <button className={`tab-btn ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => setActiveTab('recipes')}>Rețete</button>}
+
+                {/* ERP Nomenclatures */}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>Furnizori</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
+
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
                 {canAccess('requests') && <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>}
@@ -313,6 +320,18 @@ const AdminDashboard = () => {
                 {activeTab === 'stock_logs' && (
                     <div className="tab-content">
                         <StockHistory />
+                    </div>
+                )}
+                {/* SUPPLIERS TAB */}
+                {activeTab === 'suppliers' && (
+                    <div className="tab-content">
+                        <AdminSuppliers />
+                    </div>
+                )}
+                {/* INVENTORY ITEMS TAB */}
+                {activeTab === 'inventory_items' && (
+                    <div className="tab-content">
+                        <AdminInventoryItems />
                     </div>
                 )}
                 {/* DELIVERY ZONES TAB */}
