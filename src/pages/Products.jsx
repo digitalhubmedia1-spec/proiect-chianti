@@ -278,12 +278,11 @@ const Products = () => {
         return true;
     });
 
-    // Sort Logic
-    if (sortOrder === 'asc') {
-        filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
-    } else if (sortOrder === 'desc') {
-        filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
-    }
+    const productsSorted = [...filteredProducts].sort((a, b) => {
+        if (sortOrder === "asc") return a.price - b.price;
+        if (sortOrder === "desc") return b.price - a.price;
+        return 0;
+    });
 
     const handleAddToCart = (e, product) => {
         e.preventDefault(); // Prevent navigation if clicking the button inside a Link wrapper
