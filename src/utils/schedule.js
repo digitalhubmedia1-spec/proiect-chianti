@@ -17,7 +17,7 @@ export const getScheduleStatus = () => {
             isOpen: true,
             showWarning: true,
             title: "Atenție - Comenzi pentru mâine",
-            message: "Puteți plasa comanda acum, însă vă informăm că livrarea, ridicarea sau servirea se vor efectua începând cu ziua următoare (program 11:00 - 15:00)."
+            message: "Puteți plasa comanda acum, însă vă informăm că livrarea, ridicarea sau servirea se vor efectua începând cu ziua următoare (program de luni până vineri, 11:00 - 15:00)."
         };
     }
 
