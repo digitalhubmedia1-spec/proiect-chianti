@@ -9,7 +9,7 @@ import SEO from '../components/SEO';
 import './Products.css';
 
 const Products = () => {
-    const { products, categories, loading } = useMenu();
+    const { products, categories, loading, fetchDailyMenu } = useMenu();
     const [activeCategory, setActiveCategory] = useState("Toate");
     const [isOpen, setIsOpen] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
@@ -23,6 +23,34 @@ const Products = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
     const [popupContent, setPopupContent] = useState({ title: "", message: "" });
+
+    // Date Selection State
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [dailyMenuIds, setDailyMenuIds] = useState(null); // null = not loaded yet, [] = empty
+
+    const formatDate = (date) => date.toISOString().split('T')[0];
+
+    useEffect(() => {
+        const loadDailyMenu = async () => {
+            // If fetchDailyMenu is likely undefined if context wasn't updated live? 
+            // Just in case, check context update. 
+            // But we are in the same component.
+            if (fetchDailyMenu) {
+                const dateStr = formatDate(selectedDate);
+                const ids = await fetchDailyMenu(dateStr);
+                setDailyMenuIds(ids);
+            }
+        };
+        loadDailyMenu();
+    }, [selectedDate, fetchDailyMenu]);
+
+    const changeDate = (days) => {
+        const next = new Date();
+        next.setDate(new Date().getDate() + days);
+        setSelectedDate(next);
+        // If clicking today/tomorrow, switch activeCategory to 'Toate' maybe?
+        // setActiveCategory("Toate");
+    };
 
     useEffect(() => {
         const updateStatus = () => {
