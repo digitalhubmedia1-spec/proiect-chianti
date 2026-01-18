@@ -23,6 +23,7 @@ import AdminStock from './components/AdminStock';
 import AdminTransfers from './components/AdminTransfers';
 import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
+import AdminReports from './components/AdminReports';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -295,6 +296,7 @@ const AdminDashboard = () => {
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'transfers' ? 'active' : ''}`} onClick={() => setActiveTab('transfers')}>Transferuri</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'consumption' ? 'active' : ''}`} onClick={() => setActiveTab('consumption')}>Consum / Ieșiri</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_check' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_check')}>Inventar Fizic</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>Rapoarte</button>}
 
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
@@ -374,6 +376,12 @@ const AdminDashboard = () => {
                 {activeTab === 'inventory_check' && (
                     <div className="tab-content">
                         <AdminInventoryCheck />
+                    </div>
+                )}
+                {/* REPORTS TAB */}
+                {activeTab === 'reports' && (
+                    <div className="tab-content">
+                        <AdminReports />
                     </div>
                 )}
                 {/* DELIVERY ZONES TAB */}
