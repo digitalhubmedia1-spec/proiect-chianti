@@ -552,6 +552,17 @@ export const MenuProvider = ({ children }) => {
         }
     };
 
+    const fetchDailyMenu = async (dateStr) => {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+            .from('daily_menu_items')
+            .select('product_id')
+            .eq('date', dateStr);
+
+        if (error || !data) return [];
+        return data.map(item => item.product_id);
+    };
+
     const value = {
         products,
         categories,
@@ -573,7 +584,8 @@ export const MenuProvider = ({ children }) => {
         deleteConfigProduct,
         fetchRecommendations,
         addRecommendation,
-        removeRecommendation
+        removeRecommendation,
+        fetchDailyMenu
     };
 
     return (

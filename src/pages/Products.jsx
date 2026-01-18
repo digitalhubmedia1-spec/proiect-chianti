@@ -169,22 +169,47 @@ const Products = () => {
     // --- VIEW MODE: CATALOG (Existing Logic) ---
 
     // Filter logic to show ONLY delivery products
-    const deliveryCategories = categories.filter(cat => !cat.type || cat.type === 'delivery');
-    const deliveryProducts = products.filter(p => deliveryCategories.some(c => c.name === p.category) && p.is_available !== false);
+    // Filter Logic
+    let filteredProducts = products.filter(product => {
+        // 1. Delivery Check (Must NOT be catering)
+        const cat = categories.find(c => c.name === product.category);
+        if (cat?.type === 'catering') return false;
 
-    // Filter Logic based on active category
-    let filteredProducts = activeCategory === "Toate"
-        ? deliveryProducts
-        : deliveryProducts.filter(p => p.category === activeCategory || (activeCategory === "Platouri Fel Principal" && p.name.includes("Platou")));
+        // 2. Availability Check (is_available flag)
+        if (product.is_available === false) return false;
 
-    // Search Filter
-    if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredProducts = filteredProducts.filter(p =>
-            p.name.toLowerCase().includes(query) ||
-            (p.description && p.description.toLowerCase().includes(query))
-        );
-    }
+        // 3. Daily Menu Check (If configured)
+        if (dailyMenuIds !== null) {
+            const isToday = formatDate(selectedDate) === formatDate(new Date());
+            if (dailyMenuIds.length > 0) {
+                // Explicit configuration exists
+                if (!dailyMenuIds.includes(product.id)) return false;
+            } else {
+                // No configuration found
+                if (!isToday) return false; // Future empty date -> Show nothing
+                // Today empty -> Show Everything (Backup for safety)
+            }
+        }
+
+        // 4. Category Filter
+        if (activeCategory !== "Toate" && product.category !== activeCategory) {
+            // Special handling for Platouri if needed, otherwise strict
+            if (!(activeCategory === "Platouri Fel Principal" && product.name.includes("Platou"))) {
+                return false;
+            }
+        }
+
+        // 5. Search Filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            if (!product.name.toLowerCase().includes(query) &&
+                !(product.description && product.description.toLowerCase().includes(query))) {
+                return false;
+            }
+        }
+
+        return true;
+    });
 
     // Sort Logic
     if (sortOrder === 'asc') {
