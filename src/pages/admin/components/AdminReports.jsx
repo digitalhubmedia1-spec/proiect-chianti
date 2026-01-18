@@ -118,7 +118,7 @@ const AdminReports = () => {
             body = valuation.byCategory.map(c => [c.category, c.value.toFixed(2)]);
             body.push(['TOTAL', valuation.total.toFixed(2)]);
         } else if (activeReport === 'consumption') {
-            head = [['Data', 'Produs', 'Locație', 'Cantitate', 'Motiv']];
+            head = [['Data', 'Produs', 'Locatie', 'Cantitate', 'Motiv']];
             body = consumption.map(t => [
                 new Date(t.created_at).toLocaleDateString('ro-RO') + ' ' + new Date(t.created_at).toLocaleTimeString('ro-RO'),
                 t.inventory_items?.name,
@@ -127,7 +127,7 @@ const AdminReports = () => {
                 t.reason
             ]);
         } else if (activeReport === 'reception') {
-            head = [['Data', 'Produs', 'Destinație', 'Cantitate', 'Doc Ref', 'Lot']];
+            head = [['Data', 'Produs', 'Destinatie', 'Cantitate', 'Doc Ref', 'Lot']];
             body = receptionHistory.map(t => [
                 new Date(t.created_at).toLocaleDateString('ro-RO'),
                 t.inventory_items?.name,
