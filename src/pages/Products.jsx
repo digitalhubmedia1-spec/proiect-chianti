@@ -222,6 +222,9 @@ const Products = () => {
                 <div className="container">
                     <h1 className="page-title">Meniul Nostru</h1>
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
+                    <p className="current-date-header" style={{ color: '#aaa', marginTop: '5px', fontSize: '0.95rem' }}>
+                        {new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1)}, {new Date().toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </p>
 
                 </div>
             </div>

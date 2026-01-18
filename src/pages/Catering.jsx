@@ -119,6 +119,9 @@ const Catering = () => {
                 <div className="container">
                     <h1 className="page-title">Catering & Evenimente</h1>
                     <p className="page-subtitle">Platouri delicioase pentru evenimentul tău special</p>
+                    <p className="current-date-header" style={{ color: '#aaa', marginTop: '5px', fontSize: '0.95rem' }}>
+                        {new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1)}, {new Date().toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </p>
                     {!isOpen && <p className="status-closed" style={{ color: 'red', fontWeight: 'bold', marginTop: '1rem' }}>
                         COMENZI INDISPONIBILE MOMENTAN
                     </p>}
