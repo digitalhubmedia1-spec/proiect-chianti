@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle } from 'lucide-react';
@@ -83,86 +83,126 @@ const AdminRecipes = () => {
     };
 
     // --- CALCULATOR HANDLERS (FIFO Logic) ---
-    const calculateRequirements = () => {
+    const calculateRequirements = async () => {
         if (!selectedRecipeId || portions <= 0) return;
         const recipe = recipes.find(r => r.id === selectedRecipeId);
         if (!recipe) return;
 
-        const results = recipe.ingredients.map(ing => {
-            // Find ALL batches for this ingredient name
-            const batches = inventoryItems.filter(i => i.name === ing.itemName);
-
-            // Calculate total available stock from all batches
-            const totalStock = batches.reduce((sum, item) => sum + parseFloat(item.stock), 0);
-
-            const needed = parseFloat(ing.qty) * portions;
-
+        // Fetch valid batches for all ingredients involved
+        // We need to map ingredient names to Item IDs first.
+        // Assuming recipe ingredients store 'itemName'. We need to find their IDs from inventoryItems.
+        const ingredientsWithIds = recipe.ingredients.map(ing => {
+            const itemDef = inventoryItems.find(i => i.name === ing.itemName);
             return {
-                ...ing, // contains itemName, qty, unit
-                needed,
-                available: totalStock,
-                isSufficient: totalStock >= needed,
-                batches // Keep reference to batches for deduction logic
+                ...ing,
+                item_id: itemDef ? itemDef.id : null
             };
         });
+
+        const results = [];
+
+        for (const ing of ingredientsWithIds) {
+            if (!ing.item_id) {
+                results.push({
+                    itemName: ing.itemName,
+                    needed: parseFloat(ing.qty) * portions,
+                    available: 0,
+                    isSufficient: false,
+                    batches: [],
+                    unit: ing.unit,
+                    error: "Produsul nu a fost găsit în nomenclator"
+                });
+                continue;
+            }
+
+            // Fetch live batches for this item
+            const { data: batches } = await supabase
+                .from('inventory_batches')
+                .select('*')
+                .eq('item_id', ing.item_id)
+                .gt('quantity', 0)
+                .order('expiration_date', { ascending: true }); // FIFO by Expiry
+
+            const totalStock = batches ? batches.reduce((sum, b) => sum + b.quantity, 0) : 0;
+            const needed = parseFloat(ing.qty) * portions;
+
+            results.push({
+                itemName: ing.itemName,
+                item_id: ing.item_id, // Store for deduction
+                needed: needed,
+                available: totalStock,
+                isSufficient: totalStock >= needed,
+                batches: batches || [],
+                unit: ing.unit
+            });
+        }
 
         setCalculationResult(results);
     };
 
-    const handleDeductStock = () => {
+    const handleDeductStock = async () => {
         if (!calculationResult) return;
-
-        // Confirm action
         if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru ${portions} porții din stoc (FIFO)?`)) return;
 
-        const updates = [];
+        const adminName = localStorage.getItem('admin_name') || 'Admin';
 
-        // FIFO Deduction Logic
-        calculationResult.forEach(res => {
-            let remainingNeeded = res.needed;
+        try {
+            for (const res of calculationResult) {
+                let remainingNeeded = res.needed;
 
-            // Sort batches by entryDate ASC (Oldest first)
-            // If entryDate is same, maybe sort by ID or creation? We use entryDate.
-            const sortedBatches = [...res.batches].sort((a, b) => new Date(a.entryDate || a.created_at) - new Date(b.entryDate || b.created_at));
+                // Batches are already sorted by expiry (FIFO) from fetch
+                for (const batch of res.batches) {
+                    if (remainingNeeded <= 0.0001) break; // Tolerance
 
-            for (const batch of sortedBatches) {
-                if (remainingNeeded <= 0) break;
+                    const currentStock = batch.quantity;
+                    let take = 0;
 
-                const currentStock = parseFloat(batch.stock);
-                if (currentStock <= 0) continue;
+                    if (currentStock >= remainingNeeded) {
+                        take = remainingNeeded;
+                        remainingNeeded = 0;
+                    } else {
+                        take = currentStock;
+                        remainingNeeded -= currentStock;
+                    }
 
-                let deductAmount = 0;
+                    // 1. Update Batch (If reaches 0, it stays 0 and is effectively "deleted" from active view)
+                    const { error: batchErr } = await supabase
+                        .from('inventory_batches')
+                        .update({ quantity: currentStock - take })
+                        .eq('id', batch.id);
 
-                if (currentStock >= remainingNeeded) {
-                    // Batch has enough to cover remaining request
-                    deductAmount = remainingNeeded;
-                    remainingNeeded = 0;
-                } else {
-                    // Batch is partial matched, take all of it
-                    deductAmount = currentStock;
-                    remainingNeeded -= currentStock;
+                    if (batchErr) throw batchErr;
+
+                    // 2. Log Transaction (OUT)
+                    // If batch becomes 0, it's logged here as taking the full remainder.
+                    await supabase.from('inventory_transactions').insert([{
+                        transaction_type: 'OUT',
+                        batch_id: batch.id,
+                        item_id: res.item_id,
+                        quantity: take,
+                        reason: `Producție Rețetă: ${portions} x ${recipes.find(r => r.id === selectedRecipeId)?.name || 'N/A'}`,
+                        operator_name: adminName
+                    }]);
                 }
-
-                const newStock = parseFloat((currentStock - deductAmount).toFixed(4));
-                updates.push({ id: batch.id, stock: newStock });
             }
-        });
 
-        // Loop over updates and call Context function
-        // Note: In a real app this should be a batch transaction in Supabase
-        updates.forEach(up => {
-            updateStock(up.id, up.stock);
-        });
+            // 3. Log to Global Admin Logs
+            const recipeName = recipes.find(r => r.id === selectedRecipeId)?.name || 'Rețetă';
+            await supabase.from('admin_logs').insert([{
+                admin_name: adminName,
+                action: 'PRODUCTIE',
+                details: `S-au produs ${portions} porții de ${recipeName}. Stocul a fost scăzut (FIFO).`,
+                created_at: new Date().toISOString()
+            }]);
 
-        alert("Stocul a fost actualizat (FIFO)!");
-        // We need to wait a bit or just clear result, or re-calculate
-        // Since updateStock is async but we fired many keys, let's just clear for now or wait 500ms
-        setTimeout(() => {
-            // To properly reflect changes we'd need to wait for all promises but Context doesn't expose Promise.all friendly way easily here without refactor
-            // Just clearing result to force re-calc user interaction
+            alert("Stocul a fost actualizat cu succes!");
             setCalculationResult(null);
-            // Optionally trigger re-calc if we want to show updated state immediately, but simplified flow is better.
-        }, 500);
+            setPortions(1);
+            setSelectedRecipeId('');
+        } catch (error) {
+            console.error(error);
+            alert("Eroare la actualizarea stocului: " + error.message);
+        }
     };
 
     // Helper to get unique ingredient names for Select

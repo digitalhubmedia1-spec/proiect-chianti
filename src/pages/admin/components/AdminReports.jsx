@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { BarChart2, AlertOctagon, TrendingDown, DollarSign, Calendar } from 'lucide-react';
+import { BarChart2, AlertOctagon, TrendingDown, DollarSign, Calendar, Truck, FileText, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './AdminReception.css';
 
 const AdminReports = () => {
-    const [activeReport, setActiveReport] = useState('expiry'); // expiry, valuation, consumption
+    const [activeReport, setActiveReport] = useState('expiry'); // expiry, valuation, consumption, reception
     const [expiryList, setExpiryList] = useState([]);
     const [valuation, setValuation] = useState({ total: 0, byCategory: [] });
     const [consumption, setConsumption] = useState([]);
+    const [receptionHistory, setReceptionHistory] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -56,13 +59,121 @@ const AdminReports = () => {
                     .select('*, inventory_items(name, unit), locations:from_location_id(name)')
                     .eq('transaction_type', 'OUT')
                     .order('created_at', { ascending: false })
-                    .limit(50);
+                    .limit(100);
                 setConsumption(data || []);
+            }
+            else if (type === 'reception') {
+                const { data } = await supabase
+                    .from('inventory_transactions')
+                    .select('*, inventory_items(name, unit), locations:to_location_id(name)')
+                    .eq('transaction_type', 'IN')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                setReceptionHistory(data || []);
             }
         } catch (error) {
             console.error(error);
         }
         setLoading(false);
+    };
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        doc.text(`Raport ERP: ${activeReport.toUpperCase()}`, 14, 10);
+        doc.setFontSize(10);
+        doc.text(`Data generării: ${new Date().toLocaleString('ro-RO')}`, 14, 16);
+
+        let head = [];
+        let body = [];
+
+        if (activeReport === 'expiry') {
+            head = [['Produs', 'Gestiune', 'Lot', 'Expiră', 'Status']];
+            body = expiryList.map(item => [
+                item.inventory_items?.name,
+                item.locations?.name,
+                item.batch_number,
+                item.expiration_date,
+                getExpiryStatus(item.expiration_date).label
+            ]);
+        } else if (activeReport === 'valuation') {
+            head = [['Categorie', 'Valoare (RON)']];
+            body = valuation.byCategory.map(c => [c.category, c.value.toFixed(2)]);
+            body.push(['TOTAL', valuation.total.toFixed(2)]);
+        } else if (activeReport === 'consumption') {
+            head = [['Data', 'Produs', 'Locație', 'Cantitate', 'Motiv']];
+            body = consumption.map(t => [
+                new Date(t.created_at).toLocaleDateString('ro-RO'),
+                t.inventory_items?.name,
+                t.locations?.name,
+                t.quantity,
+                t.reason
+            ]);
+        } else if (activeReport === 'reception') {
+            head = [['Data', 'Produs', 'Destinație', 'Cantitate', 'Doc Ref', 'Lot']];
+            body = receptionHistory.map(t => [
+                new Date(t.created_at).toLocaleDateString('ro-RO'),
+                t.inventory_items?.name,
+                t.locations?.name,
+                t.quantity,
+                t.document_ref || '-',
+                t.batch_id || '-' // Batch ID isn't human readable, but ok for now
+            ]);
+        }
+
+        autoTable(doc, {
+            head: head,
+            body: body,
+            startY: 20
+        });
+
+        doc.save(`raport_${activeReport}_${Date.now()}.pdf`);
+    };
+
+    const exportToCSV = () => {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        let header = [];
+        let rows = [];
+
+        if (activeReport === 'expiry') {
+            header = ['Produs', 'Gestiune', 'Lot', 'Expiră', 'Status'];
+            rows = expiryList.map(item => [
+                item.inventory_items?.name,
+                item.locations?.name,
+                item.batch_number,
+                item.expiration_date,
+                getExpiryStatus(item.expiration_date).label
+            ]);
+        }
+        // ... (Implement other CSV cases similarly if needed, or stick to PDF/Excel request. CSV is simpler Excel)
+        else if (activeReport === 'valuation') {
+            header = ['Categorie', 'Valoare'];
+            rows = valuation.byCategory.map(c => [c.category, c.value.toFixed(2)]);
+        }
+        else if (activeReport === 'consumption') {
+            header = ['Data', 'Produs', 'Locatie', 'Cantitate', 'Motiv'];
+            rows = consumption.map(t => [
+                new Date(t.created_at).toLocaleDateString(), t.inventory_items?.name, t.locations?.name, t.quantity, t.reason
+            ]);
+        } else if (activeReport === 'reception') {
+            header = ['Data', 'Produs', 'Destinatie', 'Cantitate', 'Doc Ref'];
+            rows = receptionHistory.map(t => [
+                new Date(t.created_at).toLocaleDateString(), t.inventory_items?.name, t.locations?.name, t.quantity, t.document_ref
+            ]);
+        }
+
+        csvContent += header.join(",") + "\r\n";
+        rows.forEach(rowArr => {
+            const row = rowArr.map(s => `"${s}"`).join(",");
+            csvContent += row + "\r\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `raport_${activeReport}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const getExpiryStatus = (dateStr) => {
@@ -79,7 +190,7 @@ const AdminReports = () => {
                 <BarChart2 size={32} className="text-primary" /> Rapoarte & Analize
             </h2>
 
-            <div className="stock-filters-bar" style={{ gap: '1rem', marginBottom: '2rem' }}>
+            <div className="stock-filters-bar" style={{ gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <button
                     className={`tab-btn ${activeReport === 'expiry' ? 'active' : ''}`}
                     onClick={() => setActiveReport('expiry')}
@@ -98,6 +209,18 @@ const AdminReports = () => {
                 >
                     <TrendingDown size={18} style={{ marginRight: '8px' }} /> Istoric Consum
                 </button>
+                <button className={`tab-btn ${activeReport === 'reception' ? 'active' : ''}`} onClick={() => setActiveReport('reception')}>
+                    <Truck size={18} style={{ marginRight: '8px' }} /> Istoric Recepții
+                </button>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-outline-primary" onClick={exportToCSV} title="Export CSV (Excel)">
+                        <FileText size={18} /> CSV
+                    </button>
+                    <button className="btn btn-primary" onClick={exportToPDF} title="Export PDF">
+                        <Download size={18} /> PDF
+                    </button>
+                </div>
             </div>
 
             <div className="reception-card">
@@ -157,7 +280,7 @@ const AdminReports = () => {
 
                 {!loading && activeReport === 'consumption' && (
                     <div className="invoice-lines-section">
-                        <h3 style={{ marginBottom: '1rem' }}>Ultimele 50 Ieșiri din Stoc</h3>
+                        <h3 style={{ marginBottom: '1rem' }}>Istoric Consum / Ieșiri</h3>
                         <div className="lines-header" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
                             <div>Data</div>
                             <div>Produs</div>
@@ -167,11 +290,33 @@ const AdminReports = () => {
                         </div>
                         {consumption.map(txn => (
                             <div key={txn.id} className="line-row" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
-                                <div>{new Date(txn.created_at).toLocaleDateString('ro-RO')}</div>
+                                <div>{new Date(txn.created_at).toLocaleDateString('ro-RO')} {new Date(txn.created_at).toLocaleTimeString('ro-RO')}</div>
                                 <div style={{ fontWeight: '600' }}>{txn.inventory_items?.name}</div>
                                 <div>{txn.locations?.name}</div>
                                 <div style={{ color: '#dc2626', fontWeight: 'bold' }}>-{txn.quantity} {txn.inventory_items?.unit}</div>
                                 <div>{txn.reason}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {!loading && activeReport === 'reception' && (
+                    <div className="invoice-lines-section">
+                        <h3 style={{ marginBottom: '1rem' }}>Istoric Recepții (Intrări)</h3>
+                        <div className="lines-header" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
+                            <div>Data</div>
+                            <div>Produs</div>
+                            <div>Destinație</div>
+                            <div>Cantitate</div>
+                            <div>Referință</div>
+                        </div>
+                        {receptionHistory.map(txn => (
+                            <div key={txn.id} className="line-row" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
+                                <div>{new Date(txn.created_at).toLocaleDateString('ro-RO')}</div>
+                                <div style={{ fontWeight: '600' }}>{txn.inventory_items?.name}</div>
+                                <div>{txn.locations?.name}</div>
+                                <div style={{ color: '#16a34a', fontWeight: 'bold' }}>+{txn.quantity} {txn.inventory_items?.unit}</div>
+                                <div>{txn.document_ref || '-'}</div>
                             </div>
                         ))}
                     </div>

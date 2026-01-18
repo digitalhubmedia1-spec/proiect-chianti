@@ -96,6 +96,15 @@ const AdminConsumption = () => {
                     operator_name: localStorage.getItem('admin_name')
                 }]);
             }
+
+            // Log to Global Logs
+            await supabase.from('admin_logs').insert([{
+                admin_name: localStorage.getItem('admin_name') || 'Admin',
+                action: 'CONSUM',
+                details: `Consum/Ieșire din gestiunea ${locationId}: ${rows.length} linii.`,
+                created_at: new Date().toISOString()
+            }]);
+
             alert("Consum înregistrat!");
             setRows([{ batch_id: '', quantity: '', reason: 'Consum Producție (Manual)', available: 0, unit: '' }]);
             fetchStock(locationId);

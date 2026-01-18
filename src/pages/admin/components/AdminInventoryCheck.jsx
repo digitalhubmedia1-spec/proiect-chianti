@@ -75,6 +75,14 @@ const AdminInventoryCheck = () => {
                     reason: 'Inventar Fizic',
                     operator_name: localStorage.getItem('admin_name')
                 }]);
+
+                // Global Log
+                await supabase.from('admin_logs').insert([{
+                    admin_name: localStorage.getItem('admin_name') || 'Admin',
+                    action: 'INVENTAR',
+                    details: `Corecție stoc pentru ${adj.inventory_items?.name}: ${adj.diff > 0 ? '+' : ''}${adj.diff} ${adj.inventory_items?.unit}. Motiv: Inventar Fizic`,
+                    created_at: new Date().toISOString()
+                }]);
             }
             alert("Inventar reglat cu succes!");
             fetchInventory(locationId);

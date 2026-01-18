@@ -179,8 +179,21 @@ const AdminTransfers = () => {
                 if (logError) throw logError;
             }
 
+            // Global Log
+            await supabase.from('admin_logs').insert([{
+                admin_name: localStorage.getItem('admin_name') || 'Admin',
+                action: 'TRANSFER',
+                details: `Transfer ${rows.length} linii din Gestiunea ${transferData.from_location_id} în ${transferData.to_location_id}`,
+                created_at: new Date().toISOString()
+            }]);
+
             alert("Transfer realizat cu succes!");
-            setTransferData({ ...transferData, document_ref: '' });
+            setTransferData({
+                from_location_id: '',
+                to_location_id: '',
+                transfer_date: new Date().toISOString().split('T')[0],
+                document_ref: ''
+            });
             setRows([{ batch_id: '', item_name: '', quantity: '', available: 0, unit: '', expiry: '' }]);
             fetchSourceStock(transferData.from_location_id); // Refresh source
 
