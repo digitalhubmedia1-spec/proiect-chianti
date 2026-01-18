@@ -287,10 +287,9 @@ const Products = () => {
                         <select
                             value={formatDate(selectedDate)}
                             onChange={(e) => {
-                                const newDate = new Date(e.target.value);
-                                // Adjust for timezone offset to ensure we get the correct local date
-                                const offset = newDate.getTimezoneOffset();
-                                newDate.setMinutes(newDate.getMinutes() + offset);
+                                // Create date from YYYY-MM-DD string, setting it to noon to avoid timezone rollover
+                                const [y, m, d] = e.target.value.split('-').map(Number);
+                                const newDate = new Date(y, m - 1, d, 12, 0, 0);
                                 setSelectedDate(newDate);
                             }}
                             style={{
@@ -313,8 +312,15 @@ const Products = () => {
                                 const dateStr = date.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
                                 const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' });
                                 const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+                                // Proper value formatting
+                                const y = date.getFullYear();
+                                const m = String(date.getMonth() + 1).padStart(2, '0');
+                                const d = String(date.getDate()).padStart(2, '0');
+                                const valueStr = `${y}-${m}-${d}`;
+
                                 return (
-                                    <option key={i} value={date.toISOString().split('T')[0]}>
+                                    <option key={i} value={valueStr}>
                                         {dayNameCap} - {dateStr}
                                     </option>
                                 );
