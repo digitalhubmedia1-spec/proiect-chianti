@@ -20,6 +20,9 @@ import AdminSuppliers from './components/AdminSuppliers';
 import AdminInventoryItems from './components/AdminInventoryItems';
 import AdminReception from './components/AdminReception';
 import AdminStock from './components/AdminStock';
+import AdminTransfers from './components/AdminTransfers';
+import AdminConsumption from './components/AdminConsumption';
+import AdminInventoryCheck from './components/AdminInventoryCheck';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -289,6 +292,9 @@ const AdminDashboard = () => {
                 {/* ERP Operations */}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'reception' ? 'active' : ''}`} onClick={() => setActiveTab('reception')}>Recepție (NIR)</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'stock_live' ? 'active' : ''}`} onClick={() => setActiveTab('stock_live')}>Stocuri (Live)</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'transfers' ? 'active' : ''}`} onClick={() => setActiveTab('transfers')}>Transferuri</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'consumption' ? 'active' : ''}`} onClick={() => setActiveTab('consumption')}>Consum / Ieșiri</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_check' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_check')}>Inventar Fizic</button>}
 
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
@@ -350,6 +356,24 @@ const AdminDashboard = () => {
                 {activeTab === 'stock_live' && (
                     <div className="tab-content">
                         <AdminStock />
+                    </div>
+                )}
+                {/* TRANSFERS TAB */}
+                {activeTab === 'transfers' && (
+                    <div className="tab-content">
+                        <AdminTransfers />
+                    </div>
+                )}
+                {/* CONSUMPTION TAB */}
+                {activeTab === 'consumption' && (
+                    <div className="tab-content">
+                        <AdminConsumption />
+                    </div>
+                )}
+                {/* INVENTORY CHECK TAB */}
+                {activeTab === 'inventory_check' && (
+                    <div className="tab-content">
+                        <AdminInventoryCheck />
                     </div>
                 )}
                 {/* DELIVERY ZONES TAB */}
