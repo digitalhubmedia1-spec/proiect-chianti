@@ -30,8 +30,8 @@ const ProductDetails = () => {
             fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
 
             // Fetch Stock
-            const today = new Date().toISOString().split('T')[0];
-            fetchDailyMenu(today).then(data => {
+            const targetDate = dateParam || new Date().toISOString().split('T')[0];
+            fetchDailyMenu(targetDate).then(data => {
                 const item = data.find(i => i.id === foundProduct.id);
                 if (item && item.stock !== undefined) {
                     setStock(item.stock);
@@ -41,7 +41,7 @@ const ProductDetails = () => {
         } else {
             navigate('/produse');
         }
-    }, [id, navigate, products, loading, fetchRecommendations, fetchDailyMenu]);
+    }, [id, navigate, products, loading, fetchRecommendations, fetchDailyMenu, dateParam]);
 
     if (loading || !product) return <div className="loading">Se încarcă...</div>;
 

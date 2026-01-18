@@ -556,11 +556,11 @@ export const MenuProvider = ({ children }) => {
         if (!supabase) return [];
         const { data, error } = await supabase
             .from('daily_menu_items')
-            .select('product_id')
+            .select('product_id, stock')
             .eq('date', dateStr);
 
         if (error || !data) return [];
-        return data.map(item => item.product_id);
+        return data.map(item => ({ id: item.product_id, stock: item.stock }));
     };
 
     const value = {
