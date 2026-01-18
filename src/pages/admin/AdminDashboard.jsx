@@ -18,6 +18,7 @@ import AdminDelivery from './components/AdminDelivery';
 import AdminMenuPlanner from './components/AdminMenuPlanner';
 import AdminSuppliers from './components/AdminSuppliers';
 import AdminInventoryItems from './components/AdminInventoryItems';
+import AdminReception from './components/AdminReception';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -284,6 +285,9 @@ const AdminDashboard = () => {
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>Furnizori</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
 
+                {/* ERP Operations */}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'reception' ? 'active' : ''}`} onClick={() => setActiveTab('reception')}>Recepție (NIR)</button>}
+
                 {canAccess('blog') && <button className={`tab-btn ${activeTab === 'blog' ? 'active' : ''}`} onClick={() => setActiveTab('blog')}>Blog</button>}
                 {canAccess('messages') && <button className={`tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>Mesaje Contact</button>}
                 {canAccess('requests') && <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>Cereri</button>}
@@ -332,6 +336,12 @@ const AdminDashboard = () => {
                 {activeTab === 'inventory_items' && (
                     <div className="tab-content">
                         <AdminInventoryItems />
+                    </div>
+                )}
+                {/* RECEPTION (NIR) TAB */}
+                {activeTab === 'reception' && (
+                    <div className="tab-content">
+                        <AdminReception />
                     </div>
                 )}
                 {/* DELIVERY ZONES TAB */}
