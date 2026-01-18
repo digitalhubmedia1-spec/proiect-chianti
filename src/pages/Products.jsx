@@ -276,34 +276,45 @@ const Products = () => {
                     <h1 className="page-title">Meniul Nostru</h1>
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
 
-                    {/* Date Navigation */}
-                    <div className="date-tabs" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
-                        <button
-                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date()) ? 'active' : ''}`}
-                            onClick={() => setSelectedDate(new Date())}
-                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date()) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date()) ? 'white' : '#333', cursor: 'pointer' }}
+                    {/* Date Navigation Dropdown */}
+                    <div className="date-selector-container" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
+                        <select
+                            value={formatDate(selectedDate)}
+                            onChange={(e) => {
+                                const newDate = new Date(e.target.value);
+                                // Adjust for timezone offset to ensure we get the correct local date
+                                const offset = newDate.getTimezoneOffset();
+                                newDate.setMinutes(newDate.getMinutes() + offset);
+                                setSelectedDate(newDate);
+                            }}
+                            style={{
+                                padding: '10px 20px',
+                                fontSize: '1rem',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                background: 'white',
+                                color: '#333',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                minWidth: '250px',
+                                textAlign: 'center'
+                            }}
                         >
-                            Azi
-                        </button>
-                        <button
-                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'active' : ''}`}
-                            onClick={() => changeDate(1)}
-                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'white' : '#333', cursor: 'pointer' }}
-                        >
-                            Mâine
-                        </button>
-                        <button
-                            className={`date-tab-btn ${formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? 'active' : ''}`}
-                            onClick={() => changeDate(2)}
-                            style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #ccc', background: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? '#800020' : 'white', color: formatDate(selectedDate) === formatDate(new Date(new Date().setDate(new Date().getDate() + 2))) ? 'white' : '#333', cursor: 'pointer' }}
-                        >
-                            {new Date(new Date().setDate(new Date().getDate() + 2)).toLocaleDateString('ro-RO', { weekday: 'long' })}
-                        </button>
+                            {[...Array(7)].map((_, i) => {
+                                const date = new Date();
+                                date.setDate(date.getDate() + i);
+                                const dateStr = date.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' });
+                                const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+                                return (
+                                    <option key={i} value={date.toISOString().split('T')[0]}>
+                                        {dayNameCap} - {dateStr}
+                                    </option>
+                                );
+                            })}
+                        </select>
                     </div>
-
-                    <p className="current-date-header" style={{ color: '#aaa', marginTop: '10px', fontSize: '1rem', fontWeight: 'bold' }}>
-                        Meniu pentru: {selectedDate.toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + selectedDate.toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1)}, {selectedDate.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                    </p>
 
                 </div>
             </div>
