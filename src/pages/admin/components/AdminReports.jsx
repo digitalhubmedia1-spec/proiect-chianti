@@ -79,9 +79,27 @@ const AdminReports = () => {
 
     const exportToPDF = () => {
         const doc = new jsPDF();
-        doc.text(`Raport ERP: ${activeReport.toUpperCase()}`, 14, 10);
+
+        // --- Header Style ---
+        // Brand Color: #990000 (RGB: 153, 0, 0)
+        doc.setFillColor(153, 0, 0);
+        doc.rect(0, 0, 210, 20, 'F'); // Top red bar
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text("CHIANTI - SISTEM ERP", 14, 13);
+
+        // --- Report Info ---
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(`RAPORT: ${activeReport.toUpperCase().replace('_', ' ')}`, 14, 35);
+
         doc.setFontSize(10);
-        doc.text(`Data generării: ${new Date().toLocaleString('ro-RO')}`, 14, 16);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Generat la: ${new Date().toLocaleString('ro-RO')}`, 14, 42);
+        doc.text(`Operator: ${localStorage.getItem('admin_name') || 'Admin'}`, 14, 47);
 
         let head = [];
         let body = [];
@@ -102,10 +120,10 @@ const AdminReports = () => {
         } else if (activeReport === 'consumption') {
             head = [['Data', 'Produs', 'Locație', 'Cantitate', 'Motiv']];
             body = consumption.map(t => [
-                new Date(t.created_at).toLocaleDateString('ro-RO'),
+                new Date(t.created_at).toLocaleDateString('ro-RO') + ' ' + new Date(t.created_at).toLocaleTimeString('ro-RO'),
                 t.inventory_items?.name,
                 t.locations?.name,
-                t.quantity,
+                t.quantity + ' ' + (t.inventory_items?.unit || ''),
                 t.reason
             ]);
         } else if (activeReport === 'reception') {
@@ -114,16 +132,40 @@ const AdminReports = () => {
                 new Date(t.created_at).toLocaleDateString('ro-RO'),
                 t.inventory_items?.name,
                 t.locations?.name,
-                t.quantity,
+                t.quantity + ' ' + (t.inventory_items?.unit || ''),
                 t.document_ref || '-',
-                t.batch_id || '-' // Batch ID isn't human readable, but ok for now
+                t.batch_id || '-'
             ]);
         }
 
+        // --- Table ---
         autoTable(doc, {
             head: head,
             body: body,
-            startY: 20
+            startY: 55,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [153, 0, 0],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            alternateRowStyles: {
+                fillColor: [249, 250, 251]
+            },
+            // Footer with page numbers
+            didDrawPage: function (data) {
+                // Footer
+                const str = 'Pagina ' + doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                const pageSize = doc.internal.pageSize;
+                const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+                doc.text(str, data.settings.margin.left, pageHeight - 10);
+            }
         });
 
         doc.save(`raport_${activeReport}_${Date.now()}.pdf`);

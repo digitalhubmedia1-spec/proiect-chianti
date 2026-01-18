@@ -118,7 +118,7 @@ const AdminInventoryItems = () => {
                             whiteSpace: 'nowrap',
                             borderRadius: '20px',
                             border: '1px solid #cbd5e1',
-                            background: activeCategory === cat.id ? '#e11d48' : 'white',
+                            background: activeCategory === cat.id ? '#990000' : 'white',
                             color: activeCategory === cat.id ? 'white' : '#64748b',
                             cursor: 'pointer',
                             transition: 'all 0.2s'
@@ -144,7 +144,7 @@ const AdminInventoryItems = () => {
                 <button
                     onClick={handleAdd}
                     className="btn-primary"
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px', borderRadius: '8px', background: '#e11d48', color: 'white', border: 'none', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 24px', borderRadius: '8px', background: '#990000', color: 'white', border: 'none', cursor: 'pointer' }}
                 >
                     <Plus size={18} /> Adaugă Articol
                 </button>
@@ -252,7 +252,7 @@ const AdminInventoryItems = () => {
 
                             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                 <button type="button" onClick={() => setIsEditing(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Anulează</button>
-                                <button type="submit" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#e11d48', color: 'white', cursor: 'pointer' }}>Salvează</button>
+                                <button type="submit" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#990000', color: 'white', cursor: 'pointer' }}>Salvează</button>
                             </div>
                         </form>
                     </div>
