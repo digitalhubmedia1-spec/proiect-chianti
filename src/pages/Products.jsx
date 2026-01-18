@@ -465,18 +465,9 @@ const Products = () => {
                     <div className="search-filter-bar" style={{ display: 'none' }}> {/* Keeping existing sort box structure but let's just insert debug before it for visibility */}
                     </div>
 
-                    {/* DEBUG PANEL - REMOVE LATER */}
-                    <div style={{ background: '#fff', border: '2px dashed red', padding: '10px', marginBottom: '20px', color: 'red' }}>
-                        <h4>DEBUG INFO</h4>
-                        <p><strong>Selected Date Object:</strong> {selectedDate.toString()}</p>
-                        <p><strong>Formatted Date for API:</strong> {formatDate(selectedDate)}</p>
-                        <p><strong>Daily Menu Item Count:</strong> {dailyMenuData ? dailyMenuData.length : 'null'}</p>
-                        <p><strong>Daily Menu IDs:</strong> {dailyMenuData ? dailyMenuData.map(i => i.id).join(', ') : 'loading...'}</p>
-                    </div>
-
                     <div className="products-grid">
-                        {filteredProducts.length > 0 ? (
-                            filteredProducts.map(product => {
+                        {productsSorted.length > 0 ? (
+                            productsSorted.map(product => {
                                 let stock = dailyMenuMap[product.id];
                                 if (stock !== null && stock !== undefined) stock = parseInt(stock);
 
