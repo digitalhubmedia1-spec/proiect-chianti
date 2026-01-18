@@ -119,8 +119,28 @@ const AdminDelivery = () => {
                             min="0"
                         />
                     </div>
-                    <button type="submit" className="action-btn btn-view" style={{ backgroundColor: '#16a34a', color: 'white', height: '42px' }}>
-                        <Plus size={18} /> Adaugă
+                    <button
+                        type="submit"
+                        style={{
+                            backgroundColor: '#16a34a',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0 24px',
+                            height: '42px',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+                    >
+                        <Plus size={18} /> Adaugă Zonă
                     </button>
                 </form>
             </div>
