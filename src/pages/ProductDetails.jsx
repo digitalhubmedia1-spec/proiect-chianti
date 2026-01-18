@@ -10,12 +10,13 @@ const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { products, loading, fetchRecommendations } = useMenu();
+    const { products, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [isOpen, setIsOpen] = useState(true);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [stock, setStock] = useState(null); // null = unlimited/unknown
 
     const [activeImage, setActiveImage] = useState('');
 
@@ -25,21 +26,35 @@ const ProductDetails = () => {
         const foundProduct = products.find(p => p.id === parseInt(id));
         if (foundProduct) {
             setProduct(foundProduct);
-            setActiveImage(foundProduct.image); // Default to main image
-            // Fetch recommendations
+            setActiveImage(foundProduct.image);
             fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
+
+            // Fetch Stock
+            const today = new Date().toISOString().split('T')[0];
+            fetchDailyMenu(today).then(data => {
+                const item = data.find(i => i.id === foundProduct.id);
+                if (item && item.stock !== undefined) {
+                    setStock(item.stock);
+                }
+            });
+
         } else {
             navigate('/produse');
         }
-    }, [id, navigate, products, loading]);
+    }, [id, navigate, products, loading, fetchRecommendations, fetchDailyMenu]);
 
     if (loading || !product) return <div className="loading">Se încarcă...</div>;
 
     const handleAddToCart = () => {
+        if (stock !== null && stock === 0) {
+            alert('Produsul nu mai este disponibil.');
+            return;
+        }
         addToCart(product, quantity);
-        // Optional: show toast/notification
         alert('Produs adăugat în coș!');
     };
+
+    const isOutOfStock = stock !== null && stock === 0;
 
     const openImageModal = () => setIsImageModalOpen(true);
     const closeImageModal = () => setIsImageModalOpen(false);
@@ -55,8 +70,25 @@ const ProductDetails = () => {
 
             <div className="product-details-grid">
                 <div className="product-image-section">
-                    <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in' }}>
-                        <img src={activeImage || product.image} alt={product.name} />
+                    <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in', position: 'relative' }}>
+                        {stock !== null && stock <= 10 && stock > 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                background: '#ef4444',
+                                color: 'white',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                fontSize: '0.9rem',
+                                fontWeight: 'bold',
+                                zIndex: 10,
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                            }}>
+                                Doar {stock} porții rămase
+                            </div>
+                        )}
+                        <img src={activeImage || product.image} alt={product.name} style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
                     </div>
                     {/* Gallery Thumbnails */}
                     {allImages.length > 1 && (
@@ -84,22 +116,47 @@ const ProductDetails = () => {
                     <div className="product-meta">
                         <p><strong>Gramaj:</strong> {product.weight}</p>
                         <p><strong>Ingrediente:</strong> {product.ingredients}</p>
+                        {stock !== null && (
+                            <p style={{ color: stock > 0 ? '#16a34a' : '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>
+                                {stock > 0 ? `Stoc disponibil: ${stock} porții` : 'Stoc Epuizat'}
+                            </p>
+                        )}
                     </div>
 
                     <div className="add-to-cart-section">
-                        <div className="qty-selector">
-                            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="qty-btn"><Minus size={16} /></button>
+                        <div className="qty-selector" style={{ opacity: isOutOfStock ? 0.5 : 1 }}>
+                            <button
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="qty-btn"
+                                disabled={isOutOfStock}
+                            >
+                                <Minus size={16} />
+                            </button>
                             <span className="qty-value">{quantity}</span>
-                            <button onClick={() => setQuantity(quantity + 1)} className="qty-btn"><Plus size={16} /></button>
+                            <button
+                                onClick={() => {
+                                    if (stock !== null && quantity >= stock) return;
+                                    setQuantity(quantity + 1);
+                                }}
+                                className="qty-btn"
+                                disabled={isOutOfStock || (stock !== null && quantity >= stock)}
+                            >
+                                <Plus size={16} />
+                            </button>
                         </div>
                         <button
                             onClick={handleAddToCart}
                             className="btn btn-primary btn-add-large"
-                            disabled={!isOpen}
-                            title={!isOpen ? "Restaurantul este închis." : ""}
-                            style={{ opacity: !isOpen ? 0.5 : 1, cursor: !isOpen ? 'not-allowed' : 'pointer' }}
+                            disabled={!isOpen || isOutOfStock}
+                            title={!isOpen ? "Restaurantul este închis." : isOutOfStock ? "Produs indisponibil" : ""}
+                            style={{
+                                opacity: !isOpen || isOutOfStock ? 0.5 : 1,
+                                cursor: !isOpen || isOutOfStock ? 'not-allowed' : 'pointer',
+                                background: isOutOfStock ? '#94a3b8' : undefined,
+                                borderColor: isOutOfStock ? '#94a3b8' : undefined
+                            }}
                         >
-                            <ShoppingCart size={20} /> {isOpen ? "Adaugă în Coș" : "Indisponibil"}
+                            <ShoppingCart size={20} /> {isOutOfStock ? "Stoc Epuizat" : (isOpen ? "Adaugă în Coș" : "Indisponibil")}
                         </button>
                     </div>
                 </div>
