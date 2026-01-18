@@ -157,19 +157,27 @@ const Checkout = () => {
     const discountAmount = discount ? (cartTotal * discount.percent / 100) : 0;
     const finalTotal = (cartTotal - discountAmount) + deliveryCost;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Skip open check for Catering (usually pre-ordered) or check specific logic?
-        // User requested check logic before, but catering works differently (48h advance).
-        // Let's assume standard check applies for now unless it breaks assumptions.
-        // Actually, for catering "48h before", the restaurant might be closed NOW but open THEN.
-        // However, keeping simple logic:
+        const finalTotal = (cartTotal - discountAmount) + deliveryCost;
 
+        // 1. Decrement Stock
+        try {
+            if (supabase) {
+                const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+                const stockItems = {};
+                cartItems.forEach(item => {
+                    stockItems[item.id] = (stockItems[item.id] || 0) + item.quantity;
+                });
 
-        const finalTotal = cartTotal + deliveryCost;
+                await supabase.rpc('decrement_stock', { p_date: today, p_items: stockItems });
+            }
+        } catch (err) {
+            console.error("Error decrementing stock:", err);
+        }
 
-        // 1. Generate Invoice (Auto-download)
+        // 2. Generate Invoice (Auto-download)
         try {
             generateInvoice(new Date(), formData, cartItems, finalTotal);
         } catch (error) {
@@ -177,18 +185,18 @@ const Checkout = () => {
             alert(`Eroare la generarea facturii: ${error.message}`);
         }
 
-        // 2. Add Order to Admin System
-        addOrder({
+        // 3. Add Order to Admin System
+        await addOrder({
             customer: formData,
             items: cartItems,
-            finalTotal: finalTotal, // Store full total
+            finalTotal: finalTotal,
             subtotal: cartTotal,
             deliveryCost: deliveryCost,
             isCatering: hasCateringItems,
             discount: discount ? { code: discount.code, amount: discountAmount, percent: discount.percent } : null
         });
 
-        // 3. Clear Cart & Redirect
+        // 4. Clear Cart & Redirect
         alert('Comandă plasată cu succes! Factura se va descărca automat.');
         clearCart();
         navigate('/');
