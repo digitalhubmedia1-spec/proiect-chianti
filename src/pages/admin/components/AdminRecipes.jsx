@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
-import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen } from 'lucide-react';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
