@@ -301,6 +301,7 @@ const AdminDashboard = () => {
 
                 {/* ERP Nomenclatures */}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>Furnizori</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => setActiveTab('locations')}>Gestiuni</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
 
                 {/* ERP Operations */}
@@ -593,13 +594,6 @@ const AdminDashboard = () => {
                                 style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
                                 <ClipboardList size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Inventar Fizic
-                            </button>
-                            <button
-                                className={`btn ${activeTabType === 'locations' ? 'btn-primary' : 'btn-outline-primary'}`}
-                                onClick={() => setActiveTabType('locations')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
-                            >
-                                <MapPin size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Gestiuni
                             </button>
                             <button
                                 className={`btn ${activeTabType === 'reports' ? 'btn-primary' : 'btn-outline-primary'}`}
