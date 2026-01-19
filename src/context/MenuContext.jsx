@@ -220,7 +220,9 @@ export const MenuProvider = ({ children }) => {
     const toggleCategoryVisibility = async (id) => {
         const cat = categories.find(c => c.id === id);
         if (cat) {
-            await updateCategory(id, { is_visible: !cat.is_visible });
+            // Treat undefined/null as true (visible). So valid toggle is: if false->true, else->false
+            const nextState = cat.is_visible === false ? true : false;
+            await updateCategory(id, { is_visible: nextState });
         }
     };
 

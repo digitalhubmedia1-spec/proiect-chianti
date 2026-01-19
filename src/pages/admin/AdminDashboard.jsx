@@ -22,7 +22,7 @@ import AdminTransfers from './components/AdminTransfers';
 import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -608,9 +608,19 @@ const AdminDashboard = () => {
 
                                 const renderNode = (node, level = 0) => (
                                     <div key={node.id} style={{ marginBottom: '0.5rem' }}>
-                                        <div className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: `${level * 2}rem`, borderLeft: level > 0 ? '2px solid #ddd' : 'none', paddingLeft: level > 0 ? '1rem' : '0' }}>
-                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column' }}>
-                                                {/* Sort buttons only for roots or same parent siblings? Simplified to roots/flat for now or disabled for complexity */}
+                                        <div className="category-item" style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '1rem',
+                                            marginLeft: `${level * 2}rem`,
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            background: level > 0 ? '#f8fafc' : 'white',
+                                            border: '1px solid #e2e8f0',
+                                            borderLeft: level > 0 ? '4px solid #990000' : '1px solid #e2e8f0'
+                                        }}>
+                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '24px' }}>
+                                                {level > 0 && <CornerDownRight size={20} color="#94a3b8" />}
                                             </div>
 
                                             <div className="cat-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
