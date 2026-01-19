@@ -63,11 +63,23 @@ const AdminDashboard = () => {
 
     const canAccess = (tab) => {
         if (!adminRole) return false;
-        if (adminRole === 'admin_app') return true;
+        if (adminRole === 'admin_app') return true; // Super admin
 
-        if (adminRole === 'operator') {
-            return true;
+        if (adminRole === 'contabil') {
+            // Contabil needs reports, logs, inventory checks, suppliers, but maybe not products editing?
+            // Giving broad access similar to operator but can be refined.
+            // Allowed: Orders, Reports, Logs, Suppliers, Inventory, Locations
+            const allowed = ['orders', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
+            return allowed.includes(tab) || tab === 'inventory';
         }
+
+        if (adminRole === 'achizitor') {
+            // Achizitor needs procurement flow
+            // Allowed: Inventory stuff
+            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations'];
+            return allowed.includes(tab) || tab === 'inventory';
+        }
+
         if (adminRole === 'operator') {
             return true;
         }

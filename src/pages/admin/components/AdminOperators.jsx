@@ -72,6 +72,8 @@ const AdminOperators = () => {
             case 'admin_app': return 'Administrator Aplicație';
             case 'operator': return 'Operator';
             case 'chef': return 'Bucătar';
+            case 'contabil': return 'Contabil';
+            case 'achizitor': return 'Achizitor';
             default: return role;
         }
     };
@@ -167,8 +169,10 @@ const AdminOperators = () => {
                 <h4>ℹ️ Informații Roluri</h4>
                 <ul>
                     <li><strong>Administrator Aplicație:</strong> Acces total. Nu poate fi șters sau editat din panou.</li>
-                    <li><strong>Operator:</strong> Acces la Produse, Comenzi, Categorii, etc. Poate modifica numele contului său.</li>
-                    <li><strong>Bucătar:</strong> Acces strict limitat la secțiunea "Comenzi" pentru a vedea ce trebuie gătit.</li>
+                    <li><strong>Operator:</strong> Acces general (Comenzi, Produse, Categorii).</li>
+                    <li><strong>Contabil:</strong> Acces la Rapoarte, Stocuri, Loguri, Inventar.</li>
+                    <li><strong>Achizitor:</strong> Acces la Furnizori, Recepții, Stocuri, Transferuri.</li>
+                    <li><strong>Bucătar:</strong> Acces strict limitat la secțiunea "Comenzi".</li>
                 </ul>
             </div>
         </div>
