@@ -27,10 +27,13 @@ const AdminRecipes = () => {
     const openModal = (recipe = null) => {
         if (recipe) {
             setEditingId(recipe.id);
-            setRecipeForm(recipe);
+            setRecipeForm({
+                ...recipe,
+                preparation_method: recipe.preparation_method || ''
+            });
         } else {
             setEditingId(null);
-            setRecipeForm({ name: '', ingredients: [] });
+            setRecipeForm({ name: '', ingredients: [], preparation_method: '' });
         }
         setIsModalOpen(true);
     };
@@ -72,7 +75,8 @@ const AdminRecipes = () => {
             ingredients: validIngredients.map(ing => ({
                 ...ing,
                 itemName: ing.itemName.toUpperCase()
-            }))
+            })),
+            preparation_method: recipeForm.preparation_method
         };
 
         if (editingId) {
@@ -100,6 +104,11 @@ const AdminRecipes = () => {
             };
         });
 
+        // Filter out those without matching items in inventory? Or show error?
+        // We'll proceed with what matches, warn about others.
+        // Actually, let's just use what we have.
+
+        // Fetch batches for each item
         const results = [];
 
         for (const ing of ingredientsWithIds) {
@@ -107,34 +116,36 @@ const AdminRecipes = () => {
                 results.push({
                     itemName: ing.itemName,
                     needed: parseFloat(ing.qty) * portions,
-                    available: 0,
-                    isSufficient: false,
-                    batches: [],
                     unit: ing.unit,
-                    error: "Produsul nu a fost găsit în nomenclator"
+                    available: 0,
+                    batches: [],
+                    isSufficient: false,
+                    error: 'Nomenclator lipsă'
                 });
                 continue;
             }
 
-            // Fetch live batches for this item
+            const neededTotal = parseFloat(ing.qty) * portions;
+
+            // Fetch batches FIFO
             const { data: batches } = await supabase
                 .from('inventory_batches')
                 .select('*')
                 .eq('item_id', ing.item_id)
                 .gt('quantity', 0)
-                .order('expiration_date', { ascending: true }); // FIFO by Expiry
+                .order('expiration_date', { ascending: true }) // FIFO
+                .order('created_at', { ascending: true });
 
-            const totalStock = batches ? batches.reduce((sum, b) => sum + b.quantity, 0) : 0;
-            const needed = parseFloat(ing.qty) * portions;
+            const totalAvailable = batches ? batches.reduce((acc, b) => acc + b.quantity, 0) : 0;
 
             results.push({
                 itemName: ing.itemName,
-                item_id: ing.item_id, // Store for deduction
-                needed: needed,
-                available: totalStock,
-                isSufficient: totalStock >= needed,
+                item_id: ing.item_id,
+                needed: neededTotal,
+                unit: ing.unit,
+                available: totalAvailable,
                 batches: batches || [],
-                unit: ing.unit
+                isSufficient: totalAvailable >= neededTotal
             });
         }
 
@@ -142,7 +153,7 @@ const AdminRecipes = () => {
     };
 
     const handleDeductStock = async () => {
-        if (!calculationResult) return;
+        if (!calculationResult || !selectedRecipeId) return;
         if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru ${portions} porții din stoc (FIFO)?`)) return;
 
         const adminName = localStorage.getItem('admin_name') || 'Admin';
@@ -246,12 +257,20 @@ const AdminRecipes = () => {
                                         <button className="btn-icon btn-delete" onClick={() => deleteRecipe(recipe.id)}><Trash2 size={16} /></button>
                                     </div>
                                 </div>
-                                <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: '#64748b' }}>
+                                <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>
                                     {recipe.ingredients.slice(0, 3).map((ing, i) => (
                                         <li key={i}>• {ing.itemName || 'Nume lipsă'} ({ing.qty} {ing.unit})</li>
                                     ))}
                                     {recipe.ingredients.length > 3 && <li>... (+{recipe.ingredients.length - 3} altele)</li>}
                                 </ul>
+                                {recipe.preparation_method && (
+                                    <div style={{ fontSize: '0.85rem', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
+                                        <strong>Preparare:</strong>
+                                        <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                            {recipe.preparation_method}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -366,6 +385,17 @@ const AdminRecipes = () => {
                                     value={recipeForm.name}
                                     onChange={e => setRecipeForm({ ...recipeForm, name: e.target.value })}
                                     required
+                                />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Mod de preparare (Instrucțiuni)</label>
+                                <textarea
+                                    className="form-control"
+                                    style={{ width: '100%', padding: '0.5rem', minHeight: '100px', resize: 'vertical' }}
+                                    placeholder="Descrie pașii de preparare, timpii de gătire etc..."
+                                    value={recipeForm.preparation_method}
+                                    onChange={e => setRecipeForm({ ...recipeForm, preparation_method: e.target.value })}
                                 />
                             </div>
 
