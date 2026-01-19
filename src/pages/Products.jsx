@@ -375,18 +375,68 @@ const Products = () => {
                                 Toate
                             </button>
                         </li>
-                        {categories
-                            .filter(cat => (!cat.type || cat.type === 'delivery') && cat.is_visible !== false)
-                            .map(cat => (
-                                <li key={cat.id || cat.name}>
-                                    <button
-                                        className={`category-btn ${activeCategory === cat.name ? 'active' : ''}`}
-                                        onClick={() => setActiveCategory(cat.name)}
-                                    >
-                                        {cat.name}
-                                    </button>
-                                </li>
-                            ))}
+                        {(() => {
+                            // 1. Filter visible matching types
+                            const visibleCats = categories.filter(cat =>
+                                (!cat.type || cat.type === 'delivery') && cat.is_visible !== false
+                            );
+
+                            // 2. Build Tree
+                            const buildTree = (cats) => {
+                                const map = {};
+                                const roots = [];
+                                cats.forEach(c => map[c.id] = { ...c, children: [] });
+                                cats.forEach(c => {
+                                    if (c.parent_id && map[c.parent_id]) {
+                                        map[c.parent_id].children.push(map[c.id]);
+                                    } else {
+                                        roots.push(map[c.id]);
+                                    }
+                                });
+                                // Sort function
+                                const sortFn = (a, b) => (a.sort_order || 0) - (b.sort_order || 0);
+
+                                // Sort roots
+                                roots.sort(sortFn);
+
+                                // Recursive sort children
+                                const sortChildren = (nodes) => {
+                                    nodes.forEach(node => {
+                                        if (node.children?.length > 0) {
+                                            node.children.sort(sortFn);
+                                            sortChildren(node.children);
+                                        }
+                                    });
+                                };
+                                sortChildren(roots);
+                                return roots;
+                            };
+
+                            const tree = buildTree(visibleCats);
+
+                            // 3. Render Recursive
+                            const renderCategoryNode = (node, level = 0) => (
+                                <React.Fragment key={node.id}>
+                                    <li>
+                                        <button
+                                            className={`category-btn ${activeCategory === node.name ? 'active' : ''}`}
+                                            onClick={() => setActiveCategory(node.name)}
+                                            style={{
+                                                paddingLeft: level > 0 ? `${1 + level}rem` : '1rem',
+                                                fontSize: level > 0 ? '0.95rem' : '1rem',
+                                                opacity: level > 0 ? 0.9 : 1
+                                            }}
+                                        >
+                                            {level > 0 && <span style={{ marginRight: '5px', color: '#cbd5e1' }}>↳</span>}
+                                            {node.name}
+                                        </button>
+                                    </li>
+                                    {node.children && node.children.map(child => renderCategoryNode(child, level + 1))}
+                                </React.Fragment>
+                            );
+
+                            return tree.map(root => renderCategoryNode(root));
+                        })()}
                     </ul>
                 </aside>
 
