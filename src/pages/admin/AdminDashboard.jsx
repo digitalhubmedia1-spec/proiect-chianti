@@ -590,7 +590,7 @@ const AdminDashboard = () => {
                         <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e2e8f0', borderRadius: '4px', fontWeight: 'bold' }}>
                             Structură Ierarhică Categorii
                         </div>
-                        <div className="categories-list">
+                        <div className="categories-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {(() => {
                                 const filteredCats = categories.filter(cat => (cat.type || 'delivery') === activeTabType);
 
@@ -614,74 +614,97 @@ const AdminDashboard = () => {
                                 const tree = buildTree(filteredCats);
 
                                 const renderNode = (node, level = 0) => (
-                                    <div key={node.id} style={{ marginBottom: '0.5rem' }}>
-                                        <div className="category-item" style={{
+                                    <div key={node.id} style={{ marginBottom: '1rem', width: '100%' }}>
+                                        {/* Main Category Card */}
+                                        <div className="category-card" style={{
                                             display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '1rem',
-                                            marginLeft: `${level * 2}rem`,
-                                            padding: '10px',
+                                            flexDirection: 'column', // Allow children to be inside/below
+                                            background: 'white',
                                             borderRadius: '8px',
-                                            background: level > 0 ? '#f8fafc' : 'white',
                                             border: '1px solid #e2e8f0',
-                                            borderLeft: level > 0 ? '4px solid #990000' : '1px solid #e2e8f0'
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                            overflow: 'hidden'
                                         }}>
-                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '24px' }}>
-                                                {level > 0 && <CornerDownRight size={20} color="#94a3b8" style={{ marginBottom: '4px' }} />}
-                                                <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'up')} title="Mută sus" style={{ padding: '2px', height: 'auto' }}>
-                                                    <ArrowUp size={14} />
-                                                </button>
-                                                <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'down')} title="Mută jos" style={{ padding: '2px', height: 'auto' }}>
-                                                    <ArrowDown size={14} />
-                                                </button>
+                                            {/* Header / Main Row */}
+                                            <div className="cat-header-row" style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                padding: '1rem',
+                                                gap: '1rem',
+                                                background: level === 0 ? 'white' : '#f8fafc',
+                                                borderBottom: node.children && node.children.length > 0 ? '1px solid #eee' : 'none'
+                                            }}>
+                                                <div className="cat-order" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '24px' }}>
+                                                    <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'up')} title="Mută sus" style={{ padding: '2px', height: 'auto' }}>
+                                                        <ArrowUp size={14} />
+                                                    </button>
+                                                    <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'down')} title="Mută jos" style={{ padding: '2px', height: 'auto' }}>
+                                                        <ArrowDown size={14} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="cat-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    {/* Visibility Toggle */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleCatVisibility(node.id)}
+                                                        title={node.is_visible !== false ? "Vizibil" : "Ascuns"}
+                                                        style={{ border: 'none', background: 'none', color: node.is_visible !== false ? 'green' : '#cbd5e1', cursor: 'pointer', padding: '4px' }}
+                                                    >
+                                                        {node.is_visible !== false ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                                                    </button>
+
+                                                    {editingCategory && editingCategory.id === node.id ? (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={editCatNameValue}
+                                                                onChange={(e) => setEditCatNameValue(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                            <button className="btn-icon" style={{ color: 'green' }} onClick={saveEditingCategory} title="Salvează"><Check size={20} /></button>
+                                                            <button className="btn-icon" style={{ color: 'red' }} onClick={() => setEditingCategory(null)} title="Anulează"><X size={20} /></button>
+                                                        </div>
+                                                    ) : (
+                                                        <span style={{
+                                                            fontSize: level === 0 ? '1.1rem' : '1rem',
+                                                            fontWeight: level === 0 ? '600' : '500',
+                                                            color: node.is_visible === false ? '#94a3b8' : 'inherit',
+                                                            flex: 1
+                                                        }}>
+                                                            {node.name}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="cat-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    {editingCategory?.id !== node.id && (
+                                                        <>
+                                                            <button className="btn-icon" style={{ color: '#2563eb' }} onClick={() => openAddCategoryModal(node.id)} title="Adaugă Subcategorie"><Plus size={18} /></button>
+                                                            <button className="btn-icon edit" onClick={() => startEditingCategory(node)} title="Editează Nume"><Edit2 size={18} /></button>
+                                                            <button className="btn-icon delete" onClick={() => deleteCategory(node.name)} title="Șterge"><Trash2 size={18} /></button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="cat-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                {/* Visibility Toggle */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleCatVisibility(node.id)}
-                                                    title={node.is_visible !== false ? "Vizibil" : "Ascuns"}
-                                                    style={{ border: 'none', background: 'none', color: node.is_visible !== false ? 'green' : '#cbd5e1', cursor: 'pointer', padding: '4px' }}
-                                                >
-                                                    {node.is_visible !== false ? <CheckCircle size={20} /> : <XCircle size={20} />}
-                                                </button>
-
-                                                {editingCategory && editingCategory.id === node.id ? (
-                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control"
-                                                            value={editCatNameValue}
-                                                            onChange={(e) => setEditCatNameValue(e.target.value)}
-                                                            autoFocus
-                                                        />
-                                                        <button className="btn-icon" style={{ color: 'green' }} onClick={saveEditingCategory} title="Salvează"><Check size={20} /></button>
-                                                        <button className="btn-icon" style={{ color: 'red' }} onClick={() => setEditingCategory(null)} title="Anulează"><X size={20} /></button>
+                                            {/* Subcategories Area - "Tabs" Look */}
+                                            {node.children && node.children.length > 0 && (
+                                                <div className="cat-children-container" style={{
+                                                    background: '#f1f5f9',
+                                                    padding: '1rem 1rem 1rem 3rem', // Indent content
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '0.5rem'
+                                                }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <CornerDownRight size={14} /> SUBCATEGORII
                                                     </div>
-                                                ) : (
-                                                    <span style={{ fontSize: level === 0 ? '1.1rem' : '1rem', fontWeight: level === 0 ? '600' : '400', color: node.is_visible === false ? '#94a3b8' : 'inherit' }}>
-                                                        {node.name}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="cat-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                                                {editingCategory?.id !== node.id && (
-                                                    <>
-                                                        <button className="btn-icon" style={{ color: '#2563eb' }} onClick={() => openAddCategoryModal(node.id)} title="Adaugă Subcategorie"><Plus size={18} /></button>
-                                                        <button className="btn-icon edit" onClick={() => startEditingCategory(node)} title="Editează Nume"><Edit2 size={18} /></button>
-                                                        <button className="btn-icon delete" onClick={() => deleteCategory(node.name)} title="Șterge"><Trash2 size={18} /></button>
-                                                    </>
-                                                )}
-                                            </div>
+                                                    {node.children.map(child => renderNode(child, level + 1))}
+                                                </div>
+                                            )}
                                         </div>
-                                        {/* Render Children */}
-                                        {node.children && node.children.length > 0 && (
-                                            <div className="cat-children">
-                                                {node.children.map(child => renderNode(child, level + 1))}
-                                            </div>
-                                        )}
                                     </div>
                                 );
 
