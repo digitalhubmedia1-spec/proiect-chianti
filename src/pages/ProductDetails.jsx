@@ -11,6 +11,8 @@ const ProductDetails = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const { products, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
+    const [searchParams] = useSearchParams();
+    const dateParam = searchParams.get('date');
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
