@@ -100,6 +100,7 @@ const AdminDashboard = () => {
     const [parentIdForAdd, setParentIdForAdd] = useState(null); // New state for subcategory parent
     const [editingCategory, setEditingCategory] = useState(null);
     const [editCatNameValue, setEditCatNameValue] = useState('');
+    const [activeTabType, setActiveTabType] = useState('delivery');
 
     const startEditingCategory = (cat) => {
         setEditingCategory(cat);
