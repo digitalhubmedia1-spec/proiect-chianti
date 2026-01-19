@@ -22,7 +22,7 @@ import AdminTransfers from './components/AdminTransfers';
 import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -33,7 +33,8 @@ const AdminDashboard = () => {
         products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, moveCategory,
         bookedDates, toggleBooking,
         configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct,
-        fetchRecommendations, addRecommendation, removeRecommendation
+        fetchRecommendations, addRecommendation, removeRecommendation,
+        toggleCategoryVisibility
     } = useMenu();
     const [activeTab, setActiveTab] = useState('orders'); // Default to orders as it's common
     const navigate = useNavigate();
@@ -96,9 +97,9 @@ const AdminDashboard = () => {
     // Category State
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [catName, setCatName] = useState('');
+    const [parentIdForAdd, setParentIdForAdd] = useState(null); // New state for subcategory parent
     const [editingCategory, setEditingCategory] = useState(null);
     const [editCatNameValue, setEditCatNameValue] = useState('');
-    const [activeTabType, setActiveTabType] = useState('delivery');
 
     const startEditingCategory = (cat) => {
         setEditingCategory(cat);
@@ -106,11 +107,22 @@ const AdminDashboard = () => {
     };
 
     const saveEditingCategory = () => {
-        if (editCatNameValue && editCatNameValue.trim() !== '') {
-            updateCategory(editingCategory.name, editCatNameValue);
+        if (editingCategory && editCatNameValue.trim()) {
+            updateCategory(editingCategory.id, { name: editCatNameValue });
+            setEditingCategory(null);
+            setEditCatNameValue('');
         }
-        setEditingCategory(null);
-        setEditCatNameValue('');
+    };
+
+    const toggleCatVisibility = (id) => {
+        toggleCategoryVisibility(id);
+    };
+
+    // Prepare to add: can match parentId or be root
+    const openAddCategoryModal = (parentId = null) => {
+        setParentIdForAdd(parentId);
+        setCatName('');
+        setIsCategoryModalOpen(true);
     };
 
     // Calendar State
@@ -568,57 +580,95 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="actions-bar">
-                            <button className="btn btn-primary" onClick={() => setIsCategoryModalOpen(true)}>
+                            <button className="btn btn-primary" onClick={() => openAddCategoryModal(null)}>
                                 <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Livrări' : 'Catering'})
                             </button>
                         </div>
                         <div className="categories-list">
-                            {categories
-                                .filter(cat => (cat.type || 'delivery') === activeTabType)
-                                .map((cat, index) => (
-                                    <div key={index} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div className="cat-order" style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <button className="btn-icon" onClick={() => moveCategory(categories.indexOf(cat), 'up')} title="Mută sus">
-                                                <ArrowUp size={16} />
-                                            </button>
-                                            <button className="btn-icon" onClick={() => moveCategory(categories.indexOf(cat), 'down')} title="Mută jos">
-                                                <ArrowDown size={16} />
-                                            </button>
-                                        </div>
+                            {(() => {
+                                const filteredCats = categories.filter(cat => (cat.type || 'delivery') === activeTabType);
 
-                                        <div className="cat-content" style={{ flex: 1 }}>
-                                            {editingCategory === cat ? (
-                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        value={editCatNameValue}
-                                                        onChange={(e) => setEditCatNameValue(e.target.value)}
-                                                        autoFocus
-                                                    />
-                                                    <button className="btn-icon" style={{ color: 'green' }} onClick={saveEditingCategory} title="Salvează"><Check size={20} /></button>
-                                                    <button className="btn-icon" style={{ color: 'red' }} onClick={() => setEditingCategory(null)} title="Anulează"><X size={20} /></button>
-                                                </div>
-                                            ) : (
-                                                <span style={{ fontSize: '1.1rem' }}>{cat.name}</span>
-                                            )}
-                                        </div>
+                                // Build Tree
+                                const buildTree = (cats) => {
+                                    const map = {};
+                                    const roots = [];
+                                    cats.forEach(c => map[c.id] = { ...c, children: [] });
+                                    cats.forEach(c => {
+                                        if (c.parent_id && map[c.parent_id]) {
+                                            map[c.parent_id].children.push(map[c.id]);
+                                        } else {
+                                            roots.push(map[c.id]);
+                                        }
+                                    });
+                                    return roots;
+                                };
 
-                                        <div className="cat-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                                            {editingCategory !== cat && (
-                                                <>
-                                                    <button className="btn-icon edit" onClick={() => startEditingCategory(cat)} title="Editează Nume"><Edit2 size={18} /></button>
-                                                    <button className="btn-icon delete" onClick={() => deleteCategory(cat.name)} title="Șterge"><Trash2 size={18} /></button>
-                                                </>
-                                            )}
+                                const tree = buildTree(filteredCats);
+
+                                const renderNode = (node, level = 0) => (
+                                    <div key={node.id} style={{ marginBottom: '0.5rem' }}>
+                                        <div className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: `${level * 2}rem`, borderLeft: level > 0 ? '2px solid #ddd' : 'none', paddingLeft: level > 0 ? '1rem' : '0' }}>
+                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column' }}>
+                                                {/* Sort buttons only for roots or same parent siblings? Simplified to roots/flat for now or disabled for complexity */}
+                                            </div>
+
+                                            <div className="cat-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                {/* Visibility Toggle */}
+                                                <button
+                                                    onClick={() => toggleCatVisibility(node.id)}
+                                                    title={node.is_visible !== false ? "Vizibil" : "Ascuns"}
+                                                    style={{ border: 'none', background: 'none', color: node.is_visible !== false ? 'green' : '#cbd5e1', cursor: 'pointer' }}
+                                                >
+                                                    {node.is_visible !== false ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                                                </button>
+
+                                                {editingCategory && editingCategory.id === node.id ? (
+                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={editCatNameValue}
+                                                            onChange={(e) => setEditCatNameValue(e.target.value)}
+                                                            autoFocus
+                                                        />
+                                                        <button className="btn-icon" style={{ color: 'green' }} onClick={saveEditingCategory} title="Salvează"><Check size={20} /></button>
+                                                        <button className="btn-icon" style={{ color: 'red' }} onClick={() => setEditingCategory(null)} title="Anulează"><X size={20} /></button>
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ fontSize: level === 0 ? '1.1rem' : '1rem', fontWeight: level === 0 ? '600' : '400', color: node.is_visible === false ? '#94a3b8' : 'inherit' }}>
+                                                        {node.name}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="cat-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                                {editingCategory?.id !== node.id && (
+                                                    <>
+                                                        <button className="btn-icon" style={{ color: '#2563eb' }} onClick={() => openAddCategoryModal(node.id)} title="Adaugă Subcategorie"><Plus size={18} /></button>
+                                                        <button className="btn-icon edit" onClick={() => startEditingCategory(node)} title="Editează Nume"><Edit2 size={18} /></button>
+                                                        <button className="btn-icon delete" onClick={() => deleteCategory(node.name)} title="Șterge"><Trash2 size={18} /></button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
+                                        {/* Render Children */}
+                                        {node.children && node.children.length > 0 && (
+                                            <div className="cat-children">
+                                                {node.children.map(child => renderNode(child, level + 1))}
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                            {categories.filter(cat => (cat.type || 'delivery') === activeTabType).length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>
-                                    Nu există categorii de {activeTabType} definite.
-                                </div>
-                            )}
+                                );
+
+                                if (tree.length === 0) return (
+                                    <div style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>
+                                        Nu există categorii de {activeTabType} definite.
+                                    </div>
+                                );
+
+                                return tree.map(node => renderNode(node));
+                            })()}
+                            {/* Removed old flat list */}
                         </div>
                     </div>
                 )}
@@ -1023,7 +1073,7 @@ const AdminDashboard = () => {
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h3>Adaugă Categorie ({activeTabType === 'delivery' ? 'Livrări' : 'Catering'})</h3>
+                            <h3>{parentIdForAdd ? 'Adaugă Subcategorie' : `Adaugă Categorie (${activeTabType === 'delivery' ? 'Livrări' : 'Catering'})`}</h3>
                             <button className="close-btn" onClick={() => setIsCategoryModalOpen(false)}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleCategorySubmit}>

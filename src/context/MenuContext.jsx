@@ -32,7 +32,7 @@ export const MenuProvider = ({ children }) => {
                 // 1. Fetch Categories
                 const { data: catsData, error: catsError } = await supabase
                     .from('categories')
-                    .select('*')
+                    .select('*, parent_id, is_visible')
                     .order('sort_order', { ascending: true });
 
                 if (catsError) throw catsError;
@@ -132,7 +132,7 @@ export const MenuProvider = ({ children }) => {
     };
 
     // --- Category Actions ---
-    const addCategory = async (name, type = 'delivery') => {
+    const addCategory = async (name, type = 'delivery', parentId = null) => {
         if (!supabase) {
             alert("Eroare: Baza de date nu este conectată! Nu poți face modificări.");
             return;
@@ -141,13 +141,15 @@ export const MenuProvider = ({ children }) => {
             const { data, error } = await supabase.from('categories').insert([{
                 name,
                 type,
+                parent_id: parentId,
+                is_visible: true,
                 sort_order: categories.length
             }]).select();
 
             if (error) throw error;
             if (data) {
                 setCategories(prev => [...prev, data[0]]);
-                logAction('ADĂUGARE CATEGORIE', `Categorie: ${name}`);
+                logAction('ADĂUGARE CATEGORIE', `Categorie: ${name} (Sub: ${parentId ? 'Da' : 'Nu'})`);
             }
         } catch (error) {
             alert('Eroare la adăugarea categoriei: ' + error.message);
@@ -176,41 +178,49 @@ export const MenuProvider = ({ children }) => {
         }
     };
 
-    const updateCategory = async (oldName, newName, type) => {
+    const updateCategory = async (id, updates) => {
         if (!supabase) {
             alert("Eroare: Baza de date nu este conectată! Nu poți face modificări.");
             return;
         }
-        const cat = categories.find(c => c.name === oldName);
+        const cat = categories.find(c => c.id === id);
         if (!cat) return;
 
         try {
             const { error } = await supabase
                 .from('categories')
-                .update({ name: newName, type: type || cat.type })
-                .eq('id', cat.id);
+                .update(updates)
+                .eq('id', id);
 
             if (error) throw error;
 
             // Update local state
-            setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: newName, type: type || c.type } : c));
-            logAction('ACTUALIZERE CATEGORIE', `Din "${oldName}" în "${newName}"`);
+            setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
 
-            // Also update products if name changed (since we store category name in products table as per schema)
-            // Ideally should normalize DB to use category_id, but staying compatible with current logic
-            if (oldName !== newName) {
-                // Update all products in DB with old category name
+            if (updates.name && updates.name !== cat.name) {
+                logAction('ACTUALIZARE CATEGORIE', `Nume: ${cat.name} -> ${updates.name}`);
+                // Update products if name changed (Legacy support)
                 const { error: prodError } = await supabase
                     .from('products')
-                    .update({ category: newName })
-                    .eq('category', oldName);
-
-                if (prodError) console.error("Error updating product categories:", prodError);
-
-                setProducts(prev => prev.map(p => p.category === oldName ? { ...p, category: newName } : p));
+                    .update({ category: updates.name })
+                    .eq('category', cat.name);
+                if (!prodError) {
+                    setProducts(prev => prev.map(p => p.category === cat.name ? { ...p, category: updates.name } : p));
+                }
+            } else if (updates.is_visible !== undefined) {
+                logAction('VIZIBILITATE CATEGORIE', `${cat.name}: ${updates.is_visible ? 'Visible' : 'Hidden'}`);
             }
+
         } catch (error) {
             console.error("Error updating category:", error);
+            alert("Eroare: " + error.message);
+        }
+    };
+
+    const toggleCategoryVisibility = async (id) => {
+        const cat = categories.find(c => c.id === id);
+        if (cat) {
+            await updateCategory(id, { is_visible: !cat.is_visible });
         }
     };
 

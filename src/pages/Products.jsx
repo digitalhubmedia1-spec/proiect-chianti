@@ -376,7 +376,7 @@ const Products = () => {
                             </button>
                         </li>
                         {categories
-                            .filter(cat => !cat.type || cat.type === 'delivery')
+                            .filter(cat => (!cat.type || cat.type === 'delivery') && cat.is_visible !== false)
                             .map(cat => (
                                 <li key={cat.id || cat.name}>
                                     <button
