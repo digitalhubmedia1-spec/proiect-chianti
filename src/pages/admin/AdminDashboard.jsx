@@ -22,6 +22,7 @@ import AdminTransfers from './components/AdminTransfers';
 import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
+import AdminLocations from './components/AdminLocations';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -383,6 +384,12 @@ const AdminDashboard = () => {
                         <AdminInventoryCheck />
                     </div>
                 )}
+                {/* LOCATIONS TAB */}
+                {activeTab === 'locations' && (
+                    <div className="tab-content">
+                        <AdminLocations />
+                    </div>
+                )}
                 {/* REPORTS TAB */}
                 {activeTab === 'reports' && (
                     <div className="tab-content">
@@ -579,6 +586,27 @@ const AdminDashboard = () => {
                                 style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
                                 <Users size={16} style={{ marginRight: '8px' }} /> Catering
+                            </button>
+                            <button
+                                className={`btn ${activeTabType === 'inventory_check' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setActiveTabType('inventory_check')}
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                            >
+                                <ClipboardList size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Inventar Fizic
+                            </button>
+                            <button
+                                className={`btn ${activeTabType === 'locations' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setActiveTabType('locations')}
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                            >
+                                <MapPin size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Gestiuni
+                            </button>
+                            <button
+                                className={`btn ${activeTabType === 'reports' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setActiveTabType('reports')}
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                            >
+                                <BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Rapoarte
                             </button>
                         </div>
 
