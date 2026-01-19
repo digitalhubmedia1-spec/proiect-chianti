@@ -84,7 +84,7 @@ const AdminDashboard = () => {
             return true;
         }
         if (adminRole === 'chef') {
-            return tab === 'orders';
+            return ['orders', 'recipes'].includes(tab);
         }
         return false;
     };

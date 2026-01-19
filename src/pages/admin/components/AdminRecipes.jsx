@@ -316,6 +316,18 @@ const AdminRecipes = () => {
                         {calculationResult && (
                             <div style={{ marginTop: '2rem' }}>
                                 <h4>Rezultat Calcul pentru {portions} porții:</h4>
+
+                                {recipes.find(r => r.id === selectedRecipeId)?.preparation_method && (
+                                    <div style={{ background: '#f8fafc', padding: '1rem', borderLeft: '4px solid #990000', marginBottom: '1rem', borderRadius: '4px' }}>
+                                        <h5 style={{ marginTop: 0, color: '#990000', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <BookOpen size={18} /> Mod de preparare:
+                                        </h5>
+                                        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                                            {recipes.find(r => r.id === selectedRecipeId).preparation_method}
+                                        </p>
+                                    </div>
+                                )}
+
                                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
