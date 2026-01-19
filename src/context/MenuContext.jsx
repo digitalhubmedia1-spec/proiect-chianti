@@ -183,8 +183,12 @@ export const MenuProvider = ({ children }) => {
             alert("Eroare: Baza de date nu este conectată! Nu poți face modificări.");
             return;
         }
-        const cat = categories.find(c => c.id === id);
-        if (!cat) return;
+        // Use loose equality for ID matching in case of string/number mismatch
+        const cat = categories.find(c => c.id == id);
+        if (!cat) {
+            console.error(`Category not found for update: ${id}`);
+            return;
+        }
 
         try {
             const { error } = await supabase
@@ -218,7 +222,7 @@ export const MenuProvider = ({ children }) => {
     };
 
     const toggleCategoryVisibility = async (id) => {
-        const cat = categories.find(c => c.id === id);
+        const cat = categories.find(c => c.id == id);
         if (cat) {
             // Treat undefined/null as true (visible). So valid toggle is: if false->true, else->false
             const nextState = cat.is_visible === false ? true : false;

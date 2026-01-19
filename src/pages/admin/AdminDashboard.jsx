@@ -585,11 +585,14 @@ const AdminDashboard = () => {
                                 <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Livrări' : 'Catering'})
                             </button>
                         </div>
+                        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e2e8f0', borderRadius: '4px', fontWeight: 'bold' }}>
+                            Structură Ierarhică Categorii
+                        </div>
                         <div className="categories-list">
                             {(() => {
                                 const filteredCats = categories.filter(cat => (cat.type || 'delivery') === activeTabType);
 
-                                // Build Tree
+                                // Build Tree with Orphan Handling
                                 const buildTree = (cats) => {
                                     const map = {};
                                     const roots = [];
@@ -598,10 +601,12 @@ const AdminDashboard = () => {
                                         if (c.parent_id && map[c.parent_id]) {
                                             map[c.parent_id].children.push(map[c.id]);
                                         } else {
+                                            // Treated as root if no parent OR parent not in current filter
                                             roots.push(map[c.id]);
                                         }
                                     });
-                                    return roots;
+                                    // Sort by sort_order if available, else name
+                                    return roots.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
                                 };
 
                                 const tree = buildTree(filteredCats);
