@@ -30,7 +30,7 @@ import 'react-calendar/dist/Calendar.css';
 
 const AdminDashboard = () => {
     const {
-        products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, moveCategory,
+        products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, reorderCategory,
         bookedDates, toggleBooking,
         configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct,
         fetchRecommendations, addRecommendation, removeRecommendation,
@@ -175,8 +175,10 @@ const AdminDashboard = () => {
 
     const handleCategorySubmit = (e) => {
         e.preventDefault();
-        addCategory(catName, activeTabType);
+        console.log("Adding Category:", { catName, activeTabType, parentIdForAdd });
+        addCategory(catName, activeTabType, parentIdForAdd);
         setCatName('');
+        setParentIdForAdd(null);
         setIsCategoryModalOpen(false);
     };
 
@@ -624,16 +626,23 @@ const AdminDashboard = () => {
                                             border: '1px solid #e2e8f0',
                                             borderLeft: level > 0 ? '4px solid #990000' : '1px solid #e2e8f0'
                                         }}>
-                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '24px' }}>
-                                                {level > 0 && <CornerDownRight size={20} color="#94a3b8" />}
+                                            <div className="cat-order" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '24px' }}>
+                                                {level > 0 && <CornerDownRight size={20} color="#94a3b8" style={{ marginBottom: '4px' }} />}
+                                                <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'up')} title="Mută sus" style={{ padding: '2px', height: 'auto' }}>
+                                                    <ArrowUp size={14} />
+                                                </button>
+                                                <button type="button" className="btn-icon" onClick={() => reorderCategory(node.id, 'down')} title="Mută jos" style={{ padding: '2px', height: 'auto' }}>
+                                                    <ArrowDown size={14} />
+                                                </button>
                                             </div>
 
                                             <div className="cat-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                 {/* Visibility Toggle */}
                                                 <button
+                                                    type="button"
                                                     onClick={() => toggleCatVisibility(node.id)}
                                                     title={node.is_visible !== false ? "Vizibil" : "Ascuns"}
-                                                    style={{ border: 'none', background: 'none', color: node.is_visible !== false ? 'green' : '#cbd5e1', cursor: 'pointer' }}
+                                                    style={{ border: 'none', background: 'none', color: node.is_visible !== false ? 'green' : '#cbd5e1', cursor: 'pointer', padding: '4px' }}
                                                 >
                                                     {node.is_visible !== false ? <CheckCircle size={20} /> : <XCircle size={20} />}
                                                 </button>

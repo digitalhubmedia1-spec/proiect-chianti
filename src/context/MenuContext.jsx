@@ -230,32 +230,75 @@ export const MenuProvider = ({ children }) => {
         }
     };
 
-    const moveCategory = async (index, direction) => {
-        const newCats = [...categories];
-        if (direction === 'up' && index > 0) {
-            [newCats[index], newCats[index - 1]] = [newCats[index - 1], newCats[index]];
-        } else if (direction === 'down' && index < newCats.length - 1) {
-            [newCats[index], newCats[index + 1]] = [newCats[index + 1], newCats[index]];
-        }
-        setCategories(newCats);
+    const reorderCategory = async (id, direction) => {
+        // 1. Find Current Item
+        const item = categories.find(c => c.id == id);
+        if (!item) return;
 
-        if (!supabase) {
-            console.warn("Database not connected, sort sort order will not persist.");
-            return;
+        // 2. Find Siblings (Same Parent)
+        // Loose equality check for parent_id just in case (null vs undefined) or mismatch
+        const siblings = categories
+            .filter(c => (c.parent_id == item.parent_id)) // Handles null == null
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+        const currentIndex = siblings.findIndex(c => c.id == item.id);
+        if (currentIndex === -1) return;
+
+        // 3. Determine Target Swap
+        let swapWithIndex = -1;
+        if (direction === 'up' && currentIndex > 0) {
+            swapWithIndex = currentIndex - 1;
+        } else if (direction === 'down' && currentIndex < siblings.length - 1) {
+            swapWithIndex = currentIndex + 1;
         }
 
-        // Update DB Order (Batch update ideal, but simple loop for now)
-        try {
-            // Ideally call a procedure or just update the two swapped items
-            // For now, trust local state or implement DB update
-            // Skipping DB sort update for speed, will reset on refresh if not saved.
-            // Let's TRY to save:
-            const updates = newCats.map((c, idx) => ({ id: c.id, sort_order: idx }));
-            for (const u of updates) {
-                await supabase.from('categories').update({ sort_order: u.sort_order }).eq('id', u.id);
+        if (swapWithIndex === -1) return; // Cannot move
+
+        const swapItem = siblings[swapWithIndex];
+
+        // 4. Swap Sort Orders
+        // Ensure they have valid sort_orders (init if missing)
+        const itemOrder = item.sort_order !== undefined ? item.sort_order : 0;
+        const swapOrder = swapItem.sort_order !== undefined ? swapItem.sort_order : 0;
+
+        // If orders are identical, we force a difference, otherwise standard swap
+        const newOrderForItem = swapOrder;
+        const newOrderForSwap = itemOrder;
+
+        // OPTIMIZATION: If identical, we might need a full re-index, 
+        // but for now simple swap of values works if values were distinct.
+        // Better approach: Re-index array indices.
+
+        const updatedSiblings = [...siblings];
+        // Swap items in the array to get desired order
+        [updatedSiblings[currentIndex], updatedSiblings[swapWithIndex]] = [updatedSiblings[swapWithIndex], updatedSiblings[currentIndex]];
+
+        // Assign new sort_orders based on array index (normalized)
+        const updates = updatedSiblings.map((c, idx) => ({
+            id: c.id,
+            sort_order: idx + (siblings[0].sort_order || 0) // Keep relative range? Or just 0-based? 
+            // Better: Just 0-based for the group or re-index whole list?
+            // Localized re-index is safer:
+        }));
+
+        // 5. Update State
+        // Create new categories array with updates applied
+        const newCategories = categories.map(c => {
+            const update = updates.find(u => u.id === c.id);
+            return update ? { ...c, sort_order: update.sort_order } : c;
+        });
+
+        setCategories(newCategories);
+
+        // 6. Persist to DB
+        if (supabase) {
+            try {
+                for (const u of updates) {
+                    await supabase.from('categories').update({ sort_order: u.sort_order }).eq('id', u.id);
+                }
+            } catch (err) {
+                console.error("Failed to reorder:", err);
             }
-        } catch (e) {
-            console.error("Sort update failed", e);
         }
     };
 
@@ -588,8 +631,8 @@ export const MenuProvider = ({ children }) => {
         addCategory,
         deleteCategory,
         updateCategory,
-        moveCategory,
-        loading,
+        reorderCategory,
+        toggleCategoryVisibility,
         bookedDates,
         toggleBooking,
         configuratorSteps,
