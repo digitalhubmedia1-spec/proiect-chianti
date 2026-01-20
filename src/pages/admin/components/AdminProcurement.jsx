@@ -135,6 +135,7 @@ const AdminProcurement = () => {
                 const { error } = await supabase.from('procurement_items').insert(inserts);
                 if (error) alert("Eroare la adăugarea produselor: " + error.message);
 
+                logAction('ACHIZIȚII', `Generat necesar pentru ${new Date(generatorDate).toLocaleDateString('ro-RO')}: ${inserts.length} produse.`);
                 fetchListDetails(data.id);
                 setGeneratedNeeds(null); // Reset
             }
@@ -157,6 +158,7 @@ const AdminProcurement = () => {
             setLists([data, ...lists]);
             setActiveTab('active_lists');
             fetchListDetails(data.id); // Open it immediately
+            logAction('ACHIZIȚII', `Listă nouă creată: ${name}`);
             return data; // Return data for caller
         }
     };
@@ -171,7 +173,10 @@ const AdminProcurement = () => {
         }]);
 
         if (error) alert("Eroare adăugare produs: " + error.message);
-        else fetchListDetails(listId);
+        else {
+            fetchListDetails(listId);
+            logAction('ACHIZIȚII', `Adăugat produs în listă: ${itemName} (${qty} ${unit})`);
+        }
     };
 
     const updateItem = async (itemId, field, value) => {
@@ -197,6 +202,7 @@ const AdminProcurement = () => {
         if (!confirm("Ești sigur că vrei să finalizezi această listă? Ea va fi mutată în istoric.")) return;
 
         await supabase.from('procurement_lists').update({ status: 'closed' }).eq('id', selectedList.id);
+        logAction('ACHIZIȚII', `Finalizat listă: ${selectedList.name}`);
         setSelectedList(null);
         fetchLists();
         setActiveTab('history');
@@ -307,6 +313,7 @@ const AdminProcurement = () => {
                                             e.stopPropagation();
                                             if (confirm('Stergi produsul?')) {
                                                 await supabase.from('procurement_items').delete().eq('id', item.id);
+                                                logAction('ACHIZIȚII', `Șters produs din listă: ${item.item_name}`);
                                                 fetchListDetails(selectedList.id);
                                             }
                                         }}><X size={16} /></button>
@@ -353,6 +360,7 @@ const AdminProcurement = () => {
                                 <button className="btn-delete-icon desktop-only" onClick={async () => {
                                     if (confirm('Stergi produsul?')) {
                                         await supabase.from('procurement_items').delete().eq('id', item.id);
+                                        logAction('ACHIZIȚII', `Șters produs din listă: ${item.item_name}`);
                                         fetchListDetails(selectedList.id);
                                     }
                                 }}><X size={16} /></button>
