@@ -408,7 +408,14 @@ const AdminDashboard = () => {
                         <AdminLocations />
                     </div>
                 )}
-                {/* REPORTS TAB */}
+                {/* PROCUREMENT TAB */}
+                {activeTab === 'procurement' && (
+                    <div className="tab-content" style={{ padding: 0 }}>
+                        <AdminProcurement />
+                    </div>
+                )}
+
+                {/* CONFIGURATOR MAIN TAB */}
                 {activeTab === 'reports' && (
                     <div className="tab-content">
                         <AdminReports />
