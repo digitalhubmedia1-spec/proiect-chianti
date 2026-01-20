@@ -319,6 +319,7 @@ const AdminDashboard = () => {
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>Furnizori</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => setActiveTab('locations')}>Gestiuni</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
+                {canAccess('procurement') && <button className={`tab-btn ${activeTab === 'procurement' ? 'active' : ''}`} onClick={() => setActiveTab('procurement')}>Achiziții</button>}
 
                 {/* ERP Operations */}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'reception' ? 'active' : ''}`} onClick={() => setActiveTab('reception')}>Recepție (NIR)</button>}
@@ -447,15 +448,7 @@ const AdminDashboard = () => {
                 {activeTab === 'orders' && (
                     <div className="tab-content">
                         <OrderList />
-                        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto', flex: 1 }}>
-                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', marginBottom: '1rem' }}>
-                                Autentificat ca:<br />
-                                <strong style={{ color: 'white' }}>{adminName}</strong><br />
-                                Rol: <em style={{ color: '#fbbf24' }}>{adminRole}</em>
-                            </div>
-
-                            <nav className="admin-nav"></nav>
-                        </div>
+                        <div style={{ margin: '2rem 0', borderTop: '2px solid #ddd' }}></div>
                         <h3 className="mb-4 text-xl font-bold">Flux Comenzi</h3>
                         <KanbanBoard />
                     </div>
