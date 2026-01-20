@@ -509,4 +509,3 @@ const AdminProcurement = () => {
 };
 
 export default AdminProcurement;
-```
