@@ -259,46 +259,198 @@ const AdminProcurement = () => {
                 )}
             </div>
 
-            <style>{`
-                .lists-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
-                .list-card, .new-list-card {
-                    background: white; border-radius: 8px; padding: 1.5rem; 
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;
-                    display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;
+            .admin-procurement {
+                padding: 1.5rem;
+            background: #f8fafc;
+            min-height: 100%;
                 }
-                .new-list-card { border: 2px dashed #cbd5e1; color: #64748b; justify-content: center; flex-direction: column; }
-                .list-card:hover, .new-list-card:hover { transform: translateY(-3px); }
-                .list-icon { background: #f1f5f9; padding: 0.8rem; border-radius: 50%; color: #990000; }
-                
-                .shopping-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-                .shopping-item {
-                    background: white; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;
-                    display: flex; gap: 1rem; align-items: flex-start;
+
+            .procurement-tabs {
+                display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
                 }
-                .shopping-item.bought { background: #f0fdf4; border-color: #bbf7d0; }
-                
-                .item-check {
-                    width: 30px; height: 30px; border: 2px solid #cbd5e1; border-radius: 50%;
-                    cursor: pointer; display: flex; align-items: center; justify-content: center;
-                    flex-shrink: 0; margin-top: 0.2rem;
+
+            .procurement-tabs button {
+                background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
                 }
-                .shopping-item.bought .item-check { background: #22c55e; border-color: #22c55e; }
-                
-                .item-main { flex: 1; }
-                .item-inputs {
-                    display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;
-                    background: rgba(255,255,255,0.5); padding: 0.5rem; border-radius: 4px;
+
+            .procurement-tabs button.active {
+                background: #990000;
+            color: white;
                 }
-                .input-group { display: flex; flex-direction: column; font-size: 0.8rem; }
-                .input-group input, .input-group select {
-                    padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px;
+
+            .procurement-tabs button:hover:not(.active) {
+                background: #e2e8f0;
+            color: #1e293b;
                 }
-                .list-footer-stats {
-                    margin-top: 2rem; padding: 1rem; background: #1e293b; color: white;
-                    border-radius: 8px; display: flex; justify-content: space-between;
+
+            .lists-grid {
+                display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem; 
                 }
+
+            .list-card, .new-list-card {
+                background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+                }
+
+            .new-list-card {
+                border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+            color: #64748b;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: none;
+                }
+
+            .list-card:hover {
+                transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+                }
+
+            .new-list-card:hover {
+                border - color: #990000;
+            color: #990000;
+            background: white;
+                }
+
+            .list-icon {
+                background: #fee2e2;
+            padding: 1rem;
+            border-radius: 12px;
+            color: #990000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+                }
+
+            .list-info h4 {margin: 0 0 0.25rem 0; font-size: 1.1rem; color: #1e293b; }
+            .list-info p {margin: 0; font-size: 0.85rem; color: #64748b; }
+
+            /* Detail View */
+            .procurement-detail {
+                background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                }
+
+            .detail-header {
+                display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+                }
+
+            .detail-header h2 {margin: 0; font-size: 1.5rem; color: #1e293b; }
+            .badge-warning {background: #fef3c7; color: #d97706; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+            .btn-back {
+                background: none; border: none; color: #64748b; cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-right: 1rem;
+                }
+            .btn-back:hover {color: #1e293b; text-decoration: underline; }
+
+            .add-item-bar {
+                margin - bottom: 2rem;
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+                }
+            .add-item-bar select {
+                width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+                }
+
+            .shopping-list {margin - top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+            .shopping-item {
+                background: white;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: all 0.2s;
+                }
+            .shopping-item:hover {border - color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .shopping-item.bought {background: #f0fdf4; border-color: #bbf7d0; opacity: 0.9; }
+
+            .item-check {
+                width: 28px; height: 28px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: all 0.2s;
+            background: white;
+                }
+            .item-check:hover {border - color: #94a3b8; }
+            .shopping-item.bought .item-check {background: #22c55e; border-color: #22c55e; }
+
+            .item-main {flex: 1; }
+
+            .item-inputs {
+                display: flex; gap: 1rem; margin-top: 0.75rem; flex-wrap: wrap;
+            background: rgba(255,255,255,0.8); padding: 0.75rem; border-radius: 6px;
+            border: 1px solid #e2e8f0;
+                }
+            .input-group label {
+                display: block; font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 2px;
+                }
+            .input-group input, .input-group select {
+                padding: 0.4rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; font-size: 0.9rem;
+                }
+
+            .btn-delete-icon {
+                background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 4px; border-radius: 4px;
+                }
+            .btn-delete-icon:hover {background: #fee2e2; color: #ef4444; }
+
+            .list-footer-stats {
+                margin - top: 2rem;
+            padding: 1.5rem;
+            background: #1e293b;
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                }
+            .list-footer-stats div {font - size: 1.1rem; }
             `}</style>
-        </div>
+        </div >
     );
 };
 
