@@ -9,7 +9,7 @@ const CATEGORIES = [
     { id: 'Obiecte Inventar', label: 'Obiecte de Inventar (Veselă/Echipamente)' }
 ];
 
-const UNITS = ['kg', 'l', 'buc', 'porție', 'ml'];
+const UNITS = ['kg', 'g', 'l', 'ml', 'buc', 'porție'];
 
 const AdminInventoryItems = () => {
     const [items, setItems] = useState([]);
