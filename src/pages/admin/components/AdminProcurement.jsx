@@ -259,6 +259,7 @@ const AdminProcurement = () => {
                 )}
             </div>
 
+            <style>{`
             .admin-procurement {
                 padding: 1.5rem;
             background: #f8fafc;
