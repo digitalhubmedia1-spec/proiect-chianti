@@ -109,6 +109,15 @@ const AdminProcurement = () => {
         await updateItem(item.id, 'is_bought', !item.is_bought);
     };
 
+    const finalizeList = async () => {
+        if (!confirm("Ești sigur că vrei să finalizezi această listă? Ea va fi mutată în istoric.")) return;
+
+        await supabase.from('procurement_lists').update({ status: 'closed' }).eq('id', selectedList.id);
+        setSelectedList(null);
+        fetchLists();
+        setActiveTab('history');
+    };
+
     // --- RENDER HELPERS ---
 
     const renderActiveLists = () => (
@@ -133,72 +142,102 @@ const AdminProcurement = () => {
         </div>
     );
 
+    const renderHistoryLists = () => (
+        <div className="lists-grid">
+            {lists.filter(l => l.status === 'closed').length === 0 && <p style={{ color: '#64748b' }}>Nu există liste finalizate.</p>}
+            {lists.filter(l => l.status === 'closed').map(list => (
+                <div key={list.id} className="list-card history-card" onClick={() => fetchListDetails(list.id)}>
+                    <div className="list-icon" style={{ background: '#e2e8f0', color: '#64748b' }}><Archive size={24} /></div>
+                    <div className="list-info">
+                        <h4 style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{list.name}</h4>
+                        <p>{new Date(list.created_at).toLocaleDateString('ro-RO')} • {list.shopper_name}</p>
+                    </div>
+                    <ChevronRight color="#cbd5e1" />
+                </div>
+            ))}
+        </div>
+    );
+
     const renderDetailView = () => {
         if (!selectedList) return null;
 
         // Calculate totals
         const totalGross = selectedList.items.reduce((acc, i) => acc + (i.is_bought ? (parseFloat(i.price_gross) * parseFloat(i.quantity_bought || 0)) : 0), 0);
         const totalNet = selectedList.items.reduce((acc, i) => {
-            // Calculate net per item roughly for display if not fetched freshly
             const price = parseFloat(i.price_gross) || 0;
             const vat = parseFloat(i.vat_percent) || 19;
             const net = price / (1 + vat / 100);
             return acc + (i.is_bought ? (net * parseFloat(i.quantity_bought || 0)) : 0);
         }, 0);
 
+        const isClosed = selectedList.status === 'closed';
+
         return (
             <div className="procurement-detail">
                 <div className="detail-header">
                     <button className="btn-back" onClick={() => setSelectedList(null)}>← Înapoi</button>
-                    <div>
+                    <div className="header-title">
                         <h2>{selectedList.name}</h2>
-                        <span className="badge badge-warning">{selectedList.status.toUpperCase()}</span>
-                    </div>
-                    <div className="header-actions">
-                        <button className="btn btn-secondary" onClick={() => window.print()}><Printer size={18} /> Print</button>
+                        <span className={`badge ${isClosed ? 'badge-secondary' : 'badge-warning'}`}>{selectedList.status.toUpperCase()}</span>
                     </div>
                 </div>
 
-                <div className="add-item-bar">
-                    <select id="quick-add-item" onChange={(e) => {
-                        if (e.target.value === 'custom') {
-                            const name = prompt("Nume produs:");
-                            if (name) addItemToList(selectedList.id, name);
-                        } else {
-                            const item = items.find(i => i.id == e.target.value);
-                            if (item) addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
-                        }
-                        e.target.value = '';
-                    }}>
-                        <option value="">+ Adaugă Produs Rapid</option>
-                        <option value="custom">Produs Nou (Text)</option>
-                        <optgroup label="Din Nomenclator">
-                            {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                        </optgroup>
-                    </select>
-                </div>
+                {!isClosed && (
+                    <div className="add-item-bar">
+                        <select id="quick-add-item" onChange={(e) => {
+                            if (e.target.value === 'custom') {
+                                const name = prompt("Nume produs:");
+                                if (name) addItemToList(selectedList.id, name);
+                            } else {
+                                const item = items.find(i => i.id == e.target.value);
+                                if (item) addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
+                            }
+                            e.target.value = '';
+                        }}>
+                            <option value="">+ Adaugă Produs Rapid</option>
+                            <option value="custom">Produs Nou (Text)</option>
+                            <optgroup label="Din Nomenclator">
+                                {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
+                            </optgroup>
+                        </select>
+                    </div>
+                )}
 
                 <div className="shopping-list">
                     {selectedList.items.map(item => (
                         <div key={item.id} className={`shopping-item ${item.is_bought ? 'bought' : ''}`}>
-                            <div className="item-check" onClick={() => toggleBought(item)}>
-                                {item.is_bought ? <Check size={20} color="white" /> : null}
-                            </div>
+                            {!isClosed && (
+                                <div className="item-check" onClick={() => toggleBought(item)}>
+                                    {item.is_bought ? <Check size={20} color="white" /> : null}
+                                </div>
+                            )}
 
                             <div className="item-main">
-                                <div className="item-name">
-                                    <strong>{item.item_name}</strong>
-                                    <span className="text-muted">Necesar: {item.quantity_requested} {item.unit}</span>
+                                <div className="item-header-row">
+                                    <div className="item-name">
+                                        <strong>{item.item_name}</strong>
+                                        <span className="text-muted">Necesar: {item.quantity_requested} {item.unit}</span>
+                                    </div>
+                                    {!isClosed && (
+                                        <button className="btn-delete-icon mobile-only" onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (confirm('Stergi produsul?')) {
+                                                await supabase.from('procurement_items').delete().eq('id', item.id);
+                                                fetchListDetails(selectedList.id);
+                                            }
+                                        }}><X size={16} /></button>
+                                    )}
                                 </div>
 
-                                {item.is_bought && (
+                                {(item.is_bought || isClosed) && (
                                     <div className="item-inputs">
                                         <div className="input-group">
-                                            <label>Cant. Cumpărată</label>
+                                            <label>Cantitate</label>
                                             <input
                                                 type="number"
                                                 value={item.quantity_bought}
-                                                onChange={(e) => updateItem(item.id, 'quantity_bought', e.target.value)}
+                                                onChange={(e) => !isClosed && updateItem(item.id, 'quantity_bought', e.target.value)}
+                                                readOnly={isClosed}
                                                 placeholder={item.quantity_requested}
                                             />
                                         </div>
@@ -207,14 +246,16 @@ const AdminProcurement = () => {
                                             <input
                                                 type="number"
                                                 value={item.price_gross}
-                                                onChange={(e) => updateItem(item.id, 'price_gross', e.target.value)}
+                                                onChange={(e) => !isClosed && updateItem(item.id, 'price_gross', e.target.value)}
+                                                readOnly={isClosed}
                                             />
                                         </div>
-                                        <div className="input-group">
+                                        <div className="input-group full-width-mobile">
                                             <label>Furnizor</label>
                                             <select
                                                 value={item.supplier_id || ''}
-                                                onChange={(e) => updateItem(item.id, 'supplier_id', e.target.value)}
+                                                onChange={(e) => !isClosed && updateItem(item.id, 'supplier_id', e.target.value)}
+                                                disabled={isClosed}
                                             >
                                                 <option value="">-</option>
                                                 {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -224,19 +265,28 @@ const AdminProcurement = () => {
                                 )}
                             </div>
 
-                            <button className="btn-delete-icon" onClick={async () => {
-                                if (confirm('Stergi produsul?')) {
-                                    await supabase.from('procurement_items').delete().eq('id', item.id);
-                                    fetchListDetails(selectedList.id);
-                                }
-                            }}><X size={16} /></button>
+                            {!isClosed && (
+                                <button className="btn-delete-icon desktop-only" onClick={async () => {
+                                    if (confirm('Stergi produsul?')) {
+                                        await supabase.from('procurement_items').delete().eq('id', item.id);
+                                        fetchListDetails(selectedList.id);
+                                    }
+                                }}><X size={16} /></button>
+                            )}
                         </div>
                     ))}
                 </div>
 
                 <div className="list-footer-stats">
-                    <div>Total Net (estimat): <strong>{totalNet.toFixed(2)} RON</strong></div>
-                    <div>Total Brut (bon fiscal): <strong>{totalGross.toFixed(2)} RON</strong></div>
+                    <div className="stats-row">
+                        <div>Total Net: <strong>{totalNet.toFixed(2)}</strong></div>
+                        <div>Total Brut: <strong>{totalGross.toFixed(2)}</strong></div>
+                    </div>
+                    {!isClosed && (
+                        <button className="btn-finalize" onClick={finalizeList}>
+                            <Check size={18} /> Finalizează Lista
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -253,206 +303,210 @@ const AdminProcurement = () => {
 
             <div className="procurement-content">
                 {selectedList ? renderDetailView() : (
-                    activeTab === 'active_lists' ? renderActiveLists() : (
-                        <div>Istoric (Work in Progress)</div>
-                    )
+                    activeTab === 'active_lists' ? renderActiveLists() : renderHistoryLists()
                 )}
             </div>
 
             <style>{`
-            .admin-procurement {
-                padding: 1.5rem;
-            background: #f8fafc;
-            min-height: 100%;
+                .admin-procurement {
+                    padding: 1rem;
+                    background: #f8fafc;
+                    min-height: 100%;
+                }
+                
+                .procurement-tabs {
+                    display: flex;
+                    gap: 0.5rem;
+                    margin-bottom: 1.5rem;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding-bottom: 1rem;
+                    overflow-x: auto;
+                }
+                
+                .procurement-tabs button {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    padding: 0.6rem 1.2rem;
+                    font-weight: 600;
+                    color: #64748b;
+                    cursor: pointer;
+                    border-radius: 8px;
+                    transition: all 0.2s;
+                    white-space: nowrap;
+                }
+                
+                .procurement-tabs button.active {
+                    background: #990000;
+                    color: white;
+                    border-color: #990000;
                 }
 
-            .procurement-tabs {
-                display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1rem;
+                .lists-grid { 
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+                    gap: 1rem; 
+                }
+                
+                .list-card, .new-list-card {
+                    background: white; 
+                    border-radius: 12px; 
+                    padding: 1.5rem; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+                    cursor: pointer;
+                    display: flex; 
+                    align-items: center; 
+                    gap: 1rem; 
+                    transition: all 0.2s;
+                }
+                
+                .new-list-card { 
+                    border: 2px dashed #cbd5e1; 
+                    flex-direction: column; 
+                    justify-content: center;
+                    color: #64748b;
+                    background: #f8fafc;
+                }
+                
+                .list-icon { 
+                    width: 48px; height: 48px;
+                    background: #fee2e2; 
+                    border-radius: 12px; 
+                    color: #990000; 
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                
+                .list-info { flex: 1; min-width: 0; }
+                .list-info h4 { margin: 0 0 0.25rem 0; font-size: 1.1rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .list-info p { margin: 0; font-size: 0.85rem; color: #64748b; }
+                
+                /* Detail View */
+                .procurement-detail {
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                
+                .detail-header {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .header-title { flex: 1; }
+                .header-title h2 { margin: 0; font-size: 1.25rem; }
+                
+                .badge-secondary { background: #e2e8f0; color: #475569; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
+                .badge-warning { background: #fef3c7; color: #d97706; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
+                
+                .btn-back {
+                    background: #f1f5f9; border: none; padding: 0.5rem 1rem; border-radius: 6px; 
+                    margin-right: 1rem; font-size: 0.9rem; cursor: pointer; color: #475569;
                 }
 
-            .procurement-tabs button {
-                background: none;
-            border: none;
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            color: #64748b;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
+                .add-item-bar { margin-bottom: 1.5rem; }
+                .add-item-bar select {
+                    width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;
+                    background: #f8fafc;
                 }
 
-            .procurement-tabs button.active {
-                background: #990000;
-            color: white;
+                .shopping-list { display: flex; flex-direction: column; gap: 0.75rem; }
+                
+                .shopping-item {
+                    background: white; 
+                    border: 1px solid #e2e8f0; 
+                    padding: 1rem; 
+                    border-radius: 10px;
+                    display: flex; 
+                    gap: 0.75rem; 
+                    align-items: flex-start;
+                }
+                
+                .item-check {
+                    width: 32px; height: 32px; 
+                    border: 2px solid #cbd5e1; 
+                    border-radius: 8px;
+                    cursor: pointer; 
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0; 
+                }
+                .shopping-item.bought .item-check { background: #22c55e; border-color: #22c55e; }
+                
+                .item-main { flex: 1; min-width: 0; }
+                
+                .item-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+                .item-name strong { display: block; font-size: 1rem; color: #0f172a; margin-bottom: 0.2rem; }
+                .item-name .text-muted { font-size: 0.85rem; color: #64748b; }
+                
+                .item-inputs {
+                    display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;
+                }
+                .input-group { flex: 1; min-width: 80px; }
+                .input-group label { display: block; font-size: 0.7rem; color: #64748b; margin-bottom: 2px; }
+                .input-group input, .input-group select {
+                    width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;
+                }
+                
+                .btn-delete-icon {
+                    background: #fee2e2; border: none; color: #ef4444; 
+                    width: 32px; height: 32px; border-radius: 6px;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; flex-shrink: 0;
+                }
+                
+                .list-footer-stats {
+                    margin-top: 2rem; 
+                    padding: 1rem; 
+                    background: #1e293b; 
+                    color: white;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                }
+                .stats-row { display: flex; gap: 1.5rem; }
+                
+                .btn-finalize {
+                    background: #22c55e; color: white; border: none; padding: 0.8rem 1.5rem;
+                    border-radius: 8px; font-weight: bold; cursor: pointer;
+                    display: flex; align-items: center; gap: 0.5rem;
                 }
 
-            .procurement-tabs button:hover:not(.active) {
-                background: #e2e8f0;
-            color: #1e293b;
-                }
+                /* Mobile Optimizations */
+                .mobile-only { display: none; }
+                .desktop-only { display: flex; }
 
-            .lists-grid {
-                display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem; 
+                @media (max-width: 768px) {
+                    .admin-procurement { padding: 0.5rem; }
+                    .procurement-detail { padding: 0.75rem; }
+                    .lists-grid { grid-template-columns: 1fr; }
+                    
+                    .shopping-item { padding: 0.75rem; gap: 0.75rem; }
+                    
+                    .item-inputs { flex-direction: row; }
+                    .input-group { min-width: 45%; }
+                    .input-group.full-width-mobile { min-width: 100%; width: 100%; }
+                    
+                    .desktop-only { display: none; }
+                    .mobile-only { display: flex; }
+                    
+                    .list-footer-stats { flex-direction: column; align-items: stretch; text-align: center; }
+                    .stats-row { justify-content: space-around; margin-bottom: 1rem; }
+                    .btn-finalize { justify-content: center; width: 100%; padding: 1rem; font-size: 1.1rem; }
                 }
-
-            .list-card, .new-list-card {
-                background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-                }
-
-            .new-list-card {
-                border: 2px dashed #cbd5e1;
-            background: #f8fafc;
-            color: #64748b;
-            justify-content: center;
-            flex-direction: column;
-            box-shadow: none;
-                }
-
-            .list-card:hover {
-                transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            border-color: #cbd5e1;
-                }
-
-            .new-list-card:hover {
-                border - color: #990000;
-            color: #990000;
-            background: white;
-                }
-
-            .list-icon {
-                background: #fee2e2;
-            padding: 1rem;
-            border-radius: 12px;
-            color: #990000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-                }
-
-            .list-info h4 {margin: 0 0 0.25rem 0; font-size: 1.1rem; color: #1e293b; }
-            .list-info p {margin: 0; font-size: 0.85rem; color: #64748b; }
-
-            /* Detail View */
-            .procurement-detail {
-                background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                }
-
-            .detail-header {
-                display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-                }
-
-            .detail-header h2 {margin: 0; font-size: 1.5rem; color: #1e293b; }
-            .badge-warning {background: #fef3c7; color: #d97706; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-
-            .btn-back {
-                background: none; border: none; color: #64748b; cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-right: 1rem;
-                }
-            .btn-back:hover {color: #1e293b; text-decoration: underline; }
-
-            .add-item-bar {
-                margin - bottom: 2rem;
-            background: #f8fafc;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-                }
-            .add-item-bar select {
-                width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 1rem;
-                }
-
-            .shopping-list {margin - top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-
-            .shopping-item {
-                background: white;
-            border: 1px solid #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-            transition: all 0.2s;
-                }
-            .shopping-item:hover {border - color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-            .shopping-item.bought {background: #f0fdf4; border-color: #bbf7d0; opacity: 0.9; }
-
-            .item-check {
-                width: 28px; height: 28px;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 2px;
-            transition: all 0.2s;
-            background: white;
-                }
-            .item-check:hover {border - color: #94a3b8; }
-            .shopping-item.bought .item-check {background: #22c55e; border-color: #22c55e; }
-
-            .item-main {flex: 1; }
-
-            .item-inputs {
-                display: flex; gap: 1rem; margin-top: 0.75rem; flex-wrap: wrap;
-            background: rgba(255,255,255,0.8); padding: 0.75rem; border-radius: 6px;
-            border: 1px solid #e2e8f0;
-                }
-            .input-group label {
-                display: block; font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 2px;
-                }
-            .input-group input, .input-group select {
-                padding: 0.4rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; font-size: 0.9rem;
-                }
-
-            .btn-delete-icon {
-                background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 4px; border-radius: 4px;
-                }
-            .btn-delete-icon:hover {background: #fee2e2; color: #ef4444; }
-
-            .list-footer-stats {
-                margin - top: 2rem;
-            padding: 1.5rem;
-            background: #1e293b;
-            color: white;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-                }
-            .list-footer-stats div {font - size: 1.1rem; }
             `}</style>
         </div >
     );
 };
 
 export default AdminProcurement;
+```
