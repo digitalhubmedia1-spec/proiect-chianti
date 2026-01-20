@@ -23,7 +23,8 @@ import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight } from 'lucide-react';
+import AdminProcurement from './components/AdminProcurement';
+import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -74,9 +75,9 @@ const AdminDashboard = () => {
         }
 
         if (adminRole === 'achizitor') {
-            // Achizitor needs procurement flow
-            // Allowed: Inventory stuff
-            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations'];
+            // Achizitor needs procurement flow logic
+            // Allowed: Inventory stuff + PROCUREMENT
+            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
