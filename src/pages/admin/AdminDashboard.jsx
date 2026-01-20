@@ -66,6 +66,9 @@ const AdminDashboard = () => {
         if (!adminRole) return false;
         if (adminRole === 'admin_app') return true; // Super admin
 
+        // Grant Procurement access to everyone EXCEPT chef
+        if (tab === 'procurement' && adminRole !== 'chef') return true;
+
         if (adminRole === 'contabil') {
             // Contabil needs reports, logs, inventory checks, suppliers, but maybe not products editing?
             // Giving broad access similar to operator but can be refined.
