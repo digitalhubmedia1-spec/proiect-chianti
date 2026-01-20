@@ -447,7 +447,15 @@ const AdminDashboard = () => {
                 {activeTab === 'orders' && (
                     <div className="tab-content">
                         <OrderList />
-                        <div style={{ margin: '2rem 0', borderTop: '2px solid #ddd' }}></div>
+                        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto', flex: 1 }}>
+                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                                Autentificat ca:<br />
+                                <strong style={{ color: 'white' }}>{adminName}</strong><br />
+                                Rol: <em style={{ color: '#fbbf24' }}>{adminRole}</em>
+                            </div>
+
+                            <nav className="admin-nav"></nav>
+                        </div>
                         <h3 className="mb-4 text-xl font-bold">Flux Comenzi</h3>
                         <KanbanBoard />
                     </div>
