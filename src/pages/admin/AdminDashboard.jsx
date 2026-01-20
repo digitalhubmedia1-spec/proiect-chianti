@@ -97,7 +97,7 @@ const AdminDashboard = () => {
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_role');
         localStorage.removeItem('admin_name');
-        navigate('/admin-login');
+        navigate('/admin/login');
     };
 
 
