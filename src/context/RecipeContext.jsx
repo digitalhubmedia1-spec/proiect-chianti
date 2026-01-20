@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { logAction } from '../utils/adminLogger';
+import { supabase } from '../supabaseClient';
 
 const RecipeContext = createContext();
 
