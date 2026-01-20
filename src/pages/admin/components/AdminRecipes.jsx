@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
+import { useMenu } from '../../../context/MenuContext';
 import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen } from 'lucide-react';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
-    const { items: inventoryItems, updateStock } = useInventory();
+    const { items: inventoryItems } = useInventory();
+    const { products } = useMenu();
 
     const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'calculator'
 
@@ -26,14 +28,20 @@ const AdminRecipes = () => {
     // --- MANAGE HANDLERS ---
     const openModal = (recipe = null) => {
         if (recipe) {
-            setEditingId(recipe.id);
+            setEditingId(recipe.id); // This is product_id
             setRecipeForm({
-                ...recipe,
+                product_id: recipe.product_id,
+                name: recipe.name,
+                ingredients: recipe.ingredients.map(i => ({
+                    ingredient_id: i.ingredient_id, // Store ID
+                    qty: i.qty,
+                    unit: i.unit // Visual only, fetched from inventory
+                })),
                 preparation_method: recipe.preparation_method || ''
             });
         } else {
             setEditingId(null);
-            setRecipeForm({ name: '', ingredients: [], preparation_method: '' });
+            setRecipeForm({ product_id: '', name: '', ingredients: [], preparation_method: '' });
         }
         setIsModalOpen(true);
     };
@@ -42,10 +50,13 @@ const AdminRecipes = () => {
         const newIngredients = [...recipeForm.ingredients];
         newIngredients[index][field] = value;
 
-        // Auto-fill unit if item selected
-        if (field === 'itemName') {
-            const item = inventoryItems.find(i => i.name === value);
-            if (item) newIngredients[index].unit = item.unit;
+        // Auto-update unit if item selected
+        if (field === 'ingredient_id') {
+            const item = inventoryItems.find(i => i.id == value);
+            if (item) {
+                newIngredients[index].unit = item.unit;
+                newIngredients[index].ingredient_id = parseInt(value);
+            }
         }
 
         setRecipeForm({ ...recipeForm, ingredients: newIngredients });
@@ -54,7 +65,7 @@ const AdminRecipes = () => {
     const addIngredientRow = () => {
         setRecipeForm({
             ...recipeForm,
-            ingredients: [...recipeForm.ingredients, { itemName: '', qty: '', unit: '' }]
+            ingredients: [...recipeForm.ingredients, { ingredient_id: '', qty: '', unit: '' }]
         });
     };
 
@@ -66,17 +77,15 @@ const AdminRecipes = () => {
     const handleSaveRecipe = (e) => {
         e.preventDefault();
         // Filter out empty rows
-        const validIngredients = recipeForm.ingredients.filter(i => i.itemName && i.qty);
+        const validIngredients = recipeForm.ingredients.filter(i => i.ingredient_id && i.qty);
 
-        // Normalize to Uppercase
         const data = {
-            ...recipeForm,
-            name: recipeForm.name.toUpperCase(),
+            product_id: recipeForm.product_id,
+            preparation_method: recipeForm.preparation_method,
             ingredients: validIngredients.map(ing => ({
-                ...ing,
-                itemName: ing.itemName.toUpperCase()
-            })),
-            preparation_method: recipeForm.preparation_method
+                ingredient_id: ing.ingredient_id,
+                qty: ing.qty
+            }))
         };
 
         if (editingId) {
@@ -389,15 +398,33 @@ const AdminRecipes = () => {
                         <h3>{editingId ? 'Editează Rețetă' : 'Adaugă Rețetă Nouă'}</h3>
                         <form onSubmit={handleSaveRecipe}>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nume Produs / Rețetă</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    style={{ width: '100%', padding: '0.5rem' }}
-                                    value={recipeForm.name}
-                                    onChange={e => setRecipeForm({ ...recipeForm, name: e.target.value })}
-                                    required
-                                />
+                                {!editingId ? (
+                                    <>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Selectează Produs din Meniu</label>
+                                        <select
+                                            className="form-control"
+                                            style={{ width: '100%', padding: '0.5rem' }}
+                                            value={recipeForm.product_id}
+                                            onChange={e => {
+                                                const p = products.find(prod => prod.id == e.target.value);
+                                                setRecipeForm({ ...recipeForm, product_id: e.target.value, name: p ? p.name : '' });
+                                            }}
+                                            required
+                                        >
+                                            <option value="">-- Alege Produs --</option>
+                                            {products
+                                                .filter(p => !recipes.find(r => r.product_id == p.id)) // Hide already configured
+                                                .map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
+                                                ))}
+                                        </select>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Produs (Read-Only)</label>
+                                        <input type="text" className="form-control" value={recipeForm.name} disabled style={{ width: '100%', padding: '0.5rem', background: '#f1f5f9' }} />
+                                    </>
+                                )}
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -415,20 +442,17 @@ const AdminRecipes = () => {
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ingrediente (per 1 porție)</label>
                                 {recipeForm.ingredients.map((ing, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <input
-                                            list={`ingredient-list-${i}`}
-                                            type="text"
-                                            placeholder="Nume Ingredient (ex: Făină)"
-                                            value={ing.itemName}
-                                            onChange={e => handleIngredientChange(i, 'itemName', e.target.value)}
-                                            style={{ flex: 2, padding: '0.3rem' }}
+                                        <select
+                                            value={ing.ingredient_id || ''}
+                                            onChange={e => handleIngredientChange(i, 'ingredient_id', e.target.value)}
+                                            style={{ flex: 2, padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
                                             required
-                                        />
-                                        <datalist id={`ingredient-list-${i}`}>
-                                            {uniqueInventoryNames.map(name => (
-                                                <option key={name} value={name} />
+                                        >
+                                            <option value="">-- Alege Ingredient --</option>
+                                            {inventoryItems.map(item => (
+                                                <option key={item.id} value={item.id}>{item.name} ({item.stock || 0} {item.unit})</option>
                                             ))}
-                                        </datalist>
+                                        </select>
                                         <input
                                             type="number"
                                             step="0.001"
