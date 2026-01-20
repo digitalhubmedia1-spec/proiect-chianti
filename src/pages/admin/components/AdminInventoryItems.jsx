@@ -86,6 +86,23 @@ const AdminInventoryItems = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Check for duplicates
+        const { data: existing } = await supabase
+            .from('inventory_items')
+            .select('id')
+            .ilike('name', formData.name) // Case insensitive check
+            .maybeSingle();
+
+        if (existing) {
+            // If editing, it's fine if the found item is the one we are editing
+            if (currentItem && existing.id === currentItem.id) {
+                // proceed
+            } else {
+                alert(`Produsul "${formData.name}" există deja în nomenclator! Nu se acceptă duplicate.`);
+                return;
+            }
+        }
+
         // Auto-detect asset flag based on category
         const isAsset = formData.category === 'Obiecte Inventar';
         const payload = { ...formData, is_asset: isAsset };
