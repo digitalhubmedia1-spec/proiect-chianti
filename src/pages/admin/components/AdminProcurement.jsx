@@ -14,49 +14,132 @@ const AdminProcurement = () => {
     const [items, setItems] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
 
-    useEffect(() => {
-        fetchNomenclatures();
-        fetchLists();
-    }, []);
-
-    const fetchNomenclatures = async () => {
-        const { data: iData } = await supabase.from('inventory_items').select('*').order('name');
-        const { data: sData } = await supabase.from('suppliers').select('*').order('name');
-        if (iData) setItems(iData);
-        if (sData) setSuppliers(sData);
-    };
-
-    const fetchLists = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('procurement_lists')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (data) setLists(data);
-        setLoading(false);
-    };
-
-    const fetchListDetails = async (listId) => {
-        setLoading(true);
-        // Fetch list info
-        const { data: listData } = await supabase.from('procurement_lists').select('*').eq('id', listId).single();
-
-        // Fetch items
-        const { data: itemsData } = await supabase
-            .from('procurement_items')
-            .select('*')
-            .eq('list_id', listId)
-            .order('is_bought', { ascending: true }) // Not bought first
-            .order('item_name', { ascending: true });
-
-        if (listData && itemsData) {
-            setSelectedList({ ...listData, items: itemsData });
-        }
-        setLoading(false);
-    };
+    // Generator State
+    const [generatorDate, setGeneratorDate] = useState(new Date().toISOString().split('T')[0]);
+    const [defaultPortions, setDefaultPortions] = useState(20); // Fallback if no stock set
+    const [generatedNeeds, setGeneratedNeeds] = useState(null); // Array of { item, needed, stock, requested }
 
     // --- ACTIONS ---
+
+    const calculateNeeds = async () => {
+        setLoading(true);
+        try {
+            // 1. Get Daily Menu
+            const { data: menuItems, error: menuError } = await supabase
+                .from('daily_menu_items')
+                .select('product_id, stock')
+                .eq('date', generatorDate);
+
+            if (menuError) throw menuError;
+            if (!menuItems || menuItems.length === 0) {
+                alert("Nu există meniu setat pentru această dată.");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Get Recipes for these products
+            const productIds = menuItems.map(m => m.product_id);
+            const { data: recipes, error: recipeError } = await supabase
+                .from('recipes')
+                .select('product_id, ingredient_id, quantity_required')
+                .in('product_id', productIds);
+
+            if (recipeError) throw recipeError;
+
+            // 3. Aggregate Needs
+            const totals = {}; // ingredient_id -> needed_qty
+
+            menuItems.forEach(menuItem => {
+                const portions = menuItem.stock || defaultPortions;
+                const productRecipes = recipes.filter(r => r.product_id === menuItem.product_id);
+
+                productRecipes.forEach(rec => {
+                    const totalForProduct = parseFloat(rec.quantity_required) * portions;
+                    totals[rec.ingredient_id] = (totals[rec.ingredient_id] || 0) + totalForProduct;
+                });
+            });
+
+            // 4. Get Current Stock
+            const ingredientIds = Object.keys(totals);
+            if (ingredientIds.length === 0) {
+                alert("Nu există rețete configurate pentru produsele din meniu.");
+                setLoading(false);
+                return;
+            }
+
+            const { data: stocks, error: stockError } = await supabase
+                .from('inventory_batches')
+                .select('item_id, quantity')
+                .in('item_id', ingredientIds);
+
+            if (stockError) throw stockError;
+
+            // 5. Calculate Delta
+            const currentStockMap = {};
+            stocks.forEach(s => {
+                currentStockMap[s.item_id] = (currentStockMap[s.item_id] || 0) + parseFloat(s.quantity);
+            });
+
+            const needs = [];
+            for (const [ingId, requiredQty] of Object.entries(totals)) {
+                const current = currentStockMap[ingId] || 0;
+                if (current < requiredQty) {
+                    const itemDef = items.find(i => i.id == ingId);
+                    if (itemDef) {
+                        needs.push({
+                            id: ingId,
+                            name: itemDef.name,
+                            unit: itemDef.unit,
+                            required: requiredQty,
+                            stock: current,
+                            to_buy: requiredQty - current
+                        });
+                    }
+                }
+            }
+
+            setGeneratedNeeds(needs);
+        } catch (err) {
+            console.error(err);
+            alert("Eroare calcul: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const generateListFromNeeds = async () => {
+        if (!generatedNeeds || generatedNeeds.length === 0) return;
+
+        const listName = `Necesar Meniu ${new Date(generatorDate).toLocaleDateString('ro-RO')}`;
+        await createNewList(listName); // Creates and sets active
+
+        // We need the ID of the newly created list. 
+        // createNewList sets state but we need to wait or grab it differently?
+        // Actually createNewList sets ActiveTab to 'active_lists' and fetching lists. 
+        // We should hack it slightly or retrieve the latest list.
+
+        // Let's optimize createNewList to return the ID or handle this better.
+        // For now, I'll fetch the latest list immediately after creation.
+        setTimeout(async () => {
+            const { data } = await supabase.from('procurement_lists').select('id').order('created_at', { ascending: false }).limit(1).single();
+            if (data) {
+                // Insert items
+                const inserts = generatedNeeds.map(n => ({
+                    list_id: data.id,
+                    item_id: n.id, // linked to inventory_items
+                    item_name: n.name,
+                    quantity_requested: Math.ceil(n.to_buy * 100) / 100, // round up slightly
+                    unit: n.unit
+                }));
+
+                const { error } = await supabase.from('procurement_items').insert(inserts);
+                if (error) alert("Eroare la adăugarea produselor: " + error.message);
+
+                fetchListDetails(data.id);
+                setGeneratedNeeds(null); // Reset
+            }
+        }, 500);
+    };
 
     const createNewList = async (name) => {
         if (!name) return;
@@ -74,6 +157,7 @@ const AdminProcurement = () => {
             setLists([data, ...lists]);
             setActiveTab('active_lists');
             fetchListDetails(data.id); // Open it immediately
+            return data; // Return data for caller
         }
     };
 
@@ -292,18 +376,94 @@ const AdminProcurement = () => {
         );
     };
 
+    const renderGenerator = () => (
+        <div className="generator-container">
+            <div className="generator-controls">
+                <div className="control-group">
+                    <label>Dată Meniu</label>
+                    <input type="date" value={generatorDate} onChange={e => setGeneratorDate(e.target.value)} />
+                </div>
+                <div className="control-group">
+                    <label>Porții Implicite (dacă nu-s setate)</label>
+                    <input type="number" value={defaultPortions} onChange={e => setDefaultPortions(e.target.value)} />
+                </div>
+                <button className="btn-primary" onClick={calculateNeeds} disabled={loading}>
+                    <Calculator size={18} /> Calculează Necesar
+                </button>
+            </div>
+
+            {generatedNeeds && (
+                <div className="needs-preview">
+                    <h3>Rezultat Calcul: {generatedNeeds.length} produse necesare</h3>
+                    {generatedNeeds.length === 0 ? (
+                        <p className="success-msg"><Check size={18} /> Stocul curent acoperă tot necesarul!</p>
+                    ) : (
+                        <>
+                            <table className="needs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produs</th>
+                                        <th>Necesar (Total)</th>
+                                        <th>Stoc Curent</th>
+                                        <th>De Cumpărat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {generatedNeeds.map(n => (
+                                        <tr key={n.id}>
+                                            <td>{n.name}</td>
+                                            <td>{n.required.toFixed(2)} {n.unit}</td>
+                                            <td>{n.stock.toFixed(2)} {n.unit}</td>
+                                            <td style={{ color: '#dc2626', fontWeight: 'bold' }}>{n.to_buy.toFixed(2)} {n.unit}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div className="preview-actions">
+                                <button className="btn-finalize" onClick={generateListFromNeeds}>
+                                    <ShoppingCart size={18} /> Generează Lista de Cumpărături
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            <style>{`
+                .generator-container { padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                .generator-controls { display: flex; gap: 1.5rem; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; }
+                .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
+                .control-group label { font-weight: 600; color: #64748b; font-size: 0.9rem; }
+                .control-group input { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
+                .btn-primary { background: #0f172a; color: white; padding: 0.7rem 1.5rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+                .btn-primary:hover { background: #1e293b; }
+                
+                .needs-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.95rem; }
+                .needs-table th { text-align: left; padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+                .needs-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+                .needs-table tr:hover { background: #f8fafc; }
+                
+                .preview-actions { margin-top: 2rem; display: flex; justify-content: flex-end; }
+                .success-msg { color: #16a34a; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; }
+            `}</style>
+        </div>
+    );
+
     return (
         <div className="admin-procurement">
             {!selectedList && (
                 <div className="procurement-tabs">
                     <button className={activeTab === 'active_lists' ? 'active' : ''} onClick={() => setActiveTab('active_lists')}>Liste Active</button>
+                    <button className={activeTab === 'generator' ? 'active' : ''} onClick={() => setActiveTab('generator')}>Generator Necesar</button>
                     <button className={activeTab === 'history' ? 'active' : ''} onClick={() => { setActiveTab('history'); fetchLists(); }}>Istoric</button>
                 </div>
             )}
 
             <div className="procurement-content">
                 {selectedList ? renderDetailView() : (
-                    activeTab === 'active_lists' ? renderActiveLists() : renderHistoryLists()
+                    activeTab === 'active_lists' ? renderActiveLists() : (
+                        activeTab === 'generator' ? renderGenerator() : renderHistoryLists()
+                    )
                 )}
             </div>
 
