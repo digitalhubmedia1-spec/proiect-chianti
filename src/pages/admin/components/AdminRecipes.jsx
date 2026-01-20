@@ -4,6 +4,7 @@ import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
 import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen } from 'lucide-react';
+import InventorySearch from '../../../components/common/InventorySearch';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
@@ -16,8 +17,10 @@ const AdminRecipes = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [recipeForm, setRecipeForm] = useState({
-        name: '',
-        ingredients: [] // { itemId, qty, unit }
+        name: '', // Now explicit
+        linked_product_id: '', // Optional
+        preparation_method: '',
+        ingredients: [] // { ingredient_id, qty, unit }
     });
 
     // --- CALCULATOR STATE ---
@@ -28,20 +31,20 @@ const AdminRecipes = () => {
     // --- MANAGE HANDLERS ---
     const openModal = (recipe = null) => {
         if (recipe) {
-            setEditingId(recipe.id); // This is product_id
+            setEditingId(recipe.id);
             setRecipeForm({
-                product_id: recipe.product_id,
                 name: recipe.name,
+                linked_product_id: recipe.linked_product_id || '',
+                preparation_method: recipe.preparation_method || '',
                 ingredients: recipe.ingredients.map(i => ({
-                    ingredient_id: i.ingredient_id, // Store ID
+                    ingredient_id: i.ingredient_id,
                     qty: i.qty,
-                    unit: i.unit // Visual only, fetched from inventory
-                })),
-                preparation_method: recipe.preparation_method || ''
+                    unit: i.unit
+                }))
             });
         } else {
             setEditingId(null);
-            setRecipeForm({ product_id: '', name: '', ingredients: [], preparation_method: '' });
+            setRecipeForm({ name: '', linked_product_id: '', ingredients: [], preparation_method: '' });
         }
         setIsModalOpen(true);
     };
@@ -74,13 +77,19 @@ const AdminRecipes = () => {
         setRecipeForm({ ...recipeForm, ingredients: newIngredients });
     };
 
-    const handleSaveRecipe = (e) => {
+    const handleSaveRecipe = async (e) => {
         e.preventDefault();
         // Filter out empty rows
         const validIngredients = recipeForm.ingredients.filter(i => i.ingredient_id && i.qty);
 
+        if (!recipeForm.name.trim()) {
+            alert("Numele rețetei este obligatoriu!");
+            return;
+        }
+
         const data = {
-            product_id: recipeForm.product_id,
+            name: recipeForm.name,
+            linked_product_id: recipeForm.linked_product_id || null,
             preparation_method: recipeForm.preparation_method,
             ingredients: validIngredients.map(ing => ({
                 ingredient_id: ing.ingredient_id,
@@ -88,51 +97,35 @@ const AdminRecipes = () => {
             }))
         };
 
+        let result;
         if (editingId) {
-            updateRecipe(editingId, data);
+            result = await updateRecipe(editingId, data);
         } else {
-            addRecipe(data);
+            result = await addRecipe(data);
         }
-        setIsModalOpen(false);
+
+        if (result && result.success) {
+            setIsModalOpen(false);
+        }
     };
 
     // --- CALCULATOR HANDLERS (FIFO Logic) ---
     const calculateRequirements = async () => {
         if (!selectedRecipeId || portions <= 0) return;
-        const recipe = recipes.find(r => r.id === selectedRecipeId);
+        const recipe = recipes.find(r => r.id === parseInt(selectedRecipeId)); // Ensure ID match
         if (!recipe) return;
 
         // Fetch valid batches for all ingredients involved
-        // We need to map ingredient names to Item IDs first.
-        // Assuming recipe ingredients store 'itemName'. We need to find their IDs from inventoryItems.
-        const ingredientsWithIds = recipe.ingredients.map(ing => {
-            const itemDef = inventoryItems.find(i => i.name === ing.itemName);
-            return {
-                ...ing,
-                item_id: itemDef ? itemDef.id : null
-            };
-        });
-
-        // Filter out those without matching items in inventory? Or show error?
-        // We'll proceed with what matches, warn about others.
-        // Actually, let's just use what we have.
-
-        // Fetch batches for each item
+        // We assume recipe.ingredients already contains { ingredient_id } from our Context refactor
         const results = [];
 
-        for (const ing of ingredientsWithIds) {
-            if (!ing.item_id) {
-                results.push({
-                    itemName: ing.itemName,
-                    needed: parseFloat(ing.qty) * portions,
-                    unit: ing.unit,
-                    available: 0,
-                    batches: [],
-                    isSufficient: false,
-                    error: 'Nomenclator lipsă'
-                });
-                continue;
-            }
+        for (const ing of recipe.ingredients) {
+            if (!ing.ingredient_id) continue;
+
+            // Find item def just for name/unit fallback
+            const itemDef = inventoryItems.find(i => i.id === ing.ingredient_id);
+            const itemName = itemDef ? itemDef.name : ing.itemName;
+            const unit = itemDef ? itemDef.unit : ing.unit;
 
             const neededTotal = parseFloat(ing.qty) * portions;
 
@@ -140,7 +133,7 @@ const AdminRecipes = () => {
             const { data: batches } = await supabase
                 .from('inventory_batches')
                 .select('*')
-                .eq('item_id', ing.item_id)
+                .eq('item_id', ing.ingredient_id)
                 .gt('quantity', 0)
                 .order('expiration_date', { ascending: true }) // FIFO
                 .order('created_at', { ascending: true });
@@ -148,10 +141,10 @@ const AdminRecipes = () => {
             const totalAvailable = batches ? batches.reduce((acc, b) => acc + b.quantity, 0) : 0;
 
             results.push({
-                itemName: ing.itemName,
-                item_id: ing.item_id,
+                itemName: itemName,
+                item_id: ing.ingredient_id,
                 needed: neededTotal,
-                unit: ing.unit,
+                unit: unit,
                 available: totalAvailable,
                 batches: batches || [],
                 isSufficient: totalAvailable >= neededTotal
@@ -297,7 +290,7 @@ const AdminRecipes = () => {
                                 <select
                                     className="form-control"
                                     value={selectedRecipeId}
-                                    onChange={(e) => { setSelectedRecipeId(e.target.value); setCalculationResult(null); }}
+                                    onChange={(e) => { setSelectedRecipeId(parseInt(e.target.value)); setCalculationResult(null); }}
                                     style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                                 >
                                     <option value="">-- Selectează --</option>
@@ -398,33 +391,40 @@ const AdminRecipes = () => {
                         <h3>{editingId ? 'Editează Rețetă' : 'Adaugă Rețetă Nouă'}</h3>
                         <form onSubmit={handleSaveRecipe}>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                {!editingId ? (
-                                    <>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Selectează Produs din Meniu</label>
-                                        <select
-                                            className="form-control"
-                                            style={{ width: '100%', padding: '0.5rem' }}
-                                            value={recipeForm.product_id}
-                                            onChange={e => {
-                                                const p = products.find(prod => prod.id == e.target.value);
-                                                setRecipeForm({ ...recipeForm, product_id: e.target.value, name: p ? p.name : '' });
-                                            }}
-                                            required
-                                        >
-                                            <option value="">-- Alege Produs --</option>
-                                            {products
-                                                .filter(p => !recipes.find(r => r.product_id == p.id)) // Hide already configured
-                                                .map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
-                                                ))}
-                                        </select>
-                                    </>
-                                ) : (
-                                    <>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Produs (Read-Only)</label>
-                                        <input type="text" className="form-control" value={recipeForm.name} disabled style={{ width: '100%', padding: '0.5rem', background: '#f1f5f9' }} />
-                                    </>
-                                )}
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Nume Rețetă *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                    placeholder="ex: Sos Pizza sau Burger Chianti"
+                                    value={recipeForm.name}
+                                    onChange={e => setRecipeForm({ ...recipeForm, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asociază cu Produs din Meniu (Opțional)</label>
+                                <select
+                                    className="form-control"
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                    value={recipeForm.linked_product_id}
+                                    onChange={e => {
+                                        const p = products.find(prod => prod.id == e.target.value);
+                                        setRecipeForm({
+                                            ...recipeForm,
+                                            linked_product_id: e.target.value,
+                                            // Auto-fill name only if empty
+                                            name: (recipeForm.name === '' && p) ? p.name : recipeForm.name
+                                        });
+                                    }}
+                                >
+                                    <option value="">-- Niciunul (Doar rețetă internă) --</option>
+                                    {products.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
+                                    ))}
+                                </select>
+                                <small style={{ color: '#64748b' }}>Dacă selectați un produs, calculatorul va putea fi folosit automat din Meniu.</small>
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -432,7 +432,7 @@ const AdminRecipes = () => {
                                 <textarea
                                     className="form-control"
                                     style={{ width: '100%', padding: '0.5rem', minHeight: '100px', resize: 'vertical' }}
-                                    placeholder="Descrie pașii de preparare, timpii de gătire etc..."
+                                    placeholder="Descrie pașii de preparare..."
                                     value={recipeForm.preparation_method}
                                     onChange={e => setRecipeForm({ ...recipeForm, preparation_method: e.target.value })}
                                 />
@@ -441,25 +441,29 @@ const AdminRecipes = () => {
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ingrediente (per 1 porție)</label>
                                 {recipeForm.ingredients.map((ing, i) => (
-                                    <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <select
-                                            value={ing.ingredient_id || ''}
-                                            onChange={e => handleIngredientChange(i, 'ingredient_id', e.target.value)}
-                                            style={{ flex: 2, padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                            required
-                                        >
-                                            <option value="">-- Alege Ingredient --</option>
-                                            {inventoryItems.map(item => (
-                                                <option key={item.id} value={item.id}>{item.name} ({item.stock || 0} {item.unit})</option>
-                                            ))}
-                                        </select>
+                                    <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                        <div style={{ flex: 2 }}>
+                                            <InventorySearch
+                                                items={inventoryItems}
+                                                placeholder="Caută ingredient..."
+                                                defaultQuery={inventoryItems.find(x => x.id === ing.ingredient_id)?.name || ''}
+                                                onSelect={(item) => {
+                                                    if (item) {
+                                                        handleIngredientChange(i, 'ingredient_id', item.id);
+                                                        handleIngredientChange(i, 'unit', item.unit);
+                                                    } else {
+                                                        handleIngredientChange(i, 'ingredient_id', '');
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                         <input
                                             type="number"
                                             step="0.001"
                                             placeholder="Cantitate"
                                             value={ing.qty}
                                             onChange={e => handleIngredientChange(i, 'qty', e.target.value)}
-                                            style={{ flex: 1, padding: '0.3rem' }}
+                                            style={{ flex: 1, padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
                                             required
                                         />
                                         <input
@@ -467,12 +471,13 @@ const AdminRecipes = () => {
                                             placeholder="Unit"
                                             value={ing.unit}
                                             onChange={e => handleIngredientChange(i, 'unit', e.target.value)}
-                                            style={{ width: '55px', border: '1px solid #ccc', padding: '0.3rem', borderRadius: '4px' }}
+                                            style={{ width: '60px', border: '1px solid #cbd5e1', padding: '0.6rem', borderRadius: '4px', background: '#f8fafc' }}
+                                            title="Unitatea se completează automat din stoc, dar poate fi modificată"
                                         />
-                                        <button type="button" onClick={() => removeIngredientRow(i)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                        <button type="button" onClick={() => removeIngredientRow(i)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer', padding: '0.5rem' }}><Trash2 size={18} /></button>
                                     </div>
                                 ))}
-                                <button type="button" onClick={addIngredientRow} className="btn-text" style={{ color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <button type="button" onClick={addIngredientRow} className="btn-text" style={{ color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                                     <Plus size={16} /> Adaugă rând ingredient
                                 </button>
                             </div>

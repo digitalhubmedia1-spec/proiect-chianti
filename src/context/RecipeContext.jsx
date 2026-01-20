@@ -17,43 +17,48 @@ export const RecipeProvider = ({ children }) => {
     const fetchRecipes = async () => {
         setLoading(true);
         try {
-            // Fetch all recipe lines
+            // Fetch defined_recipes with ingredients
+            // Note: 'recipes' table is now effectively 'recipe_ingredients'
             const { data, error } = await supabase
-                .from('recipes')
+                .from('defined_recipes')
                 .select(`
                     id,
-                    product_id,
-                    ingredient_id,
-                    quantity_required,
+                    name,
+                    preparation_method,
+                    linked_product_id,
                     products (name),
-                    inventory_items (name, unit),
-                    preparation_method
-                `);
+                    recipes (
+                        id,
+                        ingredient_id,
+                        quantity_required,
+                        inventory_items (name, unit)
+                    )
+                `)
+                .order('name');
 
             if (error) throw error;
 
-            // Group by product_id to create "Recipe Objects"
-            const groups = {};
-            data.forEach(row => {
-                if (!groups[row.product_id]) {
-                    groups[row.product_id] = {
-                        id: row.product_id, // Use product_id as the Recipe ID
-                        name: row.products?.name || 'Unknown Product',
-                        product_id: row.product_id,
-                        preparation_method: row.preparation_method,
-                        ingredients: []
-                    };
-                }
-                groups[row.product_id].ingredients.push({
-                    id: row.id, // Row ID
-                    ingredient_id: row.ingredient_id,
-                    itemName: row.inventory_items?.name || 'Unknown Item',
-                    qty: row.quantity_required,
-                    unit: row.inventory_items?.unit || ''
-                });
-            });
+            console.log("Fetched Recipes Data:", data);
 
-            setRecipes(Object.values(groups));
+            // Accessing nested data might require mapping depending on how PostgREST returns it.
+            // data structure: [{ id, name, recipes: [{ ...inventory_items... }] }]
+
+            const formatted = data.map(row => ({
+                id: row.id, // This is the Recipe Header ID
+                name: row.name,
+                preparation_method: row.preparation_method,
+                linked_product_id: row.linked_product_id,
+                linked_product_name: row.products?.name,
+                ingredients: row.recipes?.map(r => ({
+                    id: r.id,
+                    ingredient_id: r.ingredient_id,
+                    itemName: r.inventory_items?.name || 'Unknown Item',
+                    qty: r.quantity_required,
+                    unit: r.inventory_items?.unit || ''
+                })) || []
+            }));
+
+            setRecipes(formatted);
         } catch (err) {
             console.error("Error fetching recipes:", err);
         } finally {
@@ -62,57 +67,109 @@ export const RecipeProvider = ({ children }) => {
     };
 
     const addRecipe = async (recipeData) => {
-        // recipeData expects: { product_id, preparation_method, ingredients: [{ ingredient_id, qty }] }
+        // recipeData: { name, preparation_method, linked_product_id (opt), ingredients: [] }
         try {
-            // 1. Prepare Inserts
-            const inserts = recipeData.ingredients.map(ing => ({
-                product_id: recipeData.product_id,
-                ingredient_id: ing.ingredient_id,
-                quantity_required: ing.qty,
-                preparation_method: recipeData.preparation_method // We store this on every row redundancy or need a separate table? 
-                // Wait, if I add preparation_method column to recipes table, it repeats for every ingredient. 
-                // Ideally it should be on 'products' or a 'recipe_meta' table.
-                // For now, let's assume we update it on all rows or it's just one row needed.
-                // Actually, the previous 'add_recipe_instructions.sql' added it to 'recipes'.
-                // So we will just include it in every row for simplicity now, or just the first.
-            }));
+            // 1. Create Header
+            const headerPayload = {
+                name: recipeData.name,
+                preparation_method: recipeData.preparation_method,
+                linked_product_id: recipeData.linked_product_id || null
+            };
 
-            // To ensure consistency, let's just save it on all loops.
-            const payload = inserts.map(i => ({ ...i, preparation_method: recipeData.preparation_method }));
+            const { data: header, error: headerErr } = await supabase
+                .from('defined_recipes')
+                .insert([headerPayload])
+                .select()
+                .single();
 
-            const { error } = await supabase.from('recipes').insert(payload);
-            if (error) throw error;
+            if (headerErr) throw headerErr;
 
-            logAction('REȚETAR', `Creat rețetă pentru produsul #${recipeData.product_id}`);
+            // 2. Insert Ingredients
+            if (recipeData.ingredients && recipeData.ingredients.length > 0) {
+                const ingredientsPayload = recipeData.ingredients.map(ing => ({
+                    recipe_id: header.id,
+                    ingredient_id: ing.ingredient_id,
+                    quantity_required: ing.qty
+                }));
+
+                const { error: ingErr } = await supabase
+                    .from('recipes') // This is the ingredient link table
+                    .insert(ingredientsPayload);
+
+                if (ingErr) throw ingErr;
+            }
+
+            logAction('REȚETAR', `Creat rețetă "${recipeData.name}"`);
             fetchRecipes();
+            return { success: true };
         } catch (err) {
             console.error("Error adding recipe:", err);
             alert("Eroare la salvarea rețetei: " + err.message);
+            return { success: false, error: err };
         }
     };
 
-    const updateRecipe = async (productId, updatedData) => {
+    const updateRecipe = async (recipeId, updatedData) => {
+        // recipeId is defined_recipes.id
         try {
-            // 1. Delete old ingredients for this product
-            const { error: delError } = await supabase.from('recipes').delete().eq('product_id', productId);
-            if (delError) throw delError;
+            // 1. Update Header
+            const { error: headerErr } = await supabase
+                .from('defined_recipes')
+                .update({
+                    name: updatedData.name,
+                    preparation_method: updatedData.preparation_method,
+                    linked_product_id: updatedData.linked_product_id || null
+                })
+                .eq('id', recipeId);
 
-            // 2. Insert new
-            await addRecipe({ ...updatedData, product_id: productId });
-            logAction('REȚETAR', `Actualizat rețetă pentru produsul #${productId}`);
+            if (headerErr) throw headerErr;
+
+            // 2. Update Ingredients (Delete Old -> Insert New)
+            // Delete existing ingredients for this recipe
+            const { error: delErr } = await supabase
+                .from('recipes')
+                .delete()
+                .eq('recipe_id', recipeId);
+
+            if (delErr) throw delErr;
+
+            // Insert new
+            if (updatedData.ingredients && updatedData.ingredients.length > 0) {
+                const ingredientsPayload = updatedData.ingredients.map(ing => ({
+                    recipe_id: recipeId,
+                    ingredient_id: ing.ingredient_id,
+                    quantity_required: ing.qty
+                }));
+
+                const { error: ingErr } = await supabase
+                    .from('recipes')
+                    .insert(ingredientsPayload);
+
+                if (ingErr) throw ingErr;
+            }
+
+            logAction('REȚETAR', `Actualizat rețetă "${updatedData.name}"`);
+            fetchRecipes();
+            return { success: true };
         } catch (err) {
             console.error("Error updating recipe:", err);
             alert("Eroare update: " + err.message);
+            return { success: false };
         }
     };
 
-    const deleteRecipe = async (productId) => {
+    const deleteRecipe = async (recipeId) => {
         try {
-            const { error } = await supabase.from('recipes').delete().eq('product_id', productId);
+            // Delete header, cascade should handle ingredients
+            const { error } = await supabase
+                .from('defined_recipes')
+                .delete()
+                .eq('id', recipeId);
+
             if (error) throw error;
 
-            setRecipes(recipes.filter(r => r.product_id !== productId));
-            logAction('REȚETAR', `Șters rețetă produs #${productId}`);
+            setRecipes(recipes.filter(r => r.id !== recipeId));
+            logAction('REȚETAR', `Șters rețetă #${recipeId}`);
         } catch (err) {
             console.error("Error deleting recipe:", err);
             alert("Eroare ștergere: " + err.message);

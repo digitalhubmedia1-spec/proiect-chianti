@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Plus, ShoppingCart, Check, X, Calendar, User, FileText, ChevronRight, Calculator, Printer, Archive } from 'lucide-react';
+import InventorySearch from '../../../components/common/InventorySearch';
 import { logAction } from '../../../utils/adminLogger';
 
 const AdminProcurement = () => {
@@ -273,23 +274,28 @@ const AdminProcurement = () => {
                 </div>
 
                 {!isClosed && (
-                    <div className="add-item-bar">
-                        <select id="quick-add-item" onChange={(e) => {
-                            if (e.target.value === 'custom') {
-                                const name = prompt("Nume produs:");
+                    <div className="add-item-bar" style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ flex: 1 }}>
+                            <InventorySearch
+                                items={items}
+                                placeholder="Caută și adaugă produs din Nomenclator..."
+                                onSelect={(item) => {
+                                    if (item) {
+                                        addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <button
+                            className="btn"
+                            style={{ background: '#e2e8f0', color: '#475569', whiteSpace: 'nowrap' }}
+                            onClick={() => {
+                                const name = prompt("Nume produs nou (care nu există în nomenclator):");
                                 if (name) addItemToList(selectedList.id, name);
-                            } else {
-                                const item = items.find(i => i.id == e.target.value);
-                                if (item) addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
-                            }
-                            e.target.value = '';
-                        }}>
-                            <option value="">+ Adaugă Produs Rapid</option>
-                            <option value="custom">Produs Nou (Text)</option>
-                            <optgroup label="Din Nomenclator">
-                                {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                            </optgroup>
-                        </select>
+                            }}
+                        >
+                            + Produs Custom
+                        </button>
                     </div>
                 )}
 
