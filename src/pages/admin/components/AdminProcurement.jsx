@@ -330,7 +330,7 @@ const AdminProcurement = () => {
         const closedLists = lists.filter(l => l.status === 'closed');
         const historyShoppers = closedLists.map(l => l.shopper_name);
         // Combine history shoppers with available (registered) shoppers and deduplicate
-        const uniqueShoppers = [...new Set([...historyShoppers, ...availableShoppers])].filter(Boolean).sort();
+        const uniqueShoppers = [...new Set([...historyShoppers, ...availableShoppers])].filter(Boolean).filter(s => s !== 'DigitalHub Media').sort();
 
         const filteredLists = lists.filter(l => {
             if (l.status !== 'closed') return false;
