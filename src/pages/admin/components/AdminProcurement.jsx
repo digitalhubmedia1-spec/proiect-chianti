@@ -20,6 +20,12 @@ const AdminProcurement = () => {
     const [defaultPortions, setDefaultPortions] = useState(20); // Fallback if no stock set
     const [generatedNeeds, setGeneratedNeeds] = useState(null); // Array of { item, needed, stock, requested }
 
+    // History Filter
+    const [historyFilter, setHistoryFilter] = useState({
+        month: new Date().getMonth().toString(), // 0-11
+        year: new Date().getFullYear().toString()
+    });
+
     // --- ACTIONS ---
 
     const calculateNeeds = async () => {
@@ -233,21 +239,67 @@ const AdminProcurement = () => {
         </div>
     );
 
-    const renderHistoryLists = () => (
-        <div className="lists-grid">
-            {lists.filter(l => l.status === 'closed').length === 0 && <p style={{ color: '#64748b' }}>Nu există liste finalizate.</p>}
-            {lists.filter(l => l.status === 'closed').map(list => (
-                <div key={list.id} className="list-card history-card" onClick={() => fetchListDetails(list.id)}>
-                    <div className="list-icon" style={{ background: '#e2e8f0', color: '#64748b' }}><Archive size={24} /></div>
-                    <div className="list-info">
-                        <h4 style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{list.name}</h4>
-                        <p>{new Date(list.created_at).toLocaleDateString('ro-RO')} • {list.shopper_name}</p>
+    const renderHistoryLists = () => {
+        const months = [
+            'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
+            'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
+        ];
+
+        const currentYear = new Date().getFullYear();
+        const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+
+        const filteredLists = lists.filter(l => {
+            if (l.status !== 'closed') return false;
+            const d = new Date(l.created_at);
+            return d.getMonth().toString() === historyFilter.month && d.getFullYear().toString() === historyFilter.year;
+        });
+
+        return (
+            <div>
+                {/* Filter Controls */}
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'white', padding: '1rem', borderRadius: '12px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b' }}>Lună</label>
+                        <select
+                            value={historyFilter.month}
+                            onChange={(e) => setHistoryFilter({ ...historyFilter, month: e.target.value })}
+                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', minWidth: '150px' }}
+                        >
+                            {months.map((m, idx) => (
+                                <option key={idx} value={idx.toString()}>{m}</option>
+                            ))}
+                        </select>
                     </div>
-                    <ChevronRight color="#cbd5e1" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b' }}>An</label>
+                        <select
+                            value={historyFilter.year}
+                            onChange={(e) => setHistoryFilter({ ...historyFilter, year: e.target.value })}
+                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', minWidth: '100px' }}
+                        >
+                            {years.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
-            ))}
-        </div>
-    );
+
+                <div className="lists-grid">
+                    {filteredLists.length === 0 && <p style={{ color: '#64748b' }}>Nu există liste finalizate în această perioadă.</p>}
+                    {filteredLists.map(list => (
+                        <div key={list.id} className="list-card history-card" onClick={() => fetchListDetails(list.id)}>
+                            <div className="list-icon" style={{ background: '#e2e8f0', color: '#64748b' }}><Archive size={24} /></div>
+                            <div className="list-info">
+                                <h4 style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{list.name}</h4>
+                                <p>{new Date(list.created_at).toLocaleDateString('ro-RO')} • {list.shopper_name}</p>
+                            </div>
+                            <ChevronRight color="#cbd5e1" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const renderDetailView = () => {
         if (!selectedList) return null;
