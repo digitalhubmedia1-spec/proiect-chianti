@@ -27,6 +27,26 @@ const AdminProcurement = () => {
         shopper: 'all' // 'all' or specific name
     });
 
+    const [availableShoppers, setAvailableShoppers] = useState([]);
+
+    useEffect(() => {
+        fetchLists();
+        fetchItems();
+        fetchSuppliers();
+        fetchShoppers();
+    }, []);
+
+    const fetchShoppers = async () => {
+        const { data } = await supabase
+            .from('admin_users')
+            .select('name')
+            .order('name');
+
+        if (data) {
+            setAvailableShoppers(data.map(u => u.name));
+        }
+    };
+
     // --- ACTIONS ---
 
     const calculateNeeds = async () => {
@@ -249,9 +269,11 @@ const AdminProcurement = () => {
         const currentYear = new Date().getFullYear();
         const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
-        // Extract unique shoppers from history
+        // Extract unique shoppers from history AND registered users
         const closedLists = lists.filter(l => l.status === 'closed');
-        const uniqueShoppers = [...new Set(closedLists.map(l => l.shopper_name))].filter(Boolean);
+        const historyShoppers = closedLists.map(l => l.shopper_name);
+        // Combine history shoppers with available (registered) shoppers and deduplicate
+        const uniqueShoppers = [...new Set([...historyShoppers, ...availableShoppers])].filter(Boolean).sort();
 
         const filteredLists = lists.filter(l => {
             if (l.status !== 'closed') return false;
