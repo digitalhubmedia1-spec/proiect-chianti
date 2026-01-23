@@ -324,7 +324,7 @@ const AdminDashboard = () => {
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_objects' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_objects')}>Obiecte de Inventar</button>}
                 {canAccess('procurement') && <button className={`tab-btn ${activeTab === 'procurement' ? 'active' : ''}`} onClick={() => setActiveTab('procurement')}>Achiziții</button>}
-                {canAccess('procurement') && <button className={`tab-btn ${activeTab === 'procurement' ? 'active' : ''}`} onClick={() => setActiveTab('procurement')}>Achiziții</button>}
+
 
                 {/* ERP Operations */}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'reception' ? 'active' : ''}`} onClick={() => setActiveTab('reception')}>Recepție (NIR)</button>}
