@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Plus, Search, Trash2, Edit2, FileText, Download, Box, Filter } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -127,6 +128,12 @@ const AdminInventoryObjects = () => {
 
             if (error) throw error;
 
+            if (editingObject) {
+                logAction('OBIECTE_INVENTAR', `Actualizat obiect: ${payload.name} (ID: ${editingObject.id})`);
+            } else {
+                logAction('OBIECTE_INVENTAR', `Adăugat obiect nou: ${payload.name}`);
+            }
+
             setShowObjectModal(false);
             fetchData();
         } catch (err) {
@@ -137,9 +144,12 @@ const AdminInventoryObjects = () => {
     const handleDeleteObject = async (id) => {
         if (!window.confirm("Sigur ștergeți acest obiect?")) return;
         try {
+            const objToDelete = objects.find(o => o.id === id);
             const { error } = await supabase.from('inventory_objects').delete().eq('id', id);
             if (error) throw error;
+
             setObjects(objects.filter(o => o.id !== id));
+            logAction('OBIECTE_INVENTAR', `Șters obiect: ${objToDelete?.name || id}`);
         } catch (err) {
             alert('Eroare la ștergere: ' + err.message);
         }
@@ -175,6 +185,12 @@ const AdminInventoryObjects = () => {
                 setCategories([...categories, data]);
             }
 
+            if (editingCategory) {
+                logAction('OBIECTE_INVENTAR', `Actualizat categorie: ${newCategoryName} (ID: ${editingCategory.id})`);
+            } else {
+                logAction('OBIECTE_INVENTAR', `Creat categorie nouă: ${newCategoryName}`);
+            }
+
             setNewCategoryName('');
             setEditingCategory(null);
             // Don't close modal, maybe user wants to add more? Or close? User request "schimb categorii", implies management.
@@ -204,6 +220,8 @@ const AdminInventoryObjects = () => {
 
             if (error) throw error;
             setCategories(categories.filter(c => c.id !== id));
+
+            logAction('OBIECTE_INVENTAR', `Șters categorie: ID ${id}`);
 
             if (editingCategory && editingCategory.id === id) {
                 handleCancelEditCategory();
