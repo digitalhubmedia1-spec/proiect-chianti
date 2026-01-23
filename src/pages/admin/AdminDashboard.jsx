@@ -23,7 +23,6 @@ import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
-import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart } from 'lucide-react';
