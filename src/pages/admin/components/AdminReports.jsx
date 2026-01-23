@@ -13,6 +13,94 @@ const AdminReports = () => {
     const [receptionHistory, setReceptionHistory] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    // Reception Edit State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null);
+    const [editForm, setEditForm] = useState({
+        id: '',
+        date: '',
+        document_ref: '',
+        quantity: '',
+        price: '', // from batch
+        batch_id: ''
+    });
+
+    const handleEditClick = async (txn) => {
+        // Fetch batch details (price)
+        let price = 0;
+        let batchQty = 0;
+
+        if (txn.batch_id) {
+            const { data: batch } = await supabase
+                .from('inventory_batches')
+                .select('purchase_price, quantity')
+                .eq('id', txn.batch_id)
+                .single();
+            if (batch) {
+                price = batch.purchase_price;
+                batchQty = batch.quantity;
+            }
+        }
+
+        setEditingTransaction({ ...txn, currentBatchStock: batchQty }); // Store current live stock for validation
+        setEditForm({
+            id: txn.id,
+            date: txn.created_at.split('T')[0],
+            document_ref: txn.document_ref || '',
+            quantity: txn.quantity,
+            price: price,
+            batch_id: txn.batch_id
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async (e) => {
+        e.preventDefault();
+        try {
+            const newQty = parseFloat(editForm.quantity);
+            const oldQty = parseFloat(editingTransaction.quantity);
+            const delta = newQty - oldQty;
+
+            // 1. Validation: Can we apply delta to batch?
+            if (editingTransaction.batch_id) {
+                const { data: batch } = await supabase.from('inventory_batches').select('quantity').eq('id', editingTransaction.batch_id).single();
+                if (batch) {
+                    if (batch.quantity + delta < 0) {
+                        alert(`Nu se poate reduce cantitatea cu ${Math.abs(delta)}. Stocul curent al lotului (${batch.quantity}) ar deveni negativ.`);
+                        return;
+                    }
+
+                    // 2. Update Batch (Price + Qty)
+                    await supabase
+                        .from('inventory_batches')
+                        .update({
+                            purchase_price: parseFloat(editForm.price),
+                            quantity: batch.quantity + delta
+                        })
+                        .eq('id', editingTransaction.batch_id);
+                }
+            }
+
+            // 3. Update Transaction
+            await supabase
+                .from('inventory_transactions')
+                .update({
+                    created_at: new Date(editForm.date).toISOString(),
+                    document_ref: editForm.document_ref,
+                    quantity: newQty
+                })
+                .eq('id', editingTransaction.id);
+
+            alert("Recepție actualizată cu succes!");
+            setIsEditModalOpen(false);
+            loadReport('reception'); // Refresh list
+
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la actualizare: " + err.message);
+        }
+    };
+
     useEffect(() => {
         loadReport(activeReport);
     }, [activeReport]);
@@ -224,95 +312,6 @@ const AdminReports = () => {
         if (days < 7) return { label: 'CRITIC (<7 zile)', color: '#dc2626', days };
         if (days < 30) return { label: 'ATENȚIE (<30 zile)', color: '#d97706', days };
         return { label: 'OK', color: '#16a34a', days };
-    };
-
-    return (
-    // ... inside AdminReports component (adding state and handlers)
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState(null);
-    const [editForm, setEditForm] = useState({
-        id: '',
-        date: '',
-        document_ref: '',
-        quantity: '',
-        price: '', // from batch
-        batch_id: ''
-    });
-
-    const handleEditClick = async (txn) => {
-        // Fetch batch details (price)
-        let price = 0;
-        let batchQty = 0;
-
-        if (txn.batch_id) {
-            const { data: batch } = await supabase
-                .from('inventory_batches')
-                .select('purchase_price, quantity')
-                .eq('id', txn.batch_id)
-                .single();
-            if (batch) {
-                price = batch.purchase_price;
-                batchQty = batch.quantity;
-            }
-        }
-
-        setEditingTransaction({ ...txn, currentBatchStock: batchQty }); // Store current live stock for validation
-        setEditForm({
-            id: txn.id,
-            date: txn.created_at.split('T')[0],
-            document_ref: txn.document_ref || '',
-            quantity: txn.quantity,
-            price: price,
-            batch_id: txn.batch_id
-        });
-        setIsEditModalOpen(true);
-    };
-
-    const handleSaveEdit = async (e) => {
-        e.preventDefault();
-        try {
-            const newQty = parseFloat(editForm.quantity);
-            const oldQty = parseFloat(editingTransaction.quantity);
-            const delta = newQty - oldQty;
-
-            // 1. Validation: Can we apply delta to batch?
-            if (editingTransaction.batch_id) {
-                const { data: batch } = await supabase.from('inventory_batches').select('quantity').eq('id', editingTransaction.batch_id).single();
-                if (batch) {
-                    if (batch.quantity + delta < 0) {
-                        alert(`Nu se poate reduce cantitatea cu ${Math.abs(delta)}. Stocul curent al lotului (${batch.quantity}) ar deveni negativ.`);
-                        return;
-                    }
-
-                    // 2. Update Batch (Price + Qty)
-                    await supabase
-                        .from('inventory_batches')
-                        .update({
-                            purchase_price: parseFloat(editForm.price),
-                            quantity: batch.quantity + delta
-                        })
-                        .eq('id', editingTransaction.batch_id);
-                }
-            }
-
-            // 3. Update Transaction
-            await supabase
-                .from('inventory_transactions')
-                .update({
-                    created_at: new Date(editForm.date).toISOString(),
-                    document_ref: editForm.document_ref,
-                    quantity: newQty
-                })
-                .eq('id', editingTransaction.id);
-
-            alert("Recepție actualizată cu succes!");
-            setIsEditModalOpen(false);
-            loadReport('reception'); // Refresh list
-
-        } catch (err) {
-            console.error(err);
-            alert("Eroare la actualizare: " + err.message);
-        }
     };
 
     return (
