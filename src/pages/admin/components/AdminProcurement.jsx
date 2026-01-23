@@ -88,6 +88,7 @@ const AdminProcurement = () => {
         const { data } = await supabase
             .from('admin_users')
             .select('name')
+            .eq('role', 'achizitor')
             .order('name');
 
         if (data) {
