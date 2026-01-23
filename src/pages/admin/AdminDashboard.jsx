@@ -23,7 +23,9 @@ import AdminConsumption from './components/AdminConsumption';
 import AdminInventoryCheck from './components/AdminInventoryCheck';
 import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
+import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
+import AdminInventoryObjects from './components/AdminInventoryObjects';
 import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
@@ -80,7 +82,9 @@ const AdminDashboard = () => {
         if (adminRole === 'achizitor') {
             // Achizitor needs procurement flow logic
             // Allowed: Inventory stuff + PROCUREMENT
-            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement'];
+            // Achizitor needs procurement flow logic
+            // Allowed: Inventory stuff + PROCUREMENT
+            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
@@ -319,6 +323,8 @@ const AdminDashboard = () => {
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>Furnizori</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => setActiveTab('locations')}>Gestiuni</button>}
                 {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_items' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_items')}>Nomenclator Gestiune</button>}
+                {canAccess('inventory') && <button className={`tab-btn ${activeTab === 'inventory_objects' ? 'active' : ''}`} onClick={() => setActiveTab('inventory_objects')}>Obiecte de Inventar</button>}
+                {canAccess('procurement') && <button className={`tab-btn ${activeTab === 'procurement' ? 'active' : ''}`} onClick={() => setActiveTab('procurement')}>Achiziții</button>}
                 {canAccess('procurement') && <button className={`tab-btn ${activeTab === 'procurement' ? 'active' : ''}`} onClick={() => setActiveTab('procurement')}>Achiziții</button>}
 
                 {/* ERP Operations */}
@@ -367,9 +373,16 @@ const AdminDashboard = () => {
                     </div>
                 )}
                 {/* INVENTORY ITEMS TAB */}
+
                 {activeTab === 'inventory_items' && (
                     <div className="tab-content">
                         <AdminInventoryItems />
+                    </div>
+                )}
+                {/* INVENTORY OBJECTS TAB */}
+                {activeTab === 'inventory_objects' && (
+                    <div className="tab-content">
+                        <AdminInventoryObjects />
                     </div>
                 )}
                 {/* RECEPTION (NIR) TAB */}
