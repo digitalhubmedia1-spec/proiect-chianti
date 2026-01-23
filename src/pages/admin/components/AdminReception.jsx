@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Plus, Trash2, Save, FileText } from 'lucide-react';
+import InventorySearch from '../../../components/common/InventorySearch';
 import './AdminReception.css';
 
 const AdminReception = () => {
@@ -211,14 +212,18 @@ const AdminReception = () => {
                     {rows.map((row, index) => (
                         <div key={index} className="line-row">
                             <div>
-                                <select
-                                    className="form-control"
-                                    value={row.item_id}
-                                    onChange={(e) => handleRowChange(index, 'item_id', e.target.value)}
-                                >
-                                    <option value="">Selectează...</option>
-                                    {items.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                                </select>
+                                <InventorySearch
+                                    items={items}
+                                    placeholder="Caută articol..."
+                                    defaultQuery={items.find(i => i.id === parseInt(row.item_id || 0))?.name || ''}
+                                    onSelect={(item) => {
+                                        if (item) {
+                                            handleRowChange(index, 'item_id', item.id);
+                                        } else {
+                                            handleRowChange(index, 'item_id', '');
+                                        }
+                                    }}
+                                />
                             </div>
                             <div>
                                 <input
