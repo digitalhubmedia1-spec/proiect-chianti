@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { BarChart2, AlertOctagon, TrendingDown, DollarSign, Calendar, Truck, FileText, Download } from 'lucide-react';
+import { BarChart2, AlertOctagon, TrendingDown, DollarSign, Calendar, Truck, FileText, Download, Edit2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './AdminReception.css';
@@ -227,11 +227,101 @@ const AdminReports = () => {
     };
 
     return (
+    // ... inside AdminReports component (adding state and handlers)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null);
+    const [editForm, setEditForm] = useState({
+        id: '',
+        date: '',
+        document_ref: '',
+        quantity: '',
+        price: '', // from batch
+        batch_id: ''
+    });
+
+    const handleEditClick = async (txn) => {
+        // Fetch batch details (price)
+        let price = 0;
+        let batchQty = 0;
+
+        if (txn.batch_id) {
+            const { data: batch } = await supabase
+                .from('inventory_batches')
+                .select('purchase_price, quantity')
+                .eq('id', txn.batch_id)
+                .single();
+            if (batch) {
+                price = batch.purchase_price;
+                batchQty = batch.quantity;
+            }
+        }
+
+        setEditingTransaction({ ...txn, currentBatchStock: batchQty }); // Store current live stock for validation
+        setEditForm({
+            id: txn.id,
+            date: txn.created_at.split('T')[0],
+            document_ref: txn.document_ref || '',
+            quantity: txn.quantity,
+            price: price,
+            batch_id: txn.batch_id
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async (e) => {
+        e.preventDefault();
+        try {
+            const newQty = parseFloat(editForm.quantity);
+            const oldQty = parseFloat(editingTransaction.quantity);
+            const delta = newQty - oldQty;
+
+            // 1. Validation: Can we apply delta to batch?
+            if (editingTransaction.batch_id) {
+                const { data: batch } = await supabase.from('inventory_batches').select('quantity').eq('id', editingTransaction.batch_id).single();
+                if (batch) {
+                    if (batch.quantity + delta < 0) {
+                        alert(`Nu se poate reduce cantitatea cu ${Math.abs(delta)}. Stocul curent al lotului (${batch.quantity}) ar deveni negativ.`);
+                        return;
+                    }
+
+                    // 2. Update Batch (Price + Qty)
+                    await supabase
+                        .from('inventory_batches')
+                        .update({
+                            purchase_price: parseFloat(editForm.price),
+                            quantity: batch.quantity + delta
+                        })
+                        .eq('id', editingTransaction.batch_id);
+                }
+            }
+
+            // 3. Update Transaction
+            await supabase
+                .from('inventory_transactions')
+                .update({
+                    created_at: new Date(editForm.date).toISOString(),
+                    document_ref: editForm.document_ref,
+                    quantity: newQty
+                })
+                .eq('id', editingTransaction.id);
+
+            alert("Recepție actualizată cu succes!");
+            setIsEditModalOpen(false);
+            loadReport('reception'); // Refresh list
+
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la actualizare: " + err.message);
+        }
+    };
+
+    return (
         <div className="admin-reception-container">
             <h2 className="reception-header-title">
                 <BarChart2 size={32} className="text-primary" /> Rapoarte & Analize
             </h2>
 
+            {/* ... Filters Bar ... */}
             <div className="stock-filters-bar" style={{ gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <button
                     className={`tab-btn ${activeReport === 'expiry' ? 'active' : ''}`}
@@ -268,6 +358,7 @@ const AdminReports = () => {
             <div className="reception-card">
                 {loading && <p>Se generează raportul...</p>}
 
+                {/* ... Expiry ... */}
                 {!loading && activeReport === 'expiry' && (
                     <div className="invoice-lines-section">
                         <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Produse cu Risc de Expirare (Top 100)</h3>
@@ -293,6 +384,7 @@ const AdminReports = () => {
                     </div>
                 )}
 
+                {/* ... Valuation ... */}
                 {!loading && activeReport === 'valuation' && (
                     <div>
                         <div style={{ textAlign: 'center', padding: '2rem', background: '#f0fdf4', borderRadius: '12px', marginBottom: '2rem' }}>
@@ -320,6 +412,7 @@ const AdminReports = () => {
                     </div>
                 )}
 
+                {/* ... Consumption ... */}
                 {!loading && activeReport === 'consumption' && (
                     <div className="invoice-lines-section">
                         <h3 style={{ marginBottom: '1rem' }}>Istoric Consum / Ieșiri</h3>
@@ -342,28 +435,96 @@ const AdminReports = () => {
                     </div>
                 )}
 
+                {/* ... Reception (With Edit) ... */}
                 {!loading && activeReport === 'reception' && (
                     <div className="invoice-lines-section">
                         <h3 style={{ marginBottom: '1rem' }}>Istoric Recepții (Intrări)</h3>
-                        <div className="lines-header" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
+                        <div className="lines-header" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr 0.5fr' }}>
                             <div>Data</div>
                             <div>Produs</div>
                             <div>Destinație</div>
                             <div>Cantitate</div>
                             <div>Referință</div>
+                            <div style={{ textAlign: 'center' }}>Acțiuni</div>
                         </div>
                         {receptionHistory.map(txn => (
-                            <div key={txn.id} className="line-row" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr' }}>
+                            <div key={txn.id} className="line-row" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr 0.5fr' }}>
                                 <div>{new Date(txn.created_at).toLocaleDateString('ro-RO')}</div>
                                 <div style={{ fontWeight: '600' }}>{txn.inventory_items?.name}</div>
                                 <div>{txn.locations?.name}</div>
                                 <div style={{ color: '#16a34a', fontWeight: 'bold' }}>+{txn.quantity} {txn.inventory_items?.unit}</div>
                                 <div>{txn.document_ref || '-'}</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <button className="btn-icon edit" onClick={() => handleEditClick(txn)} title="Editează Recepția">
+                                        <Edit2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Edit Modal */}
+            {isEditModalOpen && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div className="modal-content" style={{ background: 'white', padding: '2rem', borderRadius: '8px', width: '90%', maxWidth: '500px' }}>
+                        <h3>Editează Recepție (NIR)</h3>
+                        <form onSubmit={handleSaveEdit}>
+                            <div className="form-group mb-3">
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Data</label>
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={editForm.date}
+                                    onChange={e => setEditForm({ ...editForm, date: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group mb-3">
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Referință Document</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={editForm.document_ref}
+                                    onChange={e => setEditForm({ ...editForm, document_ref: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                />
+                            </div>
+                            <div className="form-group mb-3">
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Cantitate (Updatează și stocul curent)</label>
+                                <input
+                                    type="number"
+                                    step="0.001"
+                                    className="form-control"
+                                    value={editForm.quantity}
+                                    onChange={e => setEditForm({ ...editForm, quantity: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group mb-3">
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Preț Achiziție (RON)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-control"
+                                    value={editForm.price}
+                                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                    required
+                                />
+                            </div>
+
+                            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>Anulează</button>
+                                <button type="submit" className="btn btn-primary">Salvează Modificările</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
