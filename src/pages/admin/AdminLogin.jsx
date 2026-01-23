@@ -26,13 +26,12 @@ const AdminLogin = () => {
         }
 
         try {
-            // Check credentials against admin_users table
+            // SECURE LOGIN via RPC
             const { data, error } = await supabase
-                .from('admin_users')
-                .select('*')
-                .eq('username', username.trim())
-                .eq('password', password.trim()) // Plain text comparison as requested
-                .single();
+                .rpc('check_admin_credentials', {
+                    p_username: username.trim(),
+                    p_password: password.trim()
+                });
 
             if (error || !data) {
                 setError('Date de autentificare incorecte.');

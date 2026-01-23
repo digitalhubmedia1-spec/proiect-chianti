@@ -9,8 +9,8 @@ const AdminOperators = () => {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
 
-    // State to toggle password visibility per row
-    const [visiblePasswords, setVisiblePasswords] = useState({});
+    // State to toggle password visibility per row - REMOVED for Security
+    // const [visiblePasswords, setVisiblePasswords] = useState({});
 
     // Add Operator State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -25,7 +25,7 @@ const AdminOperators = () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('admin_users')
-            .select('*')
+            .select('id, name, username, role, created_at')
             .order('role', { ascending: true });
 
         if (error) {
@@ -36,12 +36,12 @@ const AdminOperators = () => {
         setLoading(false);
     };
 
-    const togglePasswordVisibility = (id) => {
+    /* const togglePasswordVisibility = (id) => {
         setVisiblePasswords(prev => ({
             ...prev,
             [id]: !prev[id]
         }));
-    };
+    }; */
 
     const startEditing = (op) => {
         setEditingId(op.id);
@@ -186,7 +186,7 @@ const AdminOperators = () => {
                         <tr>
                             <th>Nume</th>
                             <th>Utilizator</th>
-                            <th>Parolă (Afișare)</th>
+                            <th>Parolă</th>
                             <th>Rol</th>
                             <th>Acțiuni</th>
                         </tr>
@@ -210,22 +210,9 @@ const AdminOperators = () => {
                                 </td>
                                 <td>{op.username}</td>
                                 <td>
-                                    {op.role === 'admin_app' ? (
-                                        <span className="text-muted">Ascuns (Securizat)</span>
-                                    ) : (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '1.1em' }}>
-                                                {visiblePasswords[op.id] ? op.password : '••••••••'}
-                                            </span>
-                                            <button
-                                                className="btn-icon-small"
-                                                onClick={() => togglePasswordVisibility(op.id)}
-                                                title={visiblePasswords[op.id] ? "Ascunde" : "Arată"}
-                                            >
-                                                {visiblePasswords[op.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                            </button>
-                                        </div>
-                                    )}
+                                    <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '1.2em', letterSpacing: '2px' }}>
+                                        ••••••••
+                                    </span>
                                 </td>
                                 <td>
                                     <span className={`badge badge-${op.role}`}>
