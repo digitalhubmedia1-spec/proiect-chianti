@@ -51,16 +51,16 @@ const AdminInventoryObjects = () => {
                 supabase.from('locations').select('*').order('name')
             ]);
 
-            if (objsRes.error) throw objsRes.error;
-            if (catsRes.error) throw catsRes.error;
-            if (locsRes.error) throw locsRes.error;
+            if (objsRes.error) throw new Error('Objects: ' + objsRes.error.message);
+            if (catsRes.error) throw new Error('Categories: ' + catsRes.error.message);
+            if (locsRes.error) throw new Error('Locations: ' + locsRes.error.message);
 
             setObjects(objsRes.data);
             setCategories(catsRes.data);
             setLocations(locsRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            alert('Eroare la încărcarea datelor.');
+            alert('Eroare detaliată: ' + error.message);
         } finally {
             setLoading(false);
         }
