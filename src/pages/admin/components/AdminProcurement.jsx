@@ -23,7 +23,8 @@ const AdminProcurement = () => {
     // History Filter
     const [historyFilter, setHistoryFilter] = useState({
         month: new Date().getMonth().toString(), // 0-11
-        year: new Date().getFullYear().toString()
+        year: new Date().getFullYear().toString(),
+        shopper: 'all' // 'all' or specific name
     });
 
     // --- ACTIONS ---
@@ -248,10 +249,16 @@ const AdminProcurement = () => {
         const currentYear = new Date().getFullYear();
         const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
+        // Extract unique shoppers from history
+        const closedLists = lists.filter(l => l.status === 'closed');
+        const uniqueShoppers = [...new Set(closedLists.map(l => l.shopper_name))].filter(Boolean);
+
         const filteredLists = lists.filter(l => {
             if (l.status !== 'closed') return false;
             const d = new Date(l.created_at);
-            return d.getMonth().toString() === historyFilter.month && d.getFullYear().toString() === historyFilter.year;
+            const matchesDate = d.getMonth().toString() === historyFilter.month && d.getFullYear().toString() === historyFilter.year;
+            const matchesShopper = historyFilter.shopper === 'all' || l.shopper_name === historyFilter.shopper;
+            return matchesDate && matchesShopper;
         });
 
         return (
@@ -279,6 +286,19 @@ const AdminProcurement = () => {
                         >
                             {years.map(y => (
                                 <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b' }}>Achizitor</label>
+                        <select
+                            value={historyFilter.shopper}
+                            onChange={(e) => setHistoryFilter({ ...historyFilter, shopper: e.target.value })}
+                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', minWidth: '150px' }}
+                        >
+                            <option value="all">Toți</option>
+                            {uniqueShoppers.map((s, idx) => (
+                                <option key={idx} value={s}>{s}</option>
                             ))}
                         </select>
                     </div>

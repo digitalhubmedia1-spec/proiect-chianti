@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
-import { Eye, EyeOff, Edit2, Check, X, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Edit2, Check, X, Trash2, Plus } from 'lucide-react';
 
 const AdminOperators = () => {
     const [operators, setOperators] = useState([]);
@@ -11,6 +11,10 @@ const AdminOperators = () => {
 
     // State to toggle password visibility per row
     const [visiblePasswords, setVisiblePasswords] = useState({});
+
+    // Add Operator State
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [newOp, setNewOp] = useState({ name: '', username: '', password: '', role: 'operator' });
 
     useEffect(() => {
         fetchOperators();
@@ -66,6 +70,29 @@ const AdminOperators = () => {
         }
     };
 
+    const createOperator = async (e) => {
+        e.preventDefault();
+        if (!newOp.name || !newOp.username || !newOp.password) {
+            alert("Toate câmpurile sunt obligatorii!");
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('admin_users')
+            .insert([newOp])
+            .select()
+            .single();
+
+        if (error) {
+            alert("Eroare la creare: " + error.message);
+        } else {
+            setOperators([...operators, data]);
+            setIsAddOpen(false);
+            setNewOp({ name: '', username: '', password: '', role: 'operator' });
+            logAction('OPERATORI', `Creat utilizator nou: ${data.name} (${data.role})`);
+        }
+    };
+
     // Helper to translate roles
     const getRoleName = (role) => {
         switch (role) {
@@ -82,7 +109,76 @@ const AdminOperators = () => {
 
     return (
         <div className="admin-operators-section">
-            <h2 className="section-title">Gestionare Operatori</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 className="section-title" style={{ margin: 0 }}>Gestionare Operatori</h2>
+                <button
+                    className="btn-primary"
+                    onClick={() => setIsAddOpen(true)}
+                    style={{ background: '#22c55e', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                    <Plus size={18} /> Adaugă Operator
+                </button>
+            </div>
+
+            {isAddOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', width: '100%', maxWidth: '400px' }}>
+                        <h3 style={{ marginTop: 0 }}>Operator Nou</h3>
+                        <form onSubmit={createOperator} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>Nume (Persoană)</label>
+                                <input
+                                    type="text"
+                                    value={newOp.name}
+                                    onChange={e => setNewOp({ ...newOp, name: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    placeholder="ex: Ion Popescu"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>Username (Login)</label>
+                                <input
+                                    type="text"
+                                    value={newOp.username}
+                                    onChange={e => setNewOp({ ...newOp, username: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    placeholder="ex: ion.popescu"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>Parolă</label>
+                                <input
+                                    type="text"
+                                    value={newOp.password}
+                                    onChange={e => setNewOp({ ...newOp, password: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    placeholder="ex: 1234"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>Rol</label>
+                                <select
+                                    value={newOp.role}
+                                    onChange={e => setNewOp({ ...newOp, role: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                >
+                                    <option value="operator">Operator (General)</option>
+                                    <option value="chef">Bucătar</option>
+                                    <option value="achizitor">Achizitor</option>
+                                    <option value="contabil">Contabil</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                                <button type="button" onClick={() => setIsAddOpen(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Anulează</button>
+                                <button type="submit" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#0f172a', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Creează</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             <div className="admin-table-wrapper">
                 <table className="admin-table">
