@@ -33,6 +33,7 @@ const AdminInventoryObjects = () => {
     });
 
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [editingCategory, setEditingCategory] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -146,23 +147,69 @@ const AdminInventoryObjects = () => {
 
     // --- CRUD Categories ---
 
-    const handleAddCategory = async () => {
+    // --- CRUD Categories ---
+
+    const handleSaveCategory = async () => {
         if (!newCategoryName.trim()) return;
+
         try {
-            const { data, error } = await supabase
+            if (editingCategory) {
+                // Update
+                const { error } = await supabase
+                    .from('inventory_object_categories')
+                    .update({ name: newCategoryName })
+                    .eq('id', editingCategory.id);
+
+                if (error) throw error;
+
+                setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, name: newCategoryName } : c));
+            } else {
+                // Insert
+                const { data, error } = await supabase
+                    .from('inventory_object_categories')
+                    .insert([{ name: newCategoryName }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                setCategories([...categories, data]);
+            }
+
+            setNewCategoryName('');
+            setEditingCategory(null);
+            // Don't close modal, maybe user wants to add more? Or close? User request "schimb categorii", implies management.
+            // Let's keep it open or clear the form.
+        } catch (err) {
+            alert("Eroare salvare categorie: " + err.message);
+        }
+    };
+
+    const handleEditCategory = (cat) => {
+        setEditingCategory(cat);
+        setNewCategoryName(cat.name);
+    };
+
+    const handleCancelEditCategory = () => {
+        setEditingCategory(null);
+        setNewCategoryName('');
+    };
+
+    const handleDeleteCategory = async (id) => {
+        if (!window.confirm("Sigur ștergeți această categorie? Obiectele asociate vor rămâne fără categorie.")) return;
+        try {
+            const { error } = await supabase
                 .from('inventory_object_categories')
-                .insert([{ name: newCategoryName }])
-                .select()
-                .single();
+                .delete()
+                .eq('id', id);
 
             if (error) throw error;
+            setCategories(categories.filter(c => c.id !== id));
 
-            setCategories([...categories, data]);
-            setNewCategoryName('');
-            setShowCategoryModal(false);
-            // Auto select new category in form if open? Not strictly needed but nice.
+            if (editingCategory && editingCategory.id === id) {
+                handleCancelEditCategory();
+            }
         } catch (err) {
-            alert("Eroare creare categorie: " + err.message);
+            alert("Eroare ștergere categorie: " + err.message);
         }
     };
 
@@ -448,24 +495,54 @@ const AdminInventoryObjects = () => {
                 </div>
             )}
 
-            {/* Category Modal */}
+            {/* Category Modal - Manager Style */}
             {showCategoryModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', width: '100%', maxWidth: '400px' }}>
-                        <h3>Categorie Nouă</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <input
-                                type="text"
-                                placeholder="Nume Categorie"
-                                value={newCategoryName}
-                                onChange={e => setNewCategoryName(e.target.value)}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                            />
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Gestiune Categorii</h3>
+                            <button onClick={() => setShowCategoryModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><box-icon name='x'></box-icon> X</button>
+                        </div>
+
+                        {/* List of existing categories */}
+                        <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '1rem', padding: '0.5rem' }}>
+                            {categories.length === 0 ? (
+                                <p style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>Nu există categorii.</p>
+                            ) : (
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                    {categories.map(cat => (
+                                        <li key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', borderBottom: '1px solid #f1f5f9', background: editingCategory?.id === cat.id ? '#f0f9ff' : 'transparent' }}>
+                                            <span style={{ fontWeight: '500' }}>{cat.name}</span>
+                                            <div style={{ display: 'flex', gap: '5px' }}>
+                                                <button onClick={() => handleEditCategory(cat)} title="Editează" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#3b82f6' }}><Edit2 size={16} /></button>
+                                                <button onClick={() => handleDeleteCategory(cat.id)} title="Șterge" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        {/* Add / Edit Form */}
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem' }}>{editingCategory ? 'Editare Categorie' : 'Adaugă Categorie Nouă'}</h4>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={() => setShowCategoryModal(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Anulează</button>
-                                <button onClick={handleAddCategory} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#22c55e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>Creează</button>
+                                <input
+                                    type="text"
+                                    placeholder="Nume Categorie..."
+                                    value={newCategoryName}
+                                    onChange={e => setNewCategoryName(e.target.value)}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                />
+                                {editingCategory && (
+                                    <button onClick={handleCancelEditCategory} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}>Anulează</button>
+                                )}
+                                <button onClick={handleSaveCategory} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: editingCategory ? '#3b82f6' : '#22c55e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
+                                    {editingCategory ? 'Salvează' : 'Adaugă'}
+                                </button>
                             </div>
                         </div>
+
                     </div>
                 </div>
             )}
