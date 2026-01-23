@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Trash2, Edit, Plus, X, Package, Search } from 'lucide-react';
+import { Trash2, Edit, Plus, X, Package, Search, Settings, Save } from 'lucide-react';
 
-const CATEGORIES = [
-    { id: 'Materii Prime', label: 'Materii Prime (Ingrediente)' },
-    { id: 'Ambalaje', label: 'Ambalaje & Consumabile' },
-    { id: 'Bauturi', label: 'Băuturi (Bar)' },
-    { id: 'Obiecte Inventar', label: 'Obiecte de Inventar (Veselă/Echipamente)' }
+const DEFAULT_CATEGORIES = [
+    { name: 'Materii Prime', label: 'Materii Prime (Ingrediente)' },
+    { name: 'Ambalaje', label: 'Ambalaje & Consumabile' },
+    { name: 'Bauturi', label: 'Băuturi (Bar)' },
+    { name: 'Obiecte Inventar', label: 'Obiecte de Inventar (Veselă/Echipamente)' }
 ];
 
 const UNITS = ['kg', 'g', 'l', 'ml', 'buc', 'porție'];
 
 const AdminInventoryItems = () => {
+    const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('Materii Prime');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Category Management State
+    const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+    const [catForm, setCatForm] = useState({ name: '', label: '' });
+    const [editingCatId, setEditingCatId] = useState(null);
 
     const [isEditing, setIsEditing] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
@@ -30,8 +36,28 @@ const AdminInventoryItems = () => {
     });
 
     useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
         fetchItems();
     }, [activeCategory]);
+
+    const fetchCategories = async () => {
+        const { data, error } = await supabase
+            .from('inventory_categories')
+            .select('*')
+            .order('name');
+
+        if (error) {
+            console.error('Error fetching categories:', error);
+        } else if (data && data.length > 0) {
+            setCategories(data);
+            // Validate activeCategory matches one of the loaded categories
+            const exists = data.find(c => c.name === activeCategory);
+            if (!exists) setActiveCategory(data[0].name);
+        }
+    };
 
     const fetchItems = async () => {
         setLoading(true);
@@ -120,30 +146,88 @@ const AdminInventoryItems = () => {
 
     const filteredItems = items.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    // Helper for Category Manager logic
+    const handleSaveCategory = async (e) => {
+        e.preventDefault();
+        try {
+            if (editingCatId) {
+                const { error } = await supabase
+                    .from('inventory_categories')
+                    .update({ name: catForm.name, label: catForm.label })
+                    .eq('id', editingCatId);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('inventory_categories')
+                    .insert([{ name: catForm.name, label: catForm.label }]);
+                if (error) throw error;
+            }
+            fetchCategories();
+            setCatForm({ name: '', label: '' });
+            setEditingCatId(null);
+        } catch (err) {
+            alert('Eroare: ' + err.message);
+        }
+    };
+
+    const handleDeleteCategory = async (id) => {
+        if (!window.confirm('Sigur ștergi această categorie? Dacă există produse asociate, acestea ar putea deveni invizibile.')) return;
+        try {
+            const { error } = await supabase.from('inventory_categories').delete().eq('id', id);
+            if (error) throw error;
+            fetchCategories();
+        } catch (err) {
+            alert('Eroare la ștergere: ' + err.message);
+        }
+    };
+
+    const startEditCategory = (cat) => {
+        setCatForm({ name: cat.name, label: cat.label });
+        setEditingCatId(cat.id);
+    };
+
     return (
         <div className="admin-inventory-items">
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Nomenclator Produse Gestiune</h2>
 
             {/* Category Tabs */}
-            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '1rem' }}>
-                {CATEGORIES.map(cat => (
-                    <button
-                        key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
-                        style={{
-                            padding: '8px 16px',
-                            whiteSpace: 'nowrap',
-                            borderRadius: '20px',
-                            border: '1px solid #cbd5e1',
-                            background: activeCategory === cat.id ? '#990000' : 'white',
-                            color: activeCategory === cat.id ? 'white' : '#64748b',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        {cat.label}
-                    </button>
-                ))}
+            {/* Category Tabs & Manager */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id || cat.name}
+                            onClick={() => setActiveCategory(cat.name)}
+                            style={{
+                                padding: '8px 16px',
+                                whiteSpace: 'nowrap',
+                                borderRadius: '20px',
+                                border: '1px solid #cbd5e1',
+                                background: activeCategory === cat.name ? '#990000' : 'white',
+                                color: activeCategory === cat.name ? 'white' : '#64748b',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {cat.label || cat.name}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    onClick={() => setIsCategoryManagerOpen(true)}
+                    style={{
+                        marginLeft: '10px',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        border: '1px solid #cbd5e1',
+                        background: 'white',
+                        cursor: 'pointer',
+                        color: '#64748b'
+                    }}
+                    title="Gestionează Categorii"
+                >
+                    <Settings size={20} />
+                </button>
             </div>
 
             {/* Toolbar */}
@@ -272,6 +356,70 @@ const AdminInventoryItems = () => {
                                 <button type="submit" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#990000', color: 'white', cursor: 'pointer' }}>Salvează</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* CATEGORY MANAGER MODAL */}
+            {isCategoryManagerOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>Gestionare Categorii</h3>
+                            <button onClick={() => setIsCategoryManagerOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X /></button>
+                        </div>
+
+                        {/* Add/Edit Form */}
+                        <form onSubmit={handleSaveCategory} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '4px', fontWeight: '500' }}>ID Intern (Unic)</label>
+                                <input
+                                    type="text"
+                                    placeholder="ex: Lactate"
+                                    value={catForm.name}
+                                    onChange={e => setCatForm({ ...catForm, name: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px' }}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '4px', fontWeight: '500' }}>Etichetă Afișată</label>
+                                <input
+                                    type="text"
+                                    placeholder="ex: Lactate și Brânzeturi"
+                                    value={catForm.label}
+                                    onChange={e => setCatForm({ ...catForm, label: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px' }}
+                                    required
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'end' }}>
+                                <button type="submit" style={{ background: '#0f172a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', height: '35px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    {editingCatId ? <Save size={16} /> : <Plus size={16} />}
+                                    {editingCatId ? 'Salvează' : 'Adaugă'}
+                                </button>
+                                {editingCatId && (
+                                    <button type="button" onClick={() => { setEditingCatId(null); setCatForm({ name: '', label: '' }); }} style={{ marginLeft: '5px', background: 'none', border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', cursor: 'pointer', height: '35px' }}>
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+
+                        {/* List */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {categories.map(cat => (
+                                <div key={cat.id || cat.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                                    <div>
+                                        <div style={{ fontWeight: '600' }}>{cat.label || cat.name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ID: {cat.name}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                        <button onClick={() => startEditCategory(cat)} style={{ padding: '6px', background: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: '4px', cursor: 'pointer' }}><Edit size={16} /></button>
+                                        <button onClick={() => handleDeleteCategory(cat.id)} style={{ padding: '6px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
