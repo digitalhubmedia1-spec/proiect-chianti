@@ -29,12 +29,60 @@ const AdminProcurement = () => {
 
     const [availableShoppers, setAvailableShoppers] = useState([]);
 
-    useEffect(() => {
-        fetchLists();
-        fetchItems();
-        fetchSuppliers();
-        fetchShoppers();
-    }, []);
+    const fetchLists = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('procurement_lists')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) console.error("Error fetching lists:", error);
+        else setLists(data || []);
+        setLoading(false);
+    };
+
+    const fetchListDetails = async (listId) => {
+        setLoading(true);
+        const { data: list, error: listError } = await supabase
+            .from('procurement_lists')
+            .select('*')
+            .eq('id', listId)
+            .single();
+
+        if (listError) {
+            console.error("Error fetching list details:", listError);
+            setLoading(false);
+            return;
+        }
+
+        const { data: items, error: itemsError } = await supabase
+            .from('procurement_items')
+            .select('*')
+            .eq('list_id', listId);
+
+        if (itemsError) {
+            console.error("Error fetching list items:", itemsError);
+        } else {
+            setSelectedList({ ...list, items: items || [] });
+        }
+        setLoading(false);
+    };
+
+    const fetchItems = async () => {
+        const { data } = await supabase
+            .from('inventory_items')
+            .select('id, name, unit')
+            .order('name');
+        if (data) setItems(data);
+    };
+
+    const fetchSuppliers = async () => {
+        const { data } = await supabase
+            .from('suppliers')
+            .select('*')
+            .order('name');
+        if (data) setSuppliers(data);
+    };
 
     const fetchShoppers = async () => {
         const { data } = await supabase
@@ -46,6 +94,14 @@ const AdminProcurement = () => {
             setAvailableShoppers(data.map(u => u.name));
         }
     };
+
+    useEffect(() => {
+        fetchLists();
+        fetchItems();
+        fetchSuppliers();
+        fetchShoppers();
+    }, []);
+
 
     // --- ACTIONS ---
 
