@@ -615,34 +615,20 @@ const AdminDashboard = () => {
                                 onClick={() => setActiveTabType('delivery')}
                                 style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
-                                <Truck size={16} style={{ marginRight: '8px' }} /> Livrări
+                                <Truck size={16} style={{ marginRight: '8px' }} /> Comenzi Rapide
                             </button>
                             <button
                                 className={`btn ${activeTabType === 'catering' ? 'btn-primary' : 'btn-outline-primary'}`}
                                 onClick={() => setActiveTabType('catering')}
                                 style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
-                                <Users size={16} style={{ marginRight: '8px' }} /> Catering
-                            </button>
-                            <button
-                                className={`btn ${activeTabType === 'inventory_check' ? 'btn-primary' : 'btn-outline-primary'}`}
-                                onClick={() => setActiveTabType('inventory_check')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
-                            >
-                                <ClipboardList size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Inventar Fizic
-                            </button>
-                            <button
-                                className={`btn ${activeTabType === 'reports' ? 'btn-primary' : 'btn-outline-primary'}`}
-                                onClick={() => setActiveTabType('reports')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
-                            >
-                                <BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} /> Rapoarte
+                                <Users size={16} style={{ marginRight: '8px' }} /> Precomenzi
                             </button>
                         </div>
 
                         <div className="actions-bar">
                             <button className="btn btn-primary" onClick={() => openAddCategoryModal(null)}>
-                                <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Livrări' : 'Catering'})
+                                <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Comenzi Rapide' : 'Precomenzi'})
                             </button>
                         </div>
                         <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e2e8f0', borderRadius: '4px', fontWeight: 'bold' }}>
