@@ -123,11 +123,33 @@ const AdminProcurement = () => {
             }
 
             // 2. Get Recipes for these products
+            // 2. Get Recipes for these products (Two-step fetch due to Schema Refactor)
             const productIds = menuItems.map(m => m.product_id);
-            const { data: recipes, error: recipeError } = await supabase
+
+            // Step 2a: Get Recipe Headers (link product -> recipe_id)
+            const { data: recipeHeaders, error: headerError } = await supabase
+                .from('defined_recipes')
+                .select('id, linked_product_id')
+                .in('linked_product_id', productIds);
+
+            if (headerError) throw headerError;
+
+            // Map recipe_id -> product_id
+            const recipeIdMap = {};
+            recipeHeaders.forEach(h => { recipeIdMap[h.id] = h.linked_product_id; });
+            const recipeIds = recipeHeaders.map(h => h.id);
+
+            // Step 2b: Get Ingredients
+            const { data: ingredients, error: recipeError } = await supabase
                 .from('recipes')
-                .select('product_id, ingredient_id, quantity_required')
-                .in('product_id', productIds);
+                .select('recipe_id, ingredient_id, quantity_required')
+                .in('recipe_id', recipeIds);
+
+            // Map back to expected format for aggregation
+            const recipes = ingredients?.map(ing => ({
+                ...ing,
+                product_id: recipeIdMap[ing.recipe_id]
+            })) || [];
 
             if (recipeError) throw recipeError;
 
