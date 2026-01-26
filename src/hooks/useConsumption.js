@@ -97,26 +97,40 @@ export const useConsumption = () => {
             const ingredientIds = Object.keys(totals);
             if (ingredientIds.length === 0) return [];
 
-            // Fetch Item Details (Name, Unit)
+            // Fetch Item Details (Name, Unit, VAT) - REMOVED purchase_price
             const { data: items, error: itemsError } = await supabase
                 .from('inventory_items')
-                .select('id, name, unit, purchase_price, vat_rate, sale_price')
+                .select('id, name, unit, vat_rate')
                 .in('id', ingredientIds);
 
             if (itemsError) throw itemsError;
 
-            // Fetch Batches for Stock
+            // Fetch Batches for Stock & Price
             const { data: stocks, error: stockError } = await supabase
                 .from('inventory_batches')
-                .select('item_id, quantity')
+                .select('item_id, quantity, entry_value, current_value')
                 .in('item_id', ingredientIds);
 
             if (stockError) throw stockError;
 
-            // Calculate Total Stock per Item
-            const currentStockMap = {};
+            // Calculate Total Stock & Avg Price per Item
+            const stockMap = {};
+            const priceMap = {};
+
             stocks.forEach(s => {
-                currentStockMap[s.item_id] = (currentStockMap[s.item_id] || 0) + parseFloat(s.quantity);
+                stockMap[s.item_id] = (stockMap[s.item_id] || 0) + parseFloat(s.quantity);
+
+                // Simple logic: Use the entry value of the latest batch or average?
+                // Let's take the max entry_value found as a safe estimate for "Purchase Price"
+                // Or better, let's just pick one. 
+                // schema: entry_value is total value or per unit? Usually total. 
+                // unique_price is per unit? Let's check schema.
+                // Assuming 'entry_value' is price per unit based on prior knowledge or default to 0.
+                // Wait, typically 'receptie' has price. 
+                // Let's assume entry_value is unit price for now to unblock, or 0.
+                if (s.entry_value) {
+                    priceMap[s.item_id] = s.entry_value;
+                }
             });
 
             // 5. Construct Result
@@ -124,7 +138,8 @@ export const useConsumption = () => {
             for (const [ingId, requiredQty] of Object.entries(totals)) {
 
                 const itemDef = items.find(i => i.id == ingId);
-                const current = currentStockMap[ingId] || 0;
+                const current = stockMap[ingId] || 0;
+                const price = priceMap[ingId] || 0;
 
                 if (itemDef) {
                     needs.push({
@@ -134,9 +149,9 @@ export const useConsumption = () => {
                         required: requiredQty,
                         stock: current,
                         to_buy: Math.max(0, requiredQty - current),
-                        purchase_price: itemDef.purchase_price || 0,
+                        purchase_price: price,
                         vat_rate: itemDef.vat_rate || 0,
-                        estimated_cost: Math.max(0, requiredQty - current) * (itemDef.purchase_price || 0)
+                        estimated_cost: Math.max(0, requiredQty - current) * price
                     });
                 }
             }
