@@ -17,6 +17,7 @@ const AdminProcurement = () => {
     const [suppliers, setSuppliers] = useState([]);
 
     // Generator State
+    const [generatorDate, setGeneratorDate] = useState(new Date().toISOString().split('T')[0]);
     const [defaultPortions, setDefaultPortions] = useState(20); // Fallback if no stock set
     const [generatedNeeds, setGeneratedNeeds] = useState(null); // Array of { item, needed, stock, requested }
 
