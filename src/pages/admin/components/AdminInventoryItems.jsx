@@ -30,6 +30,8 @@ const AdminInventoryItems = () => {
         category: 'Materii Prime',
         unit: 'kg',
         min_stock_alert: 5,
+        sale_price: 0,
+        vat_rate: 19,
         is_asset: false,
         responsible_person: '',
         asset_state: 'Nou'
@@ -80,6 +82,8 @@ const AdminInventoryItems = () => {
             category: item.category,
             unit: item.unit,
             min_stock_alert: item.min_stock_alert || 0,
+            sale_price: item.sale_price || 0,
+            vat_rate: item.vat_rate || 19,
             is_asset: item.is_asset || false,
             responsible_person: item.responsible_person || '',
             asset_state: item.asset_state || 'Nou'
@@ -94,6 +98,8 @@ const AdminInventoryItems = () => {
             category: activeCategory,
             unit: activeCategory === 'Bauturi' ? 'l' : (activeCategory === 'Materii Prime' ? 'kg' : 'buc'),
             min_stock_alert: 5,
+            sale_price: 0,
+            vat_rate: 19,
             is_asset: activeCategory === 'Obiecte Inventar',
             responsible_person: '',
             asset_state: 'Nou'
@@ -321,6 +327,32 @@ const AdminInventoryItems = () => {
                                         onChange={e => setFormData({ ...formData, min_stock_alert: e.target.value })}
                                         style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                     />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.9rem', fontWeight: '500' }}>Preț Vânzare (Estimat)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.sale_price}
+                                        onChange={e => setFormData({ ...formData, sale_price: e.target.value })}
+                                        style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.9rem', fontWeight: '500' }}>Cota TVA (%)</label>
+                                    <select
+                                        value={formData.vat_rate}
+                                        onChange={e => setFormData({ ...formData, vat_rate: e.target.value })}
+                                        style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                    >
+                                        <option value="19">19%</option>
+                                        <option value="9">9%</option>
+                                        <option value="5">5%</option>
+                                        <option value="0">0%</option>
+                                    </select>
                                 </div>
                             </div>
 

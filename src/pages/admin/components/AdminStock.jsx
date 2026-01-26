@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Package, Search, Filter, AlertTriangle } from 'lucide-react';
+import { Package, Search, Filter, AlertTriangle, FileText, Printer, Download } from 'lucide-react';
 import './AdminStock.css';
 
 const AdminStock = () => {
@@ -10,8 +10,14 @@ const AdminStock = () => {
 
     // Filters
     const [filterLocation, setFilterLocation] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterStockLevel, setFilterStockLevel] = useState('>0'); // '>0', 'all', 'low'
     const [searchTerm, setSearchTerm] = useState('');
     const [showExpiredOnly, setShowExpiredOnly] = useState(false);
+
+    // Value Calculation Options
+    const [valueMode, setValueMode] = useState('cost'); // 'cost' | 'sale'
+    const [vatMode, setVatMode] = useState('no-vat'); // 'no-vat' | 'vat'
 
     useEffect(() => {
         fetchData();
@@ -29,10 +35,10 @@ const AdminStock = () => {
             .from('inventory_batches')
             .select(`
                 *,
-                inventory_items (name, category, unit),
+                inventory_items (name, category, unit, sale_price, vat_rate),
                 locations (name)
             `)
-            .gt('quantity', 0); // Only show positive stock
+            .order('expiration_date', { ascending: true });
 
         const { data, error } = await query;
 
@@ -55,16 +61,12 @@ const AdminStock = () => {
 
     // Filter Logic
     const filteredStock = stockItems.filter(item => {
-        // Location Filter
-        if (filterLocation && item.location_id !== parseInt(filterLocation)) return false;
+        // Category Filter
+        if (filterCategory && item.inventory_items?.category !== filterCategory) return false;
 
-        // Search Filter (Product Name or Batch)
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            const name = item.inventory_items?.name.toLowerCase() || '';
-            const batch = item.batch_number?.toLowerCase() || '';
-            if (!name.includes(term) && !batch.includes(term)) return false;
-        }
+        // Stock Level Filter
+        if (filterStockLevel === '>0' && item.quantity <= 0) return false;
+        if (filterStockLevel === 'low' && item.quantity > (item.inventory_items?.min_stock_alert || 5)) return false;
 
         // Expiry Filter
         if (showExpiredOnly) {
@@ -76,7 +78,58 @@ const AdminStock = () => {
     });
 
     // Totals
-    const totalValue = filteredStock.reduce((acc, item) => acc + (item.quantity * (item.purchase_price || 0)), 0);
+    // Value Calculation Helper
+    const calculateValue = (item) => {
+        const qty = parseFloat(item.quantity) || 0;
+        let price = 0;
+
+        if (valueMode === 'cost') {
+            price = parseFloat(item.purchase_price) || 0;
+        } else {
+            price = parseFloat(item.inventory_items?.sale_price) || 0;
+        }
+
+        if (vatMode === 'vat') {
+            const vatRate = parseFloat(item.inventory_items?.vat_rate) || 19;
+            price = price * (1 + vatRate / 100);
+        }
+
+        return qty * price;
+    };
+
+    // Totals
+    const totalValue = filteredStock.reduce((acc, item) => acc + calculateValue(item), 0);
+
+    // Export Helpers
+    const handleExportCSV = () => {
+        const headers = ["Produs", "Categorie", "Gestiune", "Lot", "Expirare", "Stoc", "Pret Unitar", "Valoare Totala"];
+        const rows = filteredStock.map(item => [
+            item.inventory_items?.name,
+            item.inventory_items?.category,
+            item.locations?.name,
+            item.batch_number,
+            item.expiration_date,
+            item.quantity,
+            valueMode === 'cost' ? item.purchase_price : item.inventory_items?.sale_price,
+            calculateValue(item).toFixed(2)
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "stocuri_live.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
 
     return (
         <div className="admin-stock-container">
@@ -85,51 +138,129 @@ const AdminStock = () => {
             </h2>
 
             <div className="stock-card">
-                {/* Filters */}
-                <div className="stock-filters-bar">
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                        <div style={{ position: 'relative' }}>
+                {/* Filters & Tools Bar */}
+                <div className="stock-tools-section" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '15px', borderRadius: '12px' }}>
+
+                    {/* Row 1: Search & Basic Filters */}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 2, minWidth: '250px', position: 'relative' }}>
                             <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                             <input
                                 type="text"
                                 className="form-control"
                                 placeholder="Caută produs sau lot..."
-                                style={{ paddingLeft: '36px' }}
+                                style={{ paddingLeft: '36px', width: '100%' }}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
+
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                            <select
+                                className="form-control"
+                                value={filterCategory}
+                                onChange={e => setFilterCategory(e.target.value)}
+                            >
+                                <option value="">Toate Categoriile</option>
+                                <option value="Materii Prime">Materii Prime</option>
+                                <option value="Ambalaje">Ambalaje</option>
+                                <option value="Bauturi">Băuturi</option>
+                                <option value="Obiecte Inventar">Obiecte Inventar</option>
+                            </select>
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                            <select
+                                className="form-control"
+                                value={filterLocation}
+                                onChange={e => setFilterLocation(e.target.value)}
+                            >
+                                <option value="">Toate Gestiunile</option>
+                                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                            <select
+                                className="form-control"
+                                value={filterStockLevel}
+                                onChange={e => setFilterStockLevel(e.target.value)}
+                                style={{ borderColor: filterStockLevel === 'low' ? '#f59e0b' : '#e2e8f0' }}
+                            >
+                                <option value="all">Orice Stoc</option>
+                                <option value=">0">Stoc Pozitiv {'>'} 0</option>
+                                <option value="low">Sub Limita Minimă</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div style={{ minWidth: '200px' }}>
-                        <select
-                            className="form-control"
-                            value={filterLocation}
-                            onChange={e => setFilterLocation(e.target.value)}
-                        >
-                            <option value="">Toate Gestiunile</option>
-                            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
-                    </div>
+                    {/* Row 2: Value Settings & Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '10px', gap: '20px', flexWrap: 'wrap' }}>
 
-                    <div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
-                            <input
-                                type="checkbox"
-                                checked={showExpiredOnly}
-                                onChange={e => setShowExpiredOnly(e.target.checked)}
-                                style={{ width: '18px', height: '18px' }}
-                            />
-                            <span style={{ fontWeight: '600', color: showExpiredOnly ? '#dc2626' : '#64748b' }}>
-                                Doar expirate / la limită
-                            </span>
-                        </label>
-                    </div>
+                        {/* Value Controls */}
+                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                            <div className="toggle-group" style={{ display: 'flex', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                                <button
+                                    onClick={() => setValueMode('cost')}
+                                    style={{ padding: '6px 12px', background: valueMode === 'cost' ? '#e2e8f0' : 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                >
+                                    Cost Intrare
+                                </button>
+                                <div style={{ width: '1px', background: '#cbd5e1' }}></div>
+                                <button
+                                    onClick={() => setValueMode('sale')}
+                                    style={{ padding: '6px 12px', background: valueMode === 'sale' ? '#e2e8f0' : 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                >
+                                    Valoare Vânzare
+                                </button>
+                            </div>
 
-                    <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Valoare Totală Stoc Afișat</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#16a34a' }}>
-                            {totalValue.toFixed(2)} RON
+                            <div className="toggle-group" style={{ display: 'flex', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                                <button
+                                    onClick={() => setVatMode('no-vat')}
+                                    style={{ padding: '6px 12px', background: vatMode === 'no-vat' ? '#e2e8f0' : 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                >
+                                    Fără TVA
+                                </button>
+                                <div style={{ width: '1px', background: '#cbd5e1' }}></div>
+                                <button
+                                    onClick={() => setVatMode('vat')}
+                                    style={{ padding: '6px 12px', background: vatMode === 'vat' ? '#e2e8f0' : 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                >
+                                    Cu TVA
+                                </button>
+                            </div>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', marginLeft: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={showExpiredOnly}
+                                    onChange={e => setShowExpiredOnly(e.target.checked)}
+                                    style={{ width: '16px', height: '16px' }}
+                                />
+                                <span style={{ fontSize: '0.9rem', color: showExpiredOnly ? '#dc2626' : '#64748b' }}>
+                                    Expirate / Alertă
+                                </span>
+                            </label>
+                        </div>
+
+                        {/* Export & Totals */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginLeft: 'auto' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={handleExportCSV} className="btn-icon-text" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>
+                                    <FileText size={16} /> CSV
+                                </button>
+                                <button onClick={handlePrint} className="btn-icon-text" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>
+                                    <Printer size={16} /> Print
+                                </button>
+                            </div>
+
+                            <div style={{ textAlign: 'right', borderLeft: '2px solid #e2e8f0', paddingLeft: '20px' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Valoare Totală ({valueMode === 'cost' ? 'Cost' : 'Vânzare'})</div>
+                                <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#16a34a' }}>
+                                    {totalValue.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -179,11 +310,17 @@ const AdminStock = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <div style={{ fontWeight: '600' }}>
-                                                    {(item.quantity * (item.purchase_price || 0)).toFixed(2)} RON
+                                                <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                                                    {calculateValue(item).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON
                                                 </div>
-                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                    {item.purchase_price} RON / unit
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                                                    <span title="Cost de Achiziție">Cost: {item.purchase_price}</span>
+                                                    <span title="Preț de Vânzare (fără TVA)">Vnz: {item.inventory_items?.sale_price || '-'}</span>
+                                                    {item.purchase_price > 0 && item.inventory_items?.sale_price > 0 && (
+                                                        <span style={{ color: '#16a34a', fontWeight: 'bold' }}>
+                                                            Adaos: {(((item.inventory_items.sale_price - item.purchase_price) / item.purchase_price) * 100).toFixed(0)}%
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
