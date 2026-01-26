@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Search, FileText, Calendar, Trash2, Edit2, Save, X, Printer, Filter, CheckCircle, Package } from 'lucide-react';
+import { Plus, Search, FileText, Calendar, Trash2, Edit2, Save, X, Printer, Filter, CheckCircle, Package, BarChart2, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import InventorySearch from '../../../components/common/InventorySearch'; // Reusing search component
