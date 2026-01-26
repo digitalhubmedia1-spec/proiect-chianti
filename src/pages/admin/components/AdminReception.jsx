@@ -940,6 +940,57 @@ const AdminReception = () => {
                     padding: 1.5rem; border-radius: 8px; font-size: 1.2rem; color: #064e3b; margin-bottom: 2rem;
                 }
 
+                /* --- DETAIL VIEW (Missing styles) --- */
+                .reception-detail-card {
+                    background: white; border-radius: 16px; padding: 2rem;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    max-width: 1000px; margin: 0 auto;
+                }
+                .detail-header-row {
+                    display: flex; align-items: center; gap: 1.5rem;
+                    margin-bottom: 2rem; padding-bottom: 1.5rem;
+                    border-bottom: 2px solid #f1f5f9;
+                }
+                .btn-back-large {
+                    padding: 0.6rem 1.2rem; background: #f1f5f9; border: none; border-radius: 8px;
+                    color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;
+                    font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;
+                }
+                .btn-back-large:hover { background: #e2e8f0; color: #1e293b; transform: translateX(-2px); }
+
+                .detail-meta { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+                .detail-meta h2 { margin: 0; font-size: 1.75rem; color: #0f172a; letter-spacing: -0.5px; }
+                .detail-meta p { margin: 0; color: #64748b; font-size: 1rem; }
+
+                .detail-total-badge {
+                    background: #f0fdf4; color: #166534; font-size: 1.5rem; font-weight: 800;
+                    padding: 0.75rem 1.5rem; border-radius: 12px; border: 1px solid #bbf7d0;
+                }
+
+                .detail-table-airy { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; margin-top: 1rem; }
+                .detail-table-airy th {
+                    text-align: left; padding: 1rem; color: #94a3b8; font-size: 0.8rem; 
+                    text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+                    border-bottom: 2px solid #f1f5f9;
+                }
+                .detail-table-airy td { padding: 1rem; background: #fff; vertical-align: middle; border-bottom: 1px solid #f8fafc; }
+                .detail-table-airy tr:last-child td { border-bottom: none; }
+                
+                .prod-cell { display: flex; flex-direction: column; }
+                .prod-cell strong { font-size: 1.05rem; color: #334155; }
+                .prod-cell small { color: #94a3b8; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; align-self: flex-start; margin-top: 4px; }
+
+                .btn-edit-action {
+                    background: white; border: 1px solid #cbd5e1; padding: 0.5rem 1rem;
+                    border-radius: 8px; color: #475569; font-weight: 600; font-size: 0.9rem;
+                    cursor: pointer; display: flex; gap: 0.5rem; align-items: center;
+                    transition: all 0.2s;
+                }
+                .btn-edit-action:hover {
+                    border-color: #f59e0b; color: #d97706; background: #fffbeb;
+                    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+                }
+
                 @media (max-width: 1024px) {
                      .items-header-row { display: none; }
                      .item-row-card { flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1.5rem; position: relative; }
