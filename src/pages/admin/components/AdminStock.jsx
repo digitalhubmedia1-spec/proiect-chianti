@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Package, Search, Filter, AlertTriangle, FileText, Printer, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './AdminStock.css';
 
 const AdminStock = () => {
@@ -127,8 +129,53 @@ const AdminStock = () => {
         document.body.removeChild(link);
     };
 
-    const handlePrint = () => {
-        window.print();
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text("Raport Stocuri Live", 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        const dateStr = new Date().toLocaleString('ro-RO');
+        doc.text(`Generat la: ${dateStr}`, 14, 30);
+
+        // Filter Info
+        let filterText = `Filtre: ${filterCategory || 'Toate categoriile'} | ${filterLocation ? (locations.find(l => l.id == filterLocation)?.name) : 'Toate gestiunile'} | ${filterStockLevel}`;
+        doc.setFontSize(10);
+        doc.text(filterText, 14, 36);
+
+        // Table
+        const headers = [["Produs", "Categorie", "Gestiune", "Lot", "Expira", "Stoc", "Valoare"]];
+        const data = filteredStock.map(item => [
+            item.inventory_items?.name || '-',
+            item.inventory_items?.category || '-',
+            item.locations?.name || '-',
+            item.batch_number || '-',
+            item.expiration_date || '-',
+            `${item.quantity} ${item.inventory_items?.unit || ''}`,
+            `${calculateValue(item).toFixed(2)} RON`
+        ]);
+
+        autoTable(doc, {
+            head: headers,
+            body: data,
+            startY: 40,
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [153, 0, 0] }, // Chianti Red
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { top: 40 },
+        });
+
+        // Totals Grid
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Total Valoare (${valueMode === 'cost' ? 'Cost' : 'Vanzare'}): ${totalValue.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON`, 14, finalY);
+
+        doc.save("stocuri_live.pdf");
     };
 
     return (
@@ -250,8 +297,8 @@ const AdminStock = () => {
                                 <button onClick={handleExportCSV} className="btn-icon-text" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>
                                     <FileText size={16} /> CSV
                                 </button>
-                                <button onClick={handlePrint} className="btn-icon-text" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>
-                                    <Printer size={16} /> Print
+                                <button onClick={handleExportPDF} className="btn-icon-text" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>
+                                    <FileText size={16} /> PDF
                                 </button>
                             </div>
 
