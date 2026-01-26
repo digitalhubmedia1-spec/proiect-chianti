@@ -161,6 +161,13 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
                         </div>
                     </div>
 
+                    {error && (
+                        <div style={{ padding: '1rem', marginBottom: '1rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <AlertTriangle size={20} />
+                            <span>Eroare calcul: {error}</span>
+                        </div>
+                    )}
+
                     {loading ? (
                         <div style={{ padding: '3rem', textAlign: 'center' }}>Se calculează necesarul...</div>
                     ) : (
