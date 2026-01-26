@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
-import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List } from 'lucide-react';
+import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List, FileText } from 'lucide-react';
 import ConsumptionReportModal from './ConsumptionReportModal';
 import { useMenu } from '../../../context/MenuContext';
 
