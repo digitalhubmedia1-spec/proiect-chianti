@@ -102,9 +102,9 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
             const items = toBuy.map(item => ({
                 list_id: listData.id,
                 item_name: item.name,
-                quantity_needed: item.to_buy,
+                quantity_requested: item.to_buy,
                 unit: item.unit,
-                status: 'pending',
+                is_bought: false, // Replaces status='pending' likely
                 item_id: item.id // Link to inventory item if possible
             }));
 
