@@ -102,6 +102,19 @@ const AdminStock = () => {
     // Totals
     const totalValue = filteredStock.reduce((acc, item) => acc + calculateValue(item), 0);
 
+    // PDF Sanitizer
+    const sanitizeForPDF = (str) => {
+        if (!str) return '-';
+        return str.toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+            .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+            .replace(/â/g, 'a').replace(/Â/g, 'A')
+            .replace(/î/g, 'i').replace(/Î/g, 'I')
+            .replace(/ș/g, 's').replace(/Ș/g, 'S')
+            .replace(/ț/g, 't').replace(/Ț/g, 'T');
+    };
+
     // Export Helpers
     const handleExportCSV = () => {
         const headers = ["Produs", "Categorie", "Gestiune", "Lot", "Expirare", "Stoc", "Pret Unitar", "Valoare Totala"];
@@ -131,6 +144,7 @@ const AdminStock = () => {
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
+        doc.setFont("helvetica"); // Force standard font
 
         // Header
         doc.setFontSize(18);
@@ -143,19 +157,19 @@ const AdminStock = () => {
         doc.text(`Generat la: ${dateStr}`, 14, 30);
 
         // Filter Info
-        let filterText = `Filtre: ${filterCategory || 'Toate categoriile'} | ${filterLocation ? (locations.find(l => l.id == filterLocation)?.name) : 'Toate gestiunile'} | ${filterStockLevel}`;
+        let filterText = `Filtre: ${sanitizeForPDF(filterCategory) || 'Toate categoriile'} | ${filterLocation ? sanitizeForPDF(locations.find(l => l.id == filterLocation)?.name) : 'Toate gestiunile'} | ${filterStockLevel}`;
         doc.setFontSize(10);
         doc.text(filterText, 14, 36);
 
         // Table
         const headers = [["Produs", "Categorie", "Gestiune", "Lot", "Expira", "Stoc", "Valoare"]];
         const data = filteredStock.map(item => [
-            item.inventory_items?.name || '-',
-            item.inventory_items?.category || '-',
-            item.locations?.name || '-',
-            item.batch_number || '-',
+            sanitizeForPDF(item.inventory_items?.name),
+            sanitizeForPDF(item.inventory_items?.category),
+            sanitizeForPDF(item.locations?.name),
+            sanitizeForPDF(item.batch_number),
             item.expiration_date || '-',
-            `${item.quantity} ${item.inventory_items?.unit || ''}`,
+            `${item.quantity} ${sanitizeForPDF(item.inventory_items?.unit)}`,
             `${calculateValue(item).toFixed(2)} RON`
         ]);
 
@@ -163,7 +177,11 @@ const AdminStock = () => {
             head: headers,
             body: data,
             startY: 40,
-            styles: { fontSize: 9, cellPadding: 3 },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3,
+                font: 'helvetica' // Ensure autoTable uses helvetica
+            },
             headStyles: { fillColor: [153, 0, 0] }, // Chianti Red
             alternateRowStyles: { fillColor: [248, 250, 252] },
             margin: { top: 40 },
