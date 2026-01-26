@@ -6,7 +6,16 @@ import { useMenu } from '../../../context/MenuContext';
 
 const AdminMenuPlanner = () => {
     const { products, categories, loading: menuLoading } = useMenu();
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    // Helper to avoid weekends (Initial state)
+    const getInitialDate = () => {
+        const d = new Date();
+        while (d.getDay() === 0 || d.getDay() === 6) {
+            d.setDate(d.getDate() + 1);
+        }
+        return d;
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const [activeItems, setActiveItems] = useState(new Set()); // Set of Product IDs
     const [stockValues, setStockValues] = useState({}); // Map of Product ID -> Stock Count
     const [loading, setLoading] = useState(false);
@@ -118,9 +127,13 @@ const AdminMenuPlanner = () => {
     const copyFromYesterday = async () => {
         if (!window.confirm("Această acțiune va suprascrie selecția curentă cu cea de ieri. Continui?")) return;
 
-        const yesterday = new Date(selectedDate);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yStr = formatDate(yesterday);
+        const sourceDate = new Date(selectedDate);
+        // Skip backwards over weekend to find last working day
+        do {
+            sourceDate.setDate(sourceDate.getDate() - 1);
+        } while (sourceDate.getDay() === 0 || sourceDate.getDay() === 6);
+
+        const yStr = formatDate(sourceDate);
 
         setLoading(true);
         const { data, error } = await supabase
@@ -147,6 +160,12 @@ const AdminMenuPlanner = () => {
     const changeDate = (days) => {
         const next = new Date(selectedDate);
         next.setDate(next.getDate() + days);
+
+        // Skip weekends automatically
+        while (next.getDay() === 0 || next.getDay() === 6) {
+            next.setDate(next.getDate() + (days > 0 ? 1 : -1));
+        }
+
         setSelectedDate(next);
     };
 

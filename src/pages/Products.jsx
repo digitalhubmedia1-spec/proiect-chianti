@@ -24,8 +24,33 @@ const Products = () => {
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
     const [popupContent, setPopupContent] = useState({ title: "", message: "" });
 
+    // Helper to get next N weekdays (Mon-Fri)
+    const getNextWeekdays = (startDate = new Date(), count = 7) => {
+        const days = [];
+        const current = new Date(startDate);
+
+        while (days.length < count) {
+            const dayOfWeek = current.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip Sun (0) and Sat (6)
+                days.push(new Date(current));
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        return days;
+    };
+
+    // Initial Date: Must be a weekday
+    const getInitialDate = () => {
+        const d = new Date();
+        while (d.getDay() === 0 || d.getDay() === 6) {
+            d.setDate(d.getDate() + 1);
+        }
+        return d;
+    };
+
     // Date Selection State
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(getInitialDate());
+    const validDates = getNextWeekdays(new Date(), 7);
     const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
 
     // Helper to get YYYY-MM-DD in LOCAL time
@@ -338,9 +363,7 @@ const Products = () => {
                                 textAlign: 'center'
                             }}
                         >
-                            {[...Array(7)].map((_, i) => {
-                                const date = new Date();
-                                date.setDate(date.getDate() + i);
+                            {validDates.map((date, i) => {
                                 const dateStr = date.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
                                 const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' });
                                 const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
