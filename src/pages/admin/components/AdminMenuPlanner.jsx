@@ -1,28 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
-import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMenu } from '../../../context/MenuContext';
+import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List } from 'lucide-react';
+import ConsumptionReportModal from './ConsumptionReportModal';
 
 const AdminMenuPlanner = () => {
     const { products, categories, loading: menuLoading } = useMenu();
-    // Helper to avoid weekends (Initial state)
-    const getInitialDate = () => {
-        const d = new Date();
-        while (d.getDay() === 0 || d.getDay() === 6) {
-            d.setDate(d.getDate() + 1);
-        }
-        return d;
-    };
+    const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly'
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
-    const [selectedDate, setSelectedDate] = useState(getInitialDate());
-    const [activeItems, setActiveItems] = useState(new Set()); // Set of Product IDs
-    const [stockValues, setStockValues] = useState({}); // Map of Product ID -> Stock Count
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [filterCategory, setFilterCategory] = useState("Toate");
-
-    // Format date for DB: YYYY-MM-DD (LOCAL TIME)
+    // --- SHARED UTILS ---
     const formatDate = (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -30,22 +17,40 @@ const AdminMenuPlanner = () => {
         return `${year}-${month}-${day}`;
     };
 
-    const dateStr = formatDate(selectedDate);
+    // --- DAILY VIEW STATE ---
+    const getInitialDate = () => {
+        const d = new Date();
+        while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+        return d;
+    };
+    const [selectedDate, setSelectedDate] = useState(getInitialDate());
+    const [activeItems, setActiveItems] = useState(new Set());
+    const [stockValues, setStockValues] = useState({});
 
-    // Fetch config for selected date
-    const fetchConfig = async () => {
+    // --- WEEKLY VIEW STATE ---
+    // Start of current week (Monday)
+    const getStartOfWeek = (d) => {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        return new Date(date.setDate(diff));
+    };
+    const [weekStart, setWeekStart] = useState(getStartOfWeek(new Date()));
+    const [weeklyData, setWeeklyData] = useState({}); // { "YYYY-MM-DD": { product_id: stock } }
+
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [filterCategory, setFilterCategory] = useState("Toate");
+
+    // --- DATA FETCHING (DAILY) ---
+    const fetchDaily = async () => {
         setLoading(true);
         setActiveItems(new Set());
         setStockValues({});
+        const dateStr = formatDate(selectedDate);
 
-        const { data, error } = await supabase
-            .from('daily_menu_items')
-            .select('product_id, stock')
-            .eq('date', dateStr);
-
-        if (error) {
-            console.error("Error fetching menu:", error);
-        } else if (data) {
+        const { data, error } = await supabase.from('daily_menu_items').select('product_id, stock').eq('date', dateStr);
+        if (data) {
             const ids = new Set();
             const stocks = {};
             data.forEach(i => {
@@ -58,48 +63,59 @@ const AdminMenuPlanner = () => {
         setLoading(false);
     };
 
+    // --- DATA FETCHING (WEEKLY) ---
+    const fetchWeekly = async () => {
+        setLoading(true);
+        setWeeklyData({});
+
+        const startStr = formatDate(weekStart);
+        const endDate = new Date(weekStart);
+        endDate.setDate(endDate.getDate() + 6);
+        const endStr = formatDate(endDate);
+
+        const { data, error } = await supabase
+            .from('daily_menu_items')
+            .select('product_id, stock, date')
+            .gte('date', startStr)
+            .lte('date', endStr);
+
+        if (data) {
+            const mapping = {};
+            data.forEach(item => {
+                if (!mapping[item.date]) mapping[item.date] = {};
+                mapping[item.date][item.product_id] = item.stock;
+            });
+            setWeeklyData(mapping);
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
-        fetchConfig();
-    }, [dateStr]);
+        if (viewMode === 'daily') fetchDaily();
+        else fetchWeekly();
+    }, [selectedDate, weekStart, viewMode]);
+
+
+    // --- DAILY HANDLERS ---
+    const changeDate = (days) => {
+        const next = new Date(selectedDate);
+        next.setDate(next.getDate() + days);
+        while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + (days > 0 ? 1 : -1));
+        setSelectedDate(next);
+    };
 
     const toggleItem = (id) => {
         const newSet = new Set(activeItems);
-        if (newSet.has(id)) {
-            newSet.delete(id);
-        } else {
-            newSet.add(id);
-        }
+        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
         setActiveItems(newSet);
     };
 
-    const handleSelectAll = (filteredProducts) => {
-        const newSet = new Set(activeItems);
-        filteredProducts.forEach(p => newSet.add(p.id));
-        setActiveItems(newSet);
-    };
-
-    const handleDeselectAll = (filteredProducts) => {
-        const newSet = new Set(activeItems);
-        filteredProducts.forEach(p => newSet.delete(p.id));
-        setActiveItems(newSet);
-    };
-
-    const saveConfiguration = async () => {
+    const saveDaily = async () => {
         setSaving(true);
+        const dateStr = formatDate(selectedDate);
 
-        // 1. Delete existing for this date
-        const { error: delError } = await supabase
-            .from('daily_menu_items')
-            .delete()
-            .eq('date', dateStr);
+        await supabase.from('daily_menu_items').delete().eq('date', dateStr);
 
-        if (delError) {
-            alert("Eroare la ștergerea vechii configurații: " + delError.message);
-            setSaving(false);
-            return;
-        }
-
-        // 2. Insert new ids
         const itemsToInsert = Array.from(activeItems).map(id => ({
             date: dateStr,
             product_id: id,
@@ -108,240 +124,323 @@ const AdminMenuPlanner = () => {
         }));
 
         if (itemsToInsert.length > 0) {
-            const { error: insError } = await supabase
-                .from('daily_menu_items')
-                .insert(itemsToInsert);
-
-            if (insError) {
-                alert("Eroare la salvare: " + insError.message);
-                setSaving(false);
-                return;
-            }
+            await supabase.from('daily_menu_items').insert(itemsToInsert);
         }
 
         logAction('MENIU_ZILNIC', `Configurat meniu pentru ${dateStr}: ${itemsToInsert.length} produse.`);
         setSaving(false);
-        alert("Configurație salvată cu succes!");
+        alert("Configurație salvată!");
     };
 
     const copyFromYesterday = async () => {
-        if (!window.confirm("Această acțiune va suprascrie selecția curentă cu cea de ieri. Continui?")) return;
-
-        const sourceDate = new Date(selectedDate);
-        // Skip backwards over weekend to find last working day
-        do {
-            sourceDate.setDate(sourceDate.getDate() - 1);
-        } while (sourceDate.getDay() === 0 || sourceDate.getDay() === 6);
-
-        const yStr = formatDate(sourceDate);
+        if (!confirm("Suprascrii ziua curentă cu cea anterioară?")) return;
+        const srcDate = new Date(selectedDate);
+        do { srcDate.setDate(srcDate.getDate() - 1); } while (srcDate.getDay() === 0 || srcDate.getDay() === 6);
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('daily_menu_items')
-            .select('product_id, stock')
-            .eq('date', yStr);
-
-        if (error) {
-            alert("Eroare la copiere: " + error.message);
-        } else if (data) {
+        const { data } = await supabase.from('daily_menu_items').select('product_id, stock').eq('date', formatDate(srcDate));
+        if (data) {
             const ids = new Set();
             const stocks = {};
-            data.forEach(i => {
-                ids.add(i.product_id);
-                stocks[i.product_id] = i.stock;
-            });
+            data.forEach(i => { ids.add(i.product_id); stocks[i.product_id] = i.stock; });
             setActiveItems(ids);
             setStockValues(stocks);
-            alert(`Copiat ${ids.size} produse de la ${yStr}. Nu uita să salvezi!`);
         }
         setLoading(false);
     };
 
-    const changeDate = (days) => {
-        const next = new Date(selectedDate);
+    // --- WEEKLY HANDLERS ---
+    const changeWeek = (days) => {
+        const next = new Date(weekStart);
         next.setDate(next.getDate() + days);
-
-        // Skip weekends automatically
-        while (next.getDay() === 0 || next.getDay() === 6) {
-            next.setDate(next.getDate() + (days > 0 ? 1 : -1));
-        }
-
-        setSelectedDate(next);
+        setWeekStart(next);
     };
 
-    // Filter Logic: Exclude Catering + Apply Category Filter
+    const handleWeeklyInput = (dateStr, productId, val) => {
+        setWeeklyData(prev => ({
+            ...prev,
+            [dateStr]: {
+                ...prev[dateStr],
+                [productId]: val === '' ? null : parseInt(val)
+            }
+        }));
+    };
+
+    const saveWeekly = async () => {
+        setSaving(true);
+
+        // Prepare range deletion
+        const startStr = formatDate(weekStart);
+        const endDate = new Date(weekStart);
+        endDate.setDate(endDate.getDate() + 6);
+        const endStr = formatDate(endDate);
+
+        // We delete by date range, but ideally we should only touch the products that we are editing?
+        // To be safe and avoid partial overwrites of unrelated things if any, we can do upsert?
+        // But the requirement implies full control. Let's delete for the range ONLY for the active category?
+        // No, 'Save Weekly' implies saving the view. 
+        // Simplest: Delete all for the range and re-insert ALL from memory? 
+        // Warning: If `weeklyData` only has fetched data, it's incomplete if we didn't fetch everything.
+        // We fetched everything for the range in `fetchWeekly`.
+
+        // Actually, let's use Upsert logic per day to be safer, or delete by day.
+        // Since we have specific inputs, let's iterate days.
+
+        const allInserts = [];
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() + i);
+            weekDates.push(formatDate(d));
+        }
+
+        // Delete existing for this week
+        await supabase.from('daily_menu_items').delete().gte('date', startStr).lte('date', endStr);
+
+        weekDates.forEach(date => {
+            const dayData = weeklyData[date] || {};
+            Object.entries(dayData).forEach(([prodId, stock]) => {
+                if (stock !== null && stock !== undefined && !isNaN(stock)) { // Only save if stock is set (or specifically 0). 
+                    // Actually, if it was in the grid but empty, should we save it?
+                    // In Daily view, we select items. 
+                    // In Weekly view, if I put a number, it's active. If I leave empty, it's NOT active?
+                    // Let's assume: If stock > 0 => Active. 
+                    if (stock > 0) {
+                        allInserts.push({
+                            date: date,
+                            product_id: parseInt(prodId),
+                            stock: parseInt(stock),
+                            is_available: true
+                        });
+                    }
+                }
+            });
+        });
+
+        if (allInserts.length > 0) {
+            const { error } = await supabase.from('daily_menu_items').insert(allInserts);
+            if (error) alert("Eroare: " + error.message);
+            else alert("Săptămână salvată cu succes!");
+        } else {
+            alert("Săptămână salvată (Goală)!");
+        }
+
+        setSaving(false);
+        fetchWeekly(); // Refresh
+    };
+
+    // --- SHARED RENDER VARS ---
     const standardProducts = products.filter(p => {
         const cat = categories.find(c => c.name === p.category);
         return cat && cat.type !== 'catering';
     });
+    const displayProducts = filterCategory === "Toate" ? standardProducts : standardProducts.filter(p => p.category === filterCategory);
 
-    const displayProducts = filterCategory === "Toate"
-        ? standardProducts
-        : standardProducts.filter(p => p.category === filterCategory);
+    // --- RENDER WEEKLY GRID ---
+    const renderWeeklyGrid = () => {
+        const days = [];
+        const dateLabels = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() + i);
+            days.push(formatDate(d));
+            dateLabels.push(d.toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric' }));
+        }
 
-    // Group active count
-    const activeCount = Array.from(activeItems).filter(id => standardProducts.find(p => p.id === id)).length;
+        return (
+            <div className="weekly-grid-container" style={{ overflowX: 'auto' }}>
+                <table className="weekly-table">
+                    <thead>
+                        <tr>
+                            <th style={{ minWidth: '200px', textAlign: 'left' }}>Produs</th>
+                            {dateLabels.map((lbl, idx) => (
+                                <th key={idx} className={idx > 4 ? 'weekend-col' : ''}>{lbl}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {displayProducts.map(p => (
+                            <tr key={p.id}>
+                                <td className="product-cell">
+                                    <div className="prod-name">{p.name}</div>
+                                    <div className="prod-cat">{p.category}</div>
+                                </td>
+                                {days.map((dateStr, idx) => {
+                                    const val = weeklyData[dateStr]?.[p.id] ?? '';
+                                    return (
+                                        <td key={dateStr} className={idx > 4 ? 'weekend-col' : ''}>
+                                            <input
+                                                type="number"
+                                                className="stock-input"
+                                                placeholder="-"
+                                                value={val}
+                                                onChange={(e) => handleWeeklyInput(dateStr, p.id, e.target.value)}
+                                            />
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <style>{`
+                    .weekly-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+                    .weekly-table th { padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 600; }
+                    .weekly-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+                    .weekly-table .product-cell { text-align: left; border-right: 1px solid #e2e8f0; }
+                    .weekly-table .weekend-col { background: #fef2f2; }
+                    .prod-name { font-weight: 600; color: #1e293b; }
+                    .prod-cat { font-size: 0.75rem; color: #94a3b8; }
+                    .stock-input { width: 60px; padding: 6px; border: 1px solid #cbd5e1; borderRadius: 4px; text-align: center; font-weight: 600; }
+                    .stock-input:focus { border-color: #990000; outline: none; background: #fff1f2; }
+                `}</style>
+            </div>
+        );
+    };
 
     return (
-        <div className="admin-logs-container">
-            <div className="actions-bar">
-                <h3>Planificator Meniu</h3>
-                <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                    Selectează produsele disponibile și setează numărul de porții (opțional).
-                </div>
-            </div>
-
-            {/* Date Navigator */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                <button className="icon-btn" onClick={() => changeDate(-1)}><ChevronLeft /></button>
-                <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>
-                        {selectedDate.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        <div className="admin-planner-container" style={{ padding: '1rem' }}>
+            {/* HDR */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Calendar size={28} className="text-primary" /> Planificator Meniu
                     </h2>
-                    <span style={{ fontSize: '0.85rem', color: activeCount > 0 ? '#16a34a' : '#ef4444', fontWeight: '600' }}>
-                        {activeCount > 0 ? `${activeCount} Produse Active` : 'Niciun produs setat (Meniu Gol)'}
-                    </span>
+                    <p style={{ margin: '5px 0 0 0', color: '#64748b' }}>Gestionează meniul zilnic și necesarul de producție.</p>
                 </div>
-                <button className="icon-btn" onClick={() => changeDate(1)}><ChevronRight /></button>
-            </div>
 
-            {/* Controls */}
-            <div className="search-filter-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <select
-                    className="form-control"
-                    style={{ width: 'auto', paddingRight: '2rem' }}
-                    value={filterCategory}
-                    onChange={e => setFilterCategory(e.target.value)}
-                >
-                    <option value="Toate">Toate Categoriile</option>
-                    {categories.filter(c => c.type !== 'catering').map(c => (
-                        <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                </select>
-
-                <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
+                {/* View Switcher */}
+                <div className="view-switcher" style={{ display: 'flex', background: '#e2e8f0', padding: '4px', borderRadius: '8px' }}>
                     <button
-                        onClick={copyFromYesterday}
-                        style={{
-                            background: '#f8fafc',
-                            color: '#475569',
-                            border: '1px solid #cbd5e1',
-                            padding: '10px 20px',
-                            borderRadius: '8px',
-                            fontSize: '0.95rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
-                        onMouseOut={(e) => e.currentTarget.style.background = '#f8fafc'}
-                    >
-                        <Copy size={18} /> Copiază de Ieri
+                        onClick={() => setViewMode('daily')}
+                        style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: viewMode === 'daily' ? 'white' : 'transparent', fontWeight: '600', color: viewMode === 'daily' ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', boxShadow: viewMode === 'daily' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+                        <List size={16} /> Zilnic
                     </button>
                     <button
-                        onClick={saveConfiguration}
-                        disabled={saving}
-                        style={{
-                            background: '#16a34a',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 24px',
-                            borderRadius: '8px',
-                            fontSize: '0.95rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)',
-                            transition: 'all 0.2s',
-                            opacity: saving ? 0.7 : 1
-                        }}
-                        onMouseOver={(e) => !saving && (e.currentTarget.style.background = '#15803d')}
-                        onMouseOut={(e) => !saving && (e.currentTarget.style.background = '#16a34a')}
-                    >
-                        {saving ? 'Se salvează...' : <><Save size={18} /> Salvează Configurația</>}
+                        onClick={() => setViewMode('weekly')}
+                        style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: viewMode === 'weekly' ? 'white' : 'transparent', fontWeight: '600', color: viewMode === 'weekly' ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', gap: '6px', alignItems: 'center', boxShadow: viewMode === 'weekly' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+                        <Grid size={16} /> Săptămânal
                     </button>
                 </div>
             </div>
 
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
-                <button onClick={() => handleSelectAll(displayProducts)} style={{ border: 'none', background: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.9rem' }}>Selectează Tot</button>
-                <button onClick={() => handleDeselectAll(displayProducts)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}>Deselectează Tot</button>
-            </div>
+            {/* CONTROLS */}
+            <div style={{ background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
 
-            {/* Product Grid */}
-            {loading || menuLoading ? (
-                <div style={{ textAlign: 'center', padding: '3rem' }}>Se încarcă...</div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                    {displayProducts.map(product => (
-                        <div
-                            key={product.id}
-                            onClick={() => toggleItem(product.id)}
-                            style={{
-                                padding: '1rem',
-                                background: activeItems.has(product.id) ? '#f0fdf4' : 'white',
-                                border: activeItems.has(product.id) ? '2px solid #16a34a' : '1px solid #e2e8f0',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                transition: 'all 0.2s'
-                            }}
+                    {/* Period Navigator */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <button className="icon-btn" onClick={() => viewMode === 'daily' ? changeDate(-1) : changeWeek(-7)}><ChevronLeft size={20} /></button>
+                        <span style={{ fontWeight: 'bold', fontSize: '1.05rem', minWidth: '200px', textAlign: 'center' }}>
+                            {viewMode === 'daily'
+                                ? selectedDate.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' })
+                                : `Săpt: ${weekStart.toLocaleDateString('ro-RO')} - ${new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('ro-RO')}`
+                            }
+                        </span>
+                        <button className="icon-btn" onClick={() => viewMode === 'daily' ? changeDate(1) : changeWeek(7)}><ChevronRight size={20} /></button>
+                    </div>
+
+                    <select
+                        className="form-control"
+                        style={{ width: '200px' }}
+                        value={filterCategory}
+                        onChange={e => setFilterCategory(e.target.value)}
+                    >
+                        <option value="Toate">Toate Categoriile</option>
+                        {categories.filter(c => c.type !== 'catering').map(c => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                    </select>
+
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+                        <button
+                            className="btn-secondary"
+                            onClick={() => setIsReportOpen(true)}
+                            style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' }}
                         >
-                            <div style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '4px',
-                                border: `2px solid ${activeItems.has(product.id) ? '#16a34a' : '#cbd5e1'}`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0
-                            }}>
-                                {activeItems.has(product.id) && <div style={{ width: '10px', height: '10px', background: '#16a34a', borderRadius: '2px' }} />}
-                            </div>
-
-                            {product.image && (
-                                <img src={product.image} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
-                            )}
-
-                            <div style={{ overflow: 'hidden', flex: 1 }}>
-                                <div style={{ fontWeight: '600', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
-                            </div>
-
-                            {activeItems.has(product.id) && (
-                                <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="Număr de porții (Lasă gol pentru nelimitat)"
-                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                                >
-                                    <span style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Porții</span>
-                                    <input
-                                        type="number"
-                                        placeholder="∞"
-                                        min="0"
-                                        style={{
-                                            width: '60px',
-                                            padding: '4px',
-                                            borderRadius: '4px',
-                                            border: '1px solid #cbd5e1',
-                                            textAlign: 'center',
-                                            fontSize: '0.9rem'
-                                        }}
-                                        value={stockValues[product.id] ?? ''}
-                                        onChange={(e) => setStockValues({ ...stockValues, [product.id]: e.target.value })}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                            <FileText size={18} /> Generare Necesar
+                        </button>
+                        {viewMode === 'daily' && (
+                            <button className="btn-secondary" onClick={copyFromYesterday}><Copy size={16} /> Copiază Ieri</button>
+                        )}
+                        <button
+                            className="btn-primary"
+                            onClick={viewMode === 'daily' ? saveDaily : saveWeekly}
+                            disabled={saving}
+                            style={{ background: saving ? '#94a3b8' : '#16a34a' }}
+                        >
+                            <Save size={18} /> {saving ? 'Se salvează...' : 'Salvează Tot'}
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            {/* CONTENT */}
+            {loading || menuLoading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Se încarcă datele...</div>
+            ) : (
+                viewMode === 'daily' ? (
+                    // --- RE-USE EXISTING DAILY GRID RENDER ---
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                        {displayProducts.map(product => (
+                            <div
+                                key={product.id}
+                                onClick={() => toggleItem(product.id)}
+                                style={{
+                                    padding: '1rem',
+                                    background: activeItems.has(product.id) ? '#f0fdf4' : 'white',
+                                    border: activeItems.has(product.id) ? '2px solid #16a34a' : '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <div style={{
+                                    width: '20px', height: '20px', borderRadius: '4px',
+                                    border: `2px solid ${activeItems.has(product.id) ? '#16a34a' : '#cbd5e1'}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                }}>
+                                    {activeItems.has(product.id) && <div style={{ width: '10px', height: '10px', background: '#16a34a', borderRadius: '2px' }} />}
+                                </div>
+                                {product.image && <img src={product.image} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />}
+                                <div style={{ overflow: 'hidden', flex: 1 }}>
+                                    <div style={{ fontWeight: '600', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
+                                </div>
+                                {activeItems.has(product.id) && (
+                                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Porții</span>
+                                        <input
+                                            type="number" placeholder="∞" min="0"
+                                            style={{ width: '60px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }}
+                                            value={stockValues[product.id] ?? ''}
+                                            onChange={(e) => setStockValues({ ...stockValues, [product.id]: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    renderWeeklyGrid()
+                )
             )}
+            {/* Modal */}
+            <ConsumptionReportModal
+                isOpen={isReportOpen}
+                onClose={() => setIsReportOpen(false)}
+                dateRange={viewMode === 'daily'
+                    ? { start: formatDate(selectedDate), end: formatDate(selectedDate) }
+                    : {
+                        start: formatDate(weekStart),
+                        end: formatDate(new Date(weekStart.getTime() + 6 * 86400000))
+                    }
+                }
+                categoryFilter={filterCategory}
+            />
         </div>
     );
 };

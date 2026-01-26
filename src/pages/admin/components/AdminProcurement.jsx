@@ -16,9 +16,11 @@ const AdminProcurement = () => {
     const [suppliers, setSuppliers] = useState([]);
 
     // Generator State
-    const [generatorDate, setGeneratorDate] = useState(new Date().toISOString().split('T')[0]);
     const [defaultPortions, setDefaultPortions] = useState(20); // Fallback if no stock set
     const [generatedNeeds, setGeneratedNeeds] = useState(null); // Array of { item, needed, stock, requested }
+
+    // Use Consumption Hook
+    const { calculateNeeds: calculateConsumption, loading: calcLoading, error: calcError } = useConsumption();
 
     // History Filter
     const [historyFilter, setHistoryFilter] = useState({
@@ -106,111 +108,21 @@ const AdminProcurement = () => {
 
     // --- ACTIONS ---
 
-    const calculateNeeds = async () => {
-        setLoading(true);
-        try {
-            // 1. Get Daily Menu
-            const { data: menuItems, error: menuError } = await supabase
-                .from('daily_menu_items')
-                .select('product_id, stock')
-                .eq('date', generatorDate);
+    const handleCalculate = async () => {
+        const results = await calculateConsumption({
+            startDate: generatorDate,
+            endDate: generatorDate // Single day calculation for this component
+        });
 
-            if (menuError) throw menuError;
-            if (!menuItems || menuItems.length === 0) {
-                alert("Nu există meniu setat pentru această dată.");
-                setLoading(false);
-                return;
-            }
+        // Filter out items that don't need buying? The old logic purely showed what's missing.
+        // The old logic only showed items where current < required.
+        // Let's filter that here to match previous behavior for the "Generator Necesar" tab.
+        const missingItems = results.filter(n => n.stock < n.required);
 
-            // 2. Get Recipes for these products
-            // 2. Get Recipes for these products (Two-step fetch due to Schema Refactor)
-            const productIds = menuItems.map(m => m.product_id);
-
-            // Step 2a: Get Recipe Headers (link product -> recipe_id)
-            const { data: recipeHeaders, error: headerError } = await supabase
-                .from('defined_recipes')
-                .select('id, linked_product_id')
-                .in('linked_product_id', productIds);
-
-            if (headerError) throw headerError;
-
-            // Map recipe_id -> product_id
-            const recipeIdMap = {};
-            recipeHeaders.forEach(h => { recipeIdMap[h.id] = h.linked_product_id; });
-            const recipeIds = recipeHeaders.map(h => h.id);
-
-            // Step 2b: Get Ingredients
-            const { data: ingredients, error: recipeError } = await supabase
-                .from('recipes')
-                .select('recipe_id, ingredient_id, quantity_required')
-                .in('recipe_id', recipeIds);
-
-            // Map back to expected format for aggregation
-            const recipes = ingredients?.map(ing => ({
-                ...ing,
-                product_id: recipeIdMap[ing.recipe_id]
-            })) || [];
-
-            if (recipeError) throw recipeError;
-
-            // 3. Aggregate Needs
-            const totals = {}; // ingredient_id -> needed_qty
-
-            menuItems.forEach(menuItem => {
-                const portions = menuItem.stock || defaultPortions;
-                const productRecipes = recipes.filter(r => r.product_id === menuItem.product_id);
-
-                productRecipes.forEach(rec => {
-                    const totalForProduct = parseFloat(rec.quantity_required) * portions;
-                    totals[rec.ingredient_id] = (totals[rec.ingredient_id] || 0) + totalForProduct;
-                });
-            });
-
-            // 4. Get Current Stock
-            const ingredientIds = Object.keys(totals);
-            if (ingredientIds.length === 0) {
-                alert("Nu există rețete configurate pentru produsele din meniu.");
-                setLoading(false);
-                return;
-            }
-
-            const { data: stocks, error: stockError } = await supabase
-                .from('inventory_batches')
-                .select('item_id, quantity')
-                .in('item_id', ingredientIds);
-
-            if (stockError) throw stockError;
-
-            // 5. Calculate Delta
-            const currentStockMap = {};
-            stocks.forEach(s => {
-                currentStockMap[s.item_id] = (currentStockMap[s.item_id] || 0) + parseFloat(s.quantity);
-            });
-
-            const needs = [];
-            for (const [ingId, requiredQty] of Object.entries(totals)) {
-                const current = currentStockMap[ingId] || 0;
-                if (current < requiredQty) {
-                    const itemDef = items.find(i => i.id == ingId);
-                    if (itemDef) {
-                        needs.push({
-                            id: ingId,
-                            name: itemDef.name,
-                            unit: itemDef.unit,
-                            required: requiredQty,
-                            stock: current,
-                            to_buy: requiredQty - current
-                        });
-                    }
-                }
-            }
-
-            setGeneratedNeeds(needs);
-        } catch (err) {
-            console.error(err);
-            alert("Eroare calcul: " + err.message);
-        } finally {
-            setLoading(false);
+        if (results.length > 0 && missingItems.length === 0) {
+            setGeneratedNeeds([]); // Shows "All good" message
+        } else {
+            setGeneratedNeeds(missingItems);
         }
     };
 
@@ -574,8 +486,8 @@ const AdminProcurement = () => {
                     <label>Porții Implicite (dacă nu-s setate)</label>
                     <input type="number" value={defaultPortions} onChange={e => setDefaultPortions(e.target.value)} />
                 </div>
-                <button className="btn-primary" onClick={calculateNeeds} disabled={loading}>
-                    <Calculator size={18} /> Calculează Necesar
+                <button className="btn-primary" onClick={handleCalculate} disabled={calcLoading || loading}>
+                    <Calculator size={18} /> {calcLoading ? 'Se calculează...' : 'Calculează Necesar'}
                 </button>
             </div>
 
