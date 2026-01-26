@@ -35,6 +35,7 @@ const AdminReception = () => {
     const [receptionsList, setReceptionsList] = useState([]);
     const [selectedReception, setSelectedReception] = useState(null); // For detail/edit view
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [editingBatch, setEditingBatch] = useState(null); // { id, quantity, price }
 
     // --- REPORTS STATE ---
     const [reportItems, setReportItems] = useState([]);
@@ -256,15 +257,16 @@ const AdminReception = () => {
 
     // --- EDITING LOGIC (History) ---
 
-    const handleEditItemSave = async (batchId, newQty, newPrice) => {
-        // Logic: Calculate difference in qty and apply to current stock
-        // Be careful: if batch was consumed, changing initial_quantity might result in weird stock if we just overwrite 'quantity'
-        // Correct way: 
-        // 1. Get current batch data (old_initial, current_stock)
-        // 2. diff = new_initial - old_initial
-        // 3. Update initial_quantity = new_initial
-        // 4. Update quantity = quantity + diff
-        // 5. Update price
+    const handleEditItemSave = async (batchId) => {
+        // Validation
+        if (!editingBatch || editingBatch.id !== batchId) return;
+        const newQty = editingBatch.quantity;
+        const newPrice = editingBatch.price;
+
+        if (newQty === '' || newPrice === '') {
+            alert("Completați ambele valori!");
+            return;
+        }
 
         try {
             const { data: oldBatch } = await supabase.from('inventory_batches').select('*').eq('id', batchId).single();
@@ -286,6 +288,7 @@ const AdminReception = () => {
             // Recalculate reception total
             // This requires summing all batches again. We can do it on UI refresh.
             fetchReceptionDetails(selectedReception.id); // Refresh detail view
+            setEditingBatch(null); // Clear editing state
             alert("Modificare salvată!");
 
         } catch (err) {
@@ -639,19 +642,48 @@ const AdminReception = () => {
                                             <small>{batch.inventory_items?.unit}</small>
                                         </div>
                                     </td>
-                                    <td>{batch.initial_quantity}</td>
-                                    <td>{batch.purchase_price}</td>
+                                    <td>
+                                        {editingBatch?.id === batch.id ? (
+                                            <input
+                                                type="number" step="any"
+                                                className="input-edit-inline"
+                                                value={editingBatch.quantity}
+                                                onChange={e => setEditingBatch({ ...editingBatch, quantity: e.target.value })}
+                                            />
+                                        ) : batch.initial_quantity}
+                                    </td>
+                                    <td>
+                                        {editingBatch?.id === batch.id ? (
+                                            <input
+                                                type="number" step="any"
+                                                className="input-edit-inline"
+                                                value={editingBatch.price}
+                                                onChange={e => setEditingBatch({ ...editingBatch, price: e.target.value })}
+                                            />
+                                        ) : batch.purchase_price}
+                                    </td>
                                     <td>{(batch.initial_quantity * batch.purchase_price).toFixed(2)}</td>
                                     <td>
-                                        <button className="btn-edit-action" onClick={() => {
-                                            const newQ = prompt("Corecție Cantitate (Atenție: modifică stocul!):", batch.initial_quantity);
-                                            const newP = prompt("Corecție Preț Unitar:", batch.purchase_price);
-                                            if (newQ !== null && newP !== null) {
-                                                handleEditItemSave(batch.id, newQ, newP);
-                                            }
-                                        }}>
-                                            <Edit2 size={16} /> Corectează
-                                        </button>
+                                        {editingBatch?.id === batch.id ? (
+                                            <div className="actions-inline">
+                                                <button className="btn-save-inline" onClick={() => handleEditItemSave(batch.id)}>
+                                                    <CheckCircle size={16} /> Salvează
+                                                </button>
+                                                <button className="btn-cancel-inline" onClick={() => setEditingBatch(null)}>
+                                                    <X size={16} /> Renunță
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button className="btn-edit-action" onClick={() => {
+                                                setEditingBatch({
+                                                    id: batch.id,
+                                                    quantity: batch.initial_quantity,
+                                                    price: batch.purchase_price
+                                                });
+                                            }}>
+                                                <Edit2 size={16} /> Corectează
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -990,6 +1022,21 @@ const AdminReception = () => {
                     border-color: #f59e0b; color: #d97706; background: #fffbeb;
                     box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
                 }
+
+                .input-edit-inline {
+                    width: 80px; padding: 0.5rem; border: 2px solid #3b82f6; border-radius: 6px;
+                    font-weight: 700; color: #1e293b;
+                }
+                .actions-inline { display: flex; gap: 0.5rem; }
+                .btn-save-inline, .btn-cancel-inline {
+                    border: none; padding: 0.4rem 0.8rem; border-radius: 6px;
+                    cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
+                    font-size: 0.85rem; font-weight: 600; color: white;
+                }
+                .btn-save-inline { background: #22c55e; }
+                .btn-save-inline:hover { background: #16a34a; }
+                .btn-cancel-inline { background: #64748b; }
+                .btn-cancel-inline:hover { background: #475569; }
 
                 @media (max-width: 1024px) {
                      .items-header-row { display: none; }
