@@ -462,28 +462,181 @@ const AdminReception = () => {
         </div>
     );
 
-    // Reuse History Logic but Render differently for "Reports" (Aggregate or just Print friendly)
-    // Client wanted "Lista articolelor cumparate".
-    // We can flatten the reception items.
-    const renderReports = () => {
-        // We'll fetch ALL items from filtered receptions
-        // Since we don't hold them in 'receptionsList' (only headers), we might need another query or iterate detail fetching.
-        // Better approach: Query join `receptions` -> `inventory_batches`
+    // --- REPORTING LOGIC ---
 
-        // This is a bit heavy for frontend if date range is huge, but fine for normal usage.
+    const [reportItems, setReportItems] = useState([]);
+    const [loadingReport, setLoadingReport] = useState(false);
+
+    const fetchReportData = async () => {
+        setLoadingReport(true);
+        // We need detailed items (batches) joined with receptions and suppliers
+        let query = supabase
+            .from('inventory_batches')
+            .select(`
+                *,
+                receptions!inner (
+                    invoice_number,
+                    invoice_date,
+                    suppliers (name)
+                ),
+                inventory_items (name, unit)
+            `)
+            .neq('reception_id', null); // Only items linked to a reception
+
+        // Apply filters on the related reception interaction
+        if (filters.startDate) {
+            query = query.gte('receptions.reception_date', filters.startDate);
+        }
+        if (filters.endDate) {
+            query = query.lte('receptions.reception_date', filters.endDate);
+        }
+        // Note: Supabase filtering on joined tables is tricky with inner joins if we want to filter parent.
+        // The !inner modifier allows filtering on the joined table ensuring strict match.
+
+        // However, standard postgrest-js might not support deep filtering easily on nested props in one go without custom syntax.
+        // Let's rely on fetching and filtering in memory if dataset is small, OR use the documented syntax:
+        // .eq('receptions.supplier_id', val) works if !inner is used.
+
+        if (filters.supplierId !== 'all') {
+            query = query.eq('receptions.supplier_id', filters.supplierId);
+        }
+
+        // invoice number filter logic
+        // query = query.ilike('receptions.invoice_number', ...) // might work
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error(error);
+            setLoadingReport([]);
+        } else {
+            // Client-side refined filtering if needed (e.g. partial matches)
+            let filtered = data || [];
+            if (filters.invoiceNumber) {
+                filtered = filtered.filter(item => item.receptions?.invoice_number.toLowerCase().includes(filters.invoiceNumber.toLowerCase()));
+            }
+
+            // Sort by date desc
+            filtered.sort((a, b) => new Date(b.receptions.invoice_date) - new Date(a.receptions.invoice_date));
+            setReportItems(filtered);
+        }
+        setLoadingReport(false);
+    };
+
+    const generatePDF = () => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("Raport Achiziții (NIR)", 14, 20);
+
+        doc.setFontSize(10);
+        doc.text(`Perioada: ${filters.startDate} - ${filters.endDate}`, 14, 28);
+        if (filters.supplierId !== 'all') {
+            const suppName = suppliers.find(s => s.id === filters.supplierId)?.name || 'N/A';
+            doc.text(`Furnizor: ${suppName}`, 14, 34);
+        }
+
+        const tableColumn = ["Data", "Factura", "Furnizor", "Produs", "Cantitate", "Preț", "Total"];
+        const tableRows = [];
+
+        let grandTotal = 0;
+
+        reportItems.forEach(item => {
+            const date = item.receptions?.invoice_date || '-';
+            const invoice = item.receptions?.invoice_number || '-';
+            const supplier = item.receptions?.suppliers?.name || '-';
+            const product = item.inventory_items?.name || '-';
+            const qty = `${item.initial_quantity || item.quantity} ${item.inventory_items?.unit}`;
+            const price = item.purchase_price || 0;
+            const total = ((item.initial_quantity || item.quantity) * price).toFixed(2);
+
+            grandTotal += parseFloat(total);
+
+            tableRows.push([date, invoice, supplier, product, qty, price, total]);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+        });
+
+        const finalY = doc.lastAutoTable.finalY || 40;
+        doc.setFontSize(12);
+        doc.text(`Total General: ${grandTotal.toFixed(2)} RON`, 14, finalY + 10);
+
+        doc.save(`Raport_Achizitii_${filters.startDate}_${filters.endDate}.pdf`);
+    };
+
+    // Trigger fetch when tab is Reports
+    useEffect(() => {
+        if (activeTab === 'reports') {
+            fetchReportData();
+        }
+    }, [activeTab, filters]); // Refetch on filter change
+
+    const renderReports = () => {
+        const totalValue = reportItems.reduce((acc, item) => acc + ((item.initial_quantity || item.quantity) * (item.purchase_price || 0)), 0);
+
         return (
             <div className="reports-view">
                 <div className="filters-bar">
-                    {/* Reuse filter UI */}
-                    <input type="date" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} />
-                    -
-                    <input type="date" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} />
-                    <button className="btn-primary" onClick={() => alert("Funcție export PDF în lucru...")}>Export PDF</button>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontSize: '0.75rem' }}>De la</label>
+                        <input type="date" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontSize: '0.75rem' }}>Până la</label>
+                        <input type="date" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontSize: '0.75rem' }}>Furnizor</label>
+                        <select value={filters.supplierId} onChange={e => setFilters({ ...filters, supplierId: e.target.value })}>
+                            <option value="all">Toți Furnizorii</option>
+                            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </div>
+
+                    <button className="btn-primary" onClick={generatePDF} disabled={reportItems.length === 0}>
+                        <Printer size={18} /> Export PDF
+                    </button>
                 </div>
-                <div className="report-placeholder">
-                    <p>Selectați perioada și furnizorul pentru a vedea detaliile fiecărei linii de factură (în lucru).</p>
-                    {/* Placeholder for now to keep implementation manageable in one step */}
-                    <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Folosiți tab-ul <strong>Istoric & Corecții</strong> pentru a vedea detaliile facturilor.</p>
+
+                <div className="report-summary" style={{ marginBottom: '1rem', padding: '1rem', background: '#dcfce7', borderRadius: '8px', color: '#166534', fontWeight: 'bold' }}>
+                    Total Achiziții în perioada selectată: {totalValue.toFixed(2)} RON
+                </div>
+
+                <div className="receptions-grid">
+                    {loadingReport ? <p>Se încarcă datele...</p> : (
+                        <table className="main-table" style={{ fontSize: '0.9rem' }}>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Factura</th>
+                                    <th>Furnizor</th>
+                                    <th>Produs</th>
+                                    <th>Cantitate</th>
+                                    <th>Preț Unitar</th>
+                                    <th>Valoare</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {reportItems.map(item => (
+                                    <tr key={item.id}>
+                                        <td>{item.receptions?.invoice_date}</td>
+                                        <td>{item.receptions?.invoice_number}</td>
+                                        <td>{item.receptions?.suppliers?.name}</td>
+                                        <td><strong>{item.inventory_items?.name}</strong></td>
+                                        <td>{item.initial_quantity || item.quantity} {item.inventory_items?.unit}</td>
+                                        <td>{item.purchase_price}</td>
+                                        <td>{((item.initial_quantity || item.quantity) * (item.purchase_price || 0)).toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                                {reportItems.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center' }}>Nu există date.</td></tr>}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         )
