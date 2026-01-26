@@ -91,7 +91,6 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
                 .from('procurement_lists')
                 .insert([{
                     name: listName,
-                    shopper_id: null, // Unassigned initially
                     status: 'open'
                 }])
                 .select()
