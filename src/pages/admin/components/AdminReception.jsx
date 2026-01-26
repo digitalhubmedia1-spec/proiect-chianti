@@ -36,14 +36,20 @@ const AdminReception = () => {
     const [selectedReception, setSelectedReception] = useState(null); // For detail/edit view
     const [loadingHistory, setLoadingHistory] = useState(false);
 
+    // --- REPORTS STATE ---
+    const [reportItems, setReportItems] = useState([]);
+    const [loadingReport, setLoadingReport] = useState(false);
+
     useEffect(() => {
         fetchSuppliers();
         fetchProducts();
     }, []);
 
     useEffect(() => {
-        if (activeTab === 'history' || activeTab === 'reports') {
+        if (activeTab === 'history') {
             fetchReceptions();
+        } else if (activeTab === 'reports') {
+            fetchReportData();
         }
     }, [activeTab, filters]);
 
@@ -285,6 +291,86 @@ const AdminReception = () => {
         } catch (err) {
             alert("Eroare la actualizare: " + err.message);
         }
+    };
+
+    const fetchReportData = async () => {
+        setLoadingReport(true);
+        try {
+            let query = supabase
+                .from('inventory_batches')
+                .select(`
+                    *,
+                    inventory_items (name, unit),
+                    receptions!inner (
+                        reception_date,
+                        invoice_date,
+                        invoice_number,
+                        document_type,
+                        suppliers (name)
+                    )
+                `)
+                .gte('receptions.reception_date', filters.startDate)
+                .lte('receptions.reception_date', filters.endDate);
+
+            if (filters.supplierId !== 'all') {
+                query = query.eq('receptions.supplier_id', filters.supplierId);
+            }
+
+            // Note: to order by nested relation field, we'd typically need to do it client side or ensure indexes
+            // But supabase-js might support it if referenced correctly.
+            // For now, let's just get data and sort client side if needed, or rely on inserted_at default
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            // Sort by date desc
+            const sorted = (data || []).sort((a, b) => {
+                const dateA = new Date(a.receptions?.reception_date || 0);
+                const dateB = new Date(b.receptions?.reception_date || 0);
+                return dateB - dateA;
+            });
+
+            setReportItems(sorted);
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la încărcarea raportului.");
+        } finally {
+            setLoadingReport(false);
+        }
+    };
+
+    const generatePDF = () => {
+        const doc = new jsPDF();
+        doc.text(`Raport Achizitii: ${filters.startDate} - ${filters.endDate}`, 14, 20);
+
+        const tableColumn = ["Data", "Tip", "Doc", "Furnizor", "Produs", "Cant", "Pret", "Total"];
+        const tableRows = [];
+
+        reportItems.forEach(item => {
+            const receptionData = item.receptions || {};
+            const supplierName = receptionData.suppliers?.name || '-';
+            const itemData = item.inventory_items || {};
+
+            const row = [
+                receptionData.reception_date || '-',
+                receptionData.document_type || '-',
+                receptionData.invoice_number || '-',
+                supplierName,
+                itemData.name || '-',
+                `${item.initial_quantity || item.quantity} ${itemData.unit || ''}`,
+                item.purchase_price || 0,
+                ((item.initial_quantity || item.quantity) * (item.purchase_price || 0)).toFixed(2)
+            ];
+            tableRows.push(row);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 30,
+        });
+
+        doc.save(`Raport_Achizitii_${filters.startDate}_${filters.endDate}.pdf`);
     };
 
     const generateCSV = () => {
