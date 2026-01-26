@@ -202,12 +202,38 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
                 </div>
 
                 <div className="modal-footer" style={{ borderTop: '1px solid #e2e8f0', padding: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <button className="btn-secondary" onClick={onClose}>Închide</button>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: '#F8FAFC', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '8px',
+                            padding: '10px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                            display: 'flex', alignItems: 'center', gap: '8px'
+                        }}
+                    >
+                        Închide
+                    </button>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button className="btn-secondary" onClick={exportPDF} disabled={loading || needs.length === 0}>
+                        <button
+                            onClick={exportPDF}
+                            disabled={loading || needs.length === 0}
+                            style={{
+                                background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA', borderRadius: '8px',
+                                padding: '10px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                                display: 'flex', alignItems: 'center', gap: '8px', opacity: (loading || needs.length === 0) ? 0.5 : 1
+                            }}
+                        >
                             <Download size={18} /> Export PDF
                         </button>
-                        <button className="btn-primary" onClick={approveAndSend} disabled={loading || approving || productsToBuy === 0}>
+                        <button
+                            onClick={approveAndSend}
+                            disabled={loading || approving || productsToBuy === 0}
+                            style={{
+                                background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px',
+                                padding: '10px 24px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                                display: 'flex', alignItems: 'center', gap: '8px', opacity: (loading || approving || productsToBuy === 0) ? 0.5 : 1,
+                                boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)'
+                            }}
+                        >
                             <ShoppingCart size={18} /> {approving ? 'Se trimite...' : 'Aprobă & Trimite la Achiziții'}
                         </button>
                     </div>
