@@ -13,8 +13,10 @@ const AdminReception = () => {
     // --- NEW RECEPTION STATE ---
     const [newReception, setNewReception] = useState({
         supplier_id: '',
+        document_type: 'factura', // New field
         invoice_number: '',
-        invoice_date: new Date().toISOString().split('T')[0],
+        invoice_date: new Date().toISOString().split('T')[0], // Data emitere
+        reception_date: new Date().toISOString().split('T')[0], // Data intrare
         items: []
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -114,7 +116,8 @@ const AdminReception = () => {
             name: item.name,
             unit: item.unit,
             quantity: 1, // User inputs invoice quantity
-            price: 0, // Price per unit
+            price: 0, // Net Price
+            price_gross: 0, // Gross Price (display/calc)
             vat_percent: item.vat_rate || 19,
             expiration_date: ''
         };
@@ -129,16 +132,38 @@ const AdminReception = () => {
 
     const updateReceptionItem = (index, field, value) => {
         const updated = [...newReception.items];
-        updated[index][field] = value;
+        const item = { ...updated[index] };
+
+        let val = value;
+        if (field === 'quantity' || field === 'price' || field === 'price_gross' || field === 'vat_percent') {
+            val = parseFloat(value) || 0;
+        }
+
+        item[field] = val;
+
+        // Auto-calc logic
+        if (field === 'price') {
+            // Changed Net -> Calc Gross
+            item.price_gross = +(val * (1 + item.vat_percent / 100)).toFixed(4);
+        } else if (field === 'price_gross') {
+            // Changed Gross -> Calc Net
+            item.price = +(val / (1 + item.vat_percent / 100)).toFixed(4);
+        } else if (field === 'vat_percent') {
+            // Changed VAT -> Recalc Gross (keeping Net constant usually preferred in B2B, but let's see)
+            // Or recalc Net if we assume Gross is fixed? Usually Net is base.
+            item.price_gross = +(item.price * (1 + val / 100)).toFixed(4);
+        }
+
+        updated[index] = item;
         setNewReception({ ...newReception, items: updated });
     };
 
     const calculateTotals = (items) => {
         let net = 0, vat = 0, gross = 0;
         items.forEach(i => {
-            const qty = parseFloat(i.quantity) || 0;
-            const price = parseFloat(i.price) || 0;
-            const vatRate = parseFloat(i.vat_percent) || 0;
+            const qty = i.quantity || 0;
+            const price = i.price || 0; // Net
+            const vatRate = i.vat_percent || 0;
 
             const lineNet = qty * price;
             const lineVat = lineNet * (vatRate / 100);
@@ -152,7 +177,7 @@ const AdminReception = () => {
 
     const saveReception = async () => {
         if (!newReception.supplier_id || !newReception.invoice_number) {
-            alert("Vă rugăm selectați furnizorul și numărul facturii.");
+            alert("Vă rugăm selectați furnizorul și numărul documentului.");
             return;
         }
         if (newReception.items.length === 0) {
@@ -169,9 +194,10 @@ const AdminReception = () => {
                 .from('receptions')
                 .insert([{
                     supplier_id: newReception.supplier_id,
+                    document_type: newReception.document_type,
                     invoice_number: newReception.invoice_number,
                     invoice_date: newReception.invoice_date,
-                    reception_date: new Date(), // Today
+                    reception_date: newReception.reception_date,
                     total_value: totals.gross,
                     created_by: localStorage.getItem('admin_name') || 'Admin'
                 }])
@@ -186,10 +212,10 @@ const AdminReception = () => {
                 item_id: i.item_id,
                 batch_number: newReception.invoice_number, // Default to invoice num for tracking
                 expiration_date: i.expiration_date || null,
-                quantity: parseFloat(i.quantity),
-                initial_quantity: parseFloat(i.quantity),
-                purchase_price: parseFloat(i.price), // Assuming price entered is Net Price? Client asked for with/without VAT. Usually NIR input is price per unit (Net or Gross?). Let's label it Net.
-                vat_percent: parseFloat(i.vat_percent),
+                quantity: i.quantity,
+                initial_quantity: i.quantity,
+                purchase_price: i.price, // Saving Net Price
+                vat_percent: i.vat_percent,
                 location_id: null // Unspecified location logic for now
             }));
 
@@ -200,14 +226,16 @@ const AdminReception = () => {
             // Optional: update default purchase_price on item (commented out for safety/speed)
             // Or trigger function? We'll leave it simple.
 
-            logAction('RECEPȚIE', `Creat NIR Factura ${newReception.invoice_number} - ${newReception.items.length} produse`);
+            logAction('RECEPȚIE', `Creat NIR (${newReception.document_type}) ${newReception.invoice_number}`);
             alert("Recepție salvată cu succes!");
 
             // Reset
             setNewReception({
                 supplier_id: '',
+                document_type: 'factura',
                 invoice_number: '',
                 invoice_date: new Date().toISOString().split('T')[0],
+                reception_date: new Date().toISOString().split('T')[0],
                 items: []
             });
             setActiveTab('history'); // Go to history
@@ -264,9 +292,21 @@ const AdminReception = () => {
     const renderNewReception = () => (
         <div className="reception-form">
             <div className="section-header">
-                <h3><Package size={20} /> Detalii Factură</h3>
+                <h3><Package size={20} /> Detalii Document (NIR)</h3>
             </div>
             <div className="form-grid">
+                <div className="form-group">
+                    <label>Tip Document</label>
+                    <select
+                        value={newReception.document_type}
+                        onChange={e => setNewReception({ ...newReception, document_type: e.target.value })}
+                    >
+                        <option value="factura">Factură Fiscală</option>
+                        <option value="aviz">Aviz de Însoțire (Aviz)</option>
+                        <option value="proforma">Proformă</option>
+                        <option value="bon">Bon Fiscal</option>
+                    </select>
+                </div>
                 <div className="form-group">
                     <label>Furnizor</label>
                     <select
@@ -278,7 +318,7 @@ const AdminReception = () => {
                     </select>
                 </div>
                 <div className="form-group">
-                    <label>Număr Factură</label>
+                    <label>Număr Document</label>
                     <input
                         type="text"
                         value={newReception.invoice_number}
@@ -287,11 +327,19 @@ const AdminReception = () => {
                     />
                 </div>
                 <div className="form-group">
-                    <label>Dată Factură</label>
+                    <label>Data Emitere (Document)</label>
                     <input
                         type="date"
                         value={newReception.invoice_date}
                         onChange={e => setNewReception({ ...newReception, invoice_date: e.target.value })}
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Data Intrare (NIR)</label>
+                    <input
+                        type="date"
+                        value={newReception.reception_date}
+                        onChange={e => setNewReception({ ...newReception, reception_date: e.target.value })}
                     />
                 </div>
             </div>
@@ -302,7 +350,7 @@ const AdminReception = () => {
                     <InventorySearch
                         items={products}
                         onSelect={addItemToReception}
-                        placeholder="Caută produs pentru adăugare..."
+                        placeholder="Caută produs..."
                     />
                 </div>
             </div>
@@ -310,11 +358,12 @@ const AdminReception = () => {
             <div className="items-list">
                 {newReception.items.length === 0 && <p className="empty-msg">Niciun produs adăugat.</p>}
                 {newReception.items.map((item, idx) => (
-                    <div key={idx} className="reception-item-row">
+                    <div key={idx} className="reception-item-row advanced-row">
                         <div className="col-name">
                             <strong>{item.name}</strong>
                             <small>{item.unit}</small>
                         </div>
+
                         <div className="col-input">
                             <label>Cantitate</label>
                             <input
@@ -323,22 +372,41 @@ const AdminReception = () => {
                                 onChange={e => updateReceptionItem(idx, 'quantity', e.target.value)}
                             />
                         </div>
+
+                        <div className="col-input small">
+                            <label>TVA %</label>
+                            <select
+                                value={item.vat_percent}
+                                onChange={e => updateReceptionItem(idx, 'vat_percent', e.target.value)}
+                            >
+                                <option value="19">19%</option>
+                                <option value="9">9%</option>
+                                <option value="5">5%</option>
+                                <option value="0">0%</option>
+                                <option value="11">11%</option>
+                                <option value="21">21%</option>
+                            </select>
+                        </div>
+
                         <div className="col-input">
-                            <label>Preț Unitar (fără TVA)</label>
+                            <label>Preț Unitar (Fără TVA)</label>
                             <input
                                 type="number" step="0.01"
                                 value={item.price}
                                 onChange={e => updateReceptionItem(idx, 'price', e.target.value)}
                             />
                         </div>
-                        <div className="col-input small">
-                            <label>TVA %</label>
+
+                        <div className="col-input">
+                            <label>Preț Unitar (Cu TVA)</label>
                             <input
-                                type="number"
-                                value={item.vat_percent}
-                                onChange={e => updateReceptionItem(idx, 'vat_percent', e.target.value)}
+                                type="number" step="0.01"
+                                value={item.price_gross || 0}
+                                onChange={e => updateReceptionItem(idx, 'price_gross', e.target.value)}
+                                style={{ background: '#f0f9ff', borderColor: '#bae6fd' }}
                             />
                         </div>
+
                         <div className="col-input">
                             <label>Expiră la</label>
                             <input
@@ -347,8 +415,9 @@ const AdminReception = () => {
                                 onChange={e => updateReceptionItem(idx, 'expiration_date', e.target.value)}
                             />
                         </div>
+
                         <div className="col-total">
-                            <label>Total (cu TVA)</label>
+                            <label>Total Linie (Cu TVA)</label>
                             <span>
                                 {((item.quantity * item.price) * (1 + item.vat_percent / 100)).toFixed(2)}
                             </span>
@@ -357,6 +426,12 @@ const AdminReception = () => {
                     </div>
                 ))}
             </div>
+
+            <style>{`
+                .advanced-row {
+                    grid-template-columns: 2fr 0.8fr 0.8fr 1fr 1fr 1fr 1fr 40px !important;
+                }
+             `}</style>
 
             <div className="form-footer">
                 <div className="total-display">
