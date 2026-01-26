@@ -353,24 +353,56 @@ const AdminMenuPlanner = () => {
                         ))}
                     </select>
 
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <button
-                            className="btn-secondary"
                             onClick={() => setIsReportOpen(true)}
-                            style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: '#FFF7ED', color: '#C2410C',
+                                border: '1px solid #FED7AA', borderRadius: '8px',
+                                padding: '10px 16px', fontWeight: '600', fontSize: '0.9rem',
+                                cursor: 'pointer', transition: 'all 0.2s',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#FFEDD5'}
+                            onMouseOut={e => e.currentTarget.style.background = '#FFF7ED'}
                         >
                             <FileText size={18} /> Generare Necesar
                         </button>
+
                         {viewMode === 'daily' && (
-                            <button className="btn-secondary" onClick={copyFromYesterday}><Copy size={16} /> Copiază Ieri</button>
+                            <button
+                                onClick={copyFromYesterday}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    background: '#F8FAFC', color: '#475569',
+                                    border: '1px solid #CBD5E1', borderRadius: '8px',
+                                    padding: '10px 16px', fontWeight: '600', fontSize: '0.9rem',
+                                    cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#F1F5F9'}
+                                onMouseOut={e => e.currentTarget.style.background = '#F8FAFC'}
+                            >
+                                <Copy size={18} /> Copiază Ieri
+                            </button>
                         )}
+
                         <button
-                            className="btn-primary"
                             onClick={viewMode === 'daily' ? saveDaily : saveWeekly}
                             disabled={saving}
-                            style={{ background: saving ? '#94a3b8' : '#16a34a' }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: saving ? '#94a3b8' : '#16a34a', color: 'white',
+                                border: 'none', borderRadius: '8px',
+                                padding: '10px 24px', fontWeight: '600', fontSize: '0.95rem',
+                                cursor: 'pointer', transition: 'all 0.2s',
+                                boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)',
+                                opacity: saving ? 0.7 : 1
+                            }}
+                            onMouseOver={(e) => !saving && (e.currentTarget.style.background = '#15803d')}
+                            onMouseOut={(e) => !saving && (e.currentTarget.style.background = '#16a34a')}
                         >
-                            <Save size={18} /> {saving ? 'Se salvează...' : 'Salvează Tot'}
+                            {saving ? 'Se salvează...' : <><Save size={18} /> Salvează Tot</>}
                         </button>
                     </div>
                 </div>
