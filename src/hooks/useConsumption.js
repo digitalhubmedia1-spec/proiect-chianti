@@ -108,7 +108,7 @@ export const useConsumption = () => {
             // Fetch Batches for Stock & Price
             const { data: stocks, error: stockError } = await supabase
                 .from('inventory_batches')
-                .select('item_id, quantity, entry_value, current_value')
+                .select('item_id, quantity, purchase_price')
                 .in('item_id', ingredientIds);
 
             if (stockError) throw stockError;
@@ -120,16 +120,9 @@ export const useConsumption = () => {
             stocks.forEach(s => {
                 stockMap[s.item_id] = (stockMap[s.item_id] || 0) + parseFloat(s.quantity);
 
-                // Simple logic: Use the entry value of the latest batch or average?
-                // Let's take the max entry_value found as a safe estimate for "Purchase Price"
-                // Or better, let's just pick one. 
-                // schema: entry_value is total value or per unit? Usually total. 
-                // unique_price is per unit? Let's check schema.
-                // Assuming 'entry_value' is price per unit based on prior knowledge or default to 0.
-                // Wait, typically 'receptie' has price. 
-                // Let's assume entry_value is unit price for now to unblock, or 0.
-                if (s.entry_value) {
-                    priceMap[s.item_id] = s.entry_value;
+                // Use purchase_price from batch
+                if (s.purchase_price) {
+                    priceMap[s.item_id] = s.purchase_price;
                 }
             });
 
@@ -149,7 +142,7 @@ export const useConsumption = () => {
                         required: requiredQty,
                         stock: current,
                         to_buy: Math.max(0, requiredQty - current),
-                        purchase_price: price,
+                        purchase_price: price, // Now using batch price
                         vat_rate: itemDef.vat_rate || 0,
                         estimated_cost: Math.max(0, requiredQty - current) * price
                     });
