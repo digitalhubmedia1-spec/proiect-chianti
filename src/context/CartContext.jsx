@@ -21,7 +21,7 @@ export const CartProvider = ({ children }) => {
         return cat ? (cat.type || 'delivery') : 'delivery';
     };
 
-    const addToCart = (product, quantity = 1) = {
+    const addToCart = (product, quantity = 1) => {
         // Prevent mixing types
         if (cartItems.length > 0) {
             const currentType = getItemType(cartItems[0].category);
