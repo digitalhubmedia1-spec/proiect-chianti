@@ -92,8 +92,7 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
                 .insert([{
                     name: listName,
                     shopper_id: null, // Unassigned initially
-                    status: 'open',
-                    priority: 'medium'
+                    status: 'open'
                 }])
                 .select()
                 .single();
