@@ -182,20 +182,96 @@ const AdminRequests = () => {
 
     if (loading) return <div>Se încarcă cererile...</div>;
 
+    // Filter Logic
+    const todayStr = new Date().toDateString();
+
+    const todayRequests = requests.filter(req => {
+        const reqDate = new Date(req.created_at);
+        return reqDate.toDateString() === todayStr;
+    });
+
+    const historyRequests = requests.filter(req => {
+        const reqDate = new Date(req.created_at);
+        return reqDate.toDateString() !== todayStr;
+    });
+
     return (
         <div className="admin-requests">
-            <h3 className="mb-4">Cereri Evenimente / Saloane ({requests.length})</h3>
-            <div className="requests-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '1.5rem' }}>
-                {requests.map(req => (
+            {/* TODAY'S REQUESTS - CARDS */}
+            <h3 className="mb-4">Cereri Primite Astăzi ({todayRequests.length})</h3>
+            <div className="requests-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                {todayRequests.length > 0 ? todayRequests.map(req => (
                     <RequestCard
                         key={req.id}
                         req={req}
                         onDelete={deleteRequest}
                         onMarkMarkRead={markAsRead}
                     />
-                ))}
+                )) : (
+                    <p className="text-muted" style={{ gridColumn: '1/-1', fontStyle: 'italic' }}>Nicio cerere nouă astăzi.</p>
+                )}
             </div>
-            {requests.length === 0 && <p className="text-center text-muted">Nu există cereri momentan.</p>}
+
+            {/* HISTORY - TABLE */}
+            <h3 className="mb-4" style={{ borderTop: '1px solid #eee', paddingTop: '2rem' }}>Istoric Cereri</h3>
+            <div className="admin-table-wrapper">
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Dată</th>
+                            <th>Client</th>
+                            <th>Eveniment</th>
+                            <th>Salon</th>
+                            <th>Contact</th>
+                            <th>Acțiuni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {historyRequests.map(req => (
+                            <tr key={req.id} style={{ fontWeight: req.is_read ? 'normal' : 'bold', background: req.is_read ? 'white' : '#fff1f2' }}>
+                                <td style={{ textAlign: 'center' }}>
+                                    {req.is_read ?
+                                        <CheckCircle size={18} color="#16a34a" title="Citit" /> :
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center', color: '#be123c' }}>
+                                            <span style={{ width: '8px', height: '8px', background: '#be123c', borderRadius: '50%' }}></span>
+                                            Nou
+                                        </div>
+                                    }
+                                </td>
+                                <td>{new Date(req.created_at).toLocaleString('ro-RO')}</td>
+                                <td>{req.name}</td>
+                                <td>{req.event_type}</td>
+                                <td>{req.salon}</td>
+                                <td>
+                                    <div style={{ fontSize: '0.85rem' }}>{req.phone}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{req.email}</div>
+                                </td>
+                                <td>
+                                    <div className="admin-actions">
+                                        <button
+                                            className="btn-icon"
+                                            onClick={() => markAsRead(req.id, req.is_read)}
+                                            title={req.is_read ? "Marchează ca necitit" : "Marchează ca citit"}
+                                        >
+                                            {req.is_read ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                        </button>
+                                        <button className="btn-icon delete" onClick={() => deleteRequest(req.id)}><Trash2 size={16} /></button>
+                                        {/* For detailed view in table, we might need a modal or expand row. Keeping it simple for now as requested. */}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {historyRequests.length === 0 && (
+                            <tr>
+                                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                    Nu există istoric de cereri.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };

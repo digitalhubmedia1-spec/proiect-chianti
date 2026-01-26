@@ -45,11 +45,25 @@ const AdminMessages = () => {
 
     if (loading) return <div>Se încarcă mesajele...</div>;
 
+    // Filter Logic
+    const todayStr = new Date().toDateString();
+
+    const todayMessages = messages.filter(msg => {
+        const msgDate = new Date(msg.created_at);
+        return msgDate.toDateString() === todayStr;
+    });
+
+    const historyMessages = messages.filter(msg => {
+        const msgDate = new Date(msg.created_at);
+        return msgDate.toDateString() !== todayStr;
+    });
+
     return (
         <div className="admin-messages">
-            <h3 className="mb-4">Mesaje Contact ({messages.length})</h3>
-            <div className="messages-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1rem' }}>
-                {messages.map(msg => (
+            {/* TODAY'S MESSAGES - CARDS */}
+            <h3 className="mb-4">Mesaje Noi Astăzi ({todayMessages.length})</h3>
+            <div className="messages-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
+                {todayMessages.length > 0 ? todayMessages.map(msg => (
                     <div key={msg.id} style={{
                         background: msg.is_read ? '#f8fafc' : 'white',
                         border: '1px solid #e2e8f0',
@@ -104,9 +118,73 @@ const AdminMessages = () => {
                             </div>
                         )}
                     </div>
-                ))}
+                )) : (
+                    <p className="text-muted" style={{ gridColumn: '1/-1', fontStyle: 'italic' }}>Niciun mesaj nou astăzi.</p>
+                )}
             </div>
-            {messages.length === 0 && <p className="text-center text-muted">Nu există mesaje.</p>}
+
+            {/* HISTORY - TABLE */}
+            <h3 className="mb-4" style={{ borderTop: '1px solid #eee', paddingTop: '2rem' }}>Istoric Mesaje</h3>
+            <div className="admin-table-wrapper">
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Dată</th>
+                            <th>Nume</th>
+                            <th>Contact</th>
+                            <th>Mesaj</th>
+                            <th>Acțiuni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {historyMessages.map(msg => (
+                            <tr key={msg.id} style={{ fontWeight: msg.is_read ? 'normal' : 'bold', background: msg.is_read ? 'white' : '#fff1f2' }}>
+                                <td style={{ textAlign: 'center' }}>
+                                    {msg.is_read ?
+                                        <CheckCircle size={18} color="#16a34a" title="Citit" /> :
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center', color: '#be123c' }}>
+                                            <span style={{ width: '8px', height: '8px', background: '#be123c', borderRadius: '50%' }}></span>
+                                            Nou
+                                        </div>
+                                    }
+                                </td>
+                                <td>{new Date(msg.created_at).toLocaleString('ro-RO')}</td>
+                                <td>{msg.name}</td>
+                                <td>
+                                    <div style={{ fontSize: '0.85rem' }}>{msg.phone}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{msg.email}</div>
+                                </td>
+                                <td>
+                                    <div style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={msg.message}>
+                                        {msg.message}
+                                    </div>
+                                    {msg.date && <div style={{ fontSize: '0.75rem', color: '#0369a1' }}>Data Ev: {new Date(msg.date).toLocaleDateString('ro-RO')}</div>}
+                                </td>
+                                <td>
+                                    <div className="admin-actions">
+                                        <button
+                                            className="btn-icon"
+                                            onClick={() => markAsRead(msg.id, msg.is_read)}
+                                            title={msg.is_read ? "Marchează ca necitit" : "Marchează ca citit"}
+                                        >
+                                            {msg.is_read ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                        </button>
+                                        <button className="btn-icon delete" onClick={() => deleteMessage(msg.id)}><Trash2 size={16} /></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {historyMessages.length === 0 && (
+                            <tr>
+                                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                    Nu există istoric de mesaje.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
