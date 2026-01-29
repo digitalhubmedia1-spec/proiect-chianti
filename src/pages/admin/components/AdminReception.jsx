@@ -475,7 +475,7 @@ const AdminReception = () => {
 
             <div className="card-header secondary-header">
                 <div style={{ flex: 1 }}>
-                    <h3><div className="icon-circle"><Package size={20} /></div> Produse Recearționate</h3>
+                    <h3><div className="icon-circle"><CheckCircle size={20} /></div> Produse Recepționate</h3>
                     <p className="helper-text">Căutați produsele și adăugați-le în listă. Dacă nu există, creați-le întâi în Nomenclator.</p>
                 </div>
                 <div className="search-wrapper-large">

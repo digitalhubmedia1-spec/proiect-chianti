@@ -110,7 +110,7 @@ const AdminDashboard = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
 
-    const [activeProductTabType, setActiveProductTabType] = useState('delivery');
+    const [activeProductTabType, setActiveProductTabType] = useState('catering'); // Default to catering since delivery is hidden
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
 
@@ -120,7 +120,7 @@ const AdminDashboard = () => {
     const [parentIdForAdd, setParentIdForAdd] = useState(null); // New state for subcategory parent
     const [editingCategory, setEditingCategory] = useState(null);
     const [editCatNameValue, setEditCatNameValue] = useState('');
-    const [activeTabType, setActiveTabType] = useState('delivery');
+    const [activeTabType, setActiveTabType] = useState('catering'); // Default to catering since delivery is hidden
 
     const startEditingCategory = (cat) => {
         setEditingCategory(cat);
@@ -480,7 +480,7 @@ const AdminDashboard = () => {
                             <button
                                 className={`btn ${activeProductTabType === 'delivery' ? 'btn-primary' : 'btn-outline-primary'}`}
                                 onClick={() => setActiveProductTabType('delivery')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold', display: 'none' }} // HIDDEN PER USER REQUEST
                             >
                                 <Truck size={16} style={{ marginRight: '8px' }} /> Livrări
                             </button>
@@ -613,7 +613,7 @@ const AdminDashboard = () => {
                             <button
                                 className={`btn ${activeTabType === 'delivery' ? 'btn-primary' : 'btn-outline-primary'}`}
                                 onClick={() => setActiveTabType('delivery')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold', display: 'none' }} // HIDDEN PER USER REQUEST
                             >
                                 <Truck size={16} style={{ marginRight: '8px' }} /> Comenzi Rapide
                             </button>
@@ -1000,9 +1000,9 @@ const AdminDashboard = () => {
                                     <label>Categorie</label>
                                     <select className="form-control" value={prodForm.category} onChange={e => setProdForm({ ...prodForm, category: e.target.value })} required>
                                         <option value="">Alege Categorie</option>
-                                        <optgroup label="Livrări">
+                                        {/* <optgroup label="Livrări">
                                             {categories.filter(c => (!c.type || c.type === 'delivery')).map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                        </optgroup>
+                                        </optgroup> HIDDEN PER USER REQUEST */}
                                         <optgroup label="Catering">
                                             {categories.filter(c => c.type === 'catering').map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                         </optgroup>

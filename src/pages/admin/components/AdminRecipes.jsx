@@ -8,7 +8,7 @@ import InventorySearch from '../../../components/common/InventorySearch';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
-    const { items: inventoryItems } = useInventory();
+    const { items: inventoryItems, addItem } = useInventory(); // Destructure addItem
     const { products } = useMenu();
 
     const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'calculator'
@@ -22,6 +22,24 @@ const AdminRecipes = () => {
         preparation_method: '',
         ingredients: [] // { ingredient_id, qty, unit }
     });
+
+    // --- ITEM CREATION STATE ---
+    const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+    const [newItemName, setNewItemName] = useState('');
+    const [newItemUnit, setNewItemUnit] = useState('kg');
+
+    const handleCreateNewItem = async () => {
+        if (!newItemName.trim()) return;
+        await addItem({
+            name: newItemName,
+            category: 'Ingrediente', // Default
+            stock: 0,
+            unit: newItemUnit
+        });
+        setNewItemName('');
+        setIsItemModalOpen(false);
+        // Context updates items, so they will appear in search
+    };
 
     // --- CALCULATOR STATE ---
     const [selectedRecipeId, setSelectedRecipeId] = useState('');
@@ -442,20 +460,31 @@ const AdminRecipes = () => {
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ingrediente (per 1 porție)</label>
                                 {recipeForm.ingredients.map((ing, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                                        <div style={{ flex: 2 }}>
-                                            <InventorySearch
-                                                items={inventoryItems}
-                                                placeholder="Caută ingredient..."
-                                                defaultQuery={inventoryItems.find(x => x.id === ing.ingredient_id)?.name || ''}
-                                                onSelect={(item) => {
-                                                    if (item) {
-                                                        handleIngredientChange(i, 'ingredient_id', item.id);
-                                                        handleIngredientChange(i, 'unit', item.unit);
-                                                    } else {
-                                                        handleIngredientChange(i, 'ingredient_id', '');
-                                                    }
-                                                }}
-                                            />
+                                        <div style={{ flex: 2, display: 'flex', gap: '5px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <InventorySearch
+                                                    items={inventoryItems}
+                                                    placeholder="Caută ingredient..."
+                                                    defaultQuery={inventoryItems.find(x => x.id === ing.ingredient_id)?.name || ''}
+                                                    onSelect={(item) => {
+                                                        if (item) {
+                                                            handleIngredientChange(i, 'ingredient_id', item.id);
+                                                            handleIngredientChange(i, 'unit', item.unit);
+                                                        } else {
+                                                            handleIngredientChange(i, 'ingredient_id', '');
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="btn-icon"
+                                                title="Creează ingredient nou"
+                                                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', width: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                onClick={() => { setIsItemModalOpen(true); }}
+                                            >
+                                                <Plus size={18} color="#0f172a" />
+                                            </button>
                                         </div>
                                         <input
                                             type="number"
@@ -482,6 +511,46 @@ const AdminRecipes = () => {
                                 </button>
                             </div>
 
+                            {/* ITEM CREATION MODAL */}
+                            {/* ITEM CREATION MODAL */}
+                            {isItemModalOpen && (
+                                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100 }}>
+                                    <div className="modal-content" style={{ background: 'white', padding: '2rem', borderRadius: '8px', width: '400px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                        <h4>Creează Ingredient Nou</h4>
+                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nume Ingredient</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                autoFocus
+                                                value={newItemName}
+                                                onChange={e => setNewItemName(e.target.value)}
+                                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Unitate de Măsură</label>
+                                            <select
+                                                className="form-control"
+                                                value={newItemUnit}
+                                                onChange={e => setNewItemUnit(e.target.value)}
+                                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                            >
+                                                <option value="kg">kg</option>
+                                                <option value="buc">buc</option>
+                                                <option value="L">L</option>
+                                                <option value="cutie">cutie</option>
+                                                <option value="bax">bax</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                            <button type="button" className="btn btn-secondary" onClick={() => setIsItemModalOpen(false)}>Anulează</button>
+                                            <button type="button" className="btn btn-primary" onClick={handleCreateNewItem}>Creează</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Anulează</button>
                                 <button type="submit" className="btn btn-primary">Salvează</button>
@@ -490,7 +559,7 @@ const AdminRecipes = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 };
 

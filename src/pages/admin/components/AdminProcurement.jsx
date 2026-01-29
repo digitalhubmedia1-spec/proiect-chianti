@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, ShoppingCart, Check, X, Calendar, User, FileText, ChevronRight, Calculator, Printer, Archive } from 'lucide-react';
+import { Plus, ShoppingCart, Check, X, Calendar, User, FileText, ChevronRight, Calculator, Printer, Archive, Trash2 } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
 import { logAction } from '../../../utils/adminLogger';
 import { useConsumption } from '../../../hooks/useConsumption';
@@ -229,6 +229,27 @@ const AdminProcurement = () => {
         setActiveTab('history');
     };
 
+    const deleteList = async (listId, e) => {
+        if (e) e.stopPropagation();
+        if (!confirm('Ești sigur că vrei să ștergi această listă? Acțiunea este ireversibilă.')) return;
+
+        try {
+            // Check if it has items first? Cascade delete should be handled by DB or manual?
+            // Assuming DB cascade or manual delete. Safest is manual if no cascade.
+            // Let's assume manual delete of items first just in case.
+            await supabase.from('procurement_items').delete().eq('list_id', listId);
+
+            const { error } = await supabase.from('procurement_lists').delete().eq('id', listId);
+            if (error) throw error;
+
+            logAction('ACHIZIȚII', `Șters listă ID: ${listId}`);
+            setLists(prev => prev.filter(l => l.id !== listId));
+            if (selectedList && selectedList.id === listId) setSelectedList(null);
+        } catch (error) {
+            alert("Eroare la ștergere: " + error.message);
+        }
+    };
+
     // --- RENDER HELPERS ---
 
     const renderActiveLists = () => (
@@ -265,7 +286,6 @@ const AdminProcurement = () => {
         // Extract unique shoppers from history AND registered users
         const closedLists = lists.filter(l => l.status === 'closed');
         const historyShoppers = closedLists.map(l => l.shopper_name);
-        // Combine history shoppers with available (registered) shoppers and deduplicate
         const uniqueShoppers = [...new Set([...historyShoppers, ...availableShoppers])].filter(Boolean).filter(s => s !== 'DigitalHub Media').sort();
 
         const filteredLists = lists.filter(l => {
@@ -276,10 +296,16 @@ const AdminProcurement = () => {
             return matchesDate && matchesShopper;
         });
 
+        // Calculate totals for table (requires fetching items? No, we don't have items for all lists in `lists` state)
+        // `lists` only has headers.
+        // To show total, we might need to fetch it or store it.
+        // For now, we show basic info. If accurate total needed, we need a view or join.
+        // User asked for "History Table".
+
         return (
             <div>
                 {/* Filter Controls */}
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'white', padding: '1rem', borderRadius: '12px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'white', padding: '1rem', borderRadius: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b' }}>Lună</label>
                         <select
@@ -319,18 +345,56 @@ const AdminProcurement = () => {
                     </div>
                 </div>
 
-                <div className="lists-grid">
-                    {filteredLists.length === 0 && <p style={{ color: '#64748b' }}>Nu există liste finalizate în această perioadă.</p>}
-                    {filteredLists.map(list => (
-                        <div key={list.id} className="list-card history-card" onClick={() => fetchListDetails(list.id)}>
-                            <div className="list-icon" style={{ background: '#e2e8f0', color: '#64748b' }}><Archive size={24} /></div>
-                            <div className="list-info">
-                                <h4 style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{list.name}</h4>
-                                <p>{new Date(list.created_at).toLocaleDateString('ro-RO')} • {list.shopper_name}</p>
-                            </div>
-                            <ChevronRight color="#cbd5e1" />
-                        </div>
-                    ))}
+                <div className="table-responsive" style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                            <tr>
+                                <th style={{ padding: '1rem', color: '#64748b' }}>Data</th>
+                                <th style={{ padding: '1rem', color: '#64748b' }}>Nume Listă</th>
+                                <th style={{ padding: '1rem', color: '#64748b' }}>Achizitor</th>
+                                <th style={{ padding: '1rem', color: '#64748b' }}>Status</th>
+                                <th style={{ padding: '1rem', color: '#64748b', textAlign: 'right' }}>Acțiuni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredLists.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Nu există liste arhivate în această perioadă.</td>
+                                </tr>
+                            ) : (
+                                filteredLists.map(list => (
+                                    <tr key={list.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <td style={{ padding: '1rem' }}>{new Date(list.created_at).toLocaleDateString('ro-RO')}</td>
+                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{list.name}</td>
+                                        <td style={{ padding: '1rem' }}>{list.shopper_name}</td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <span className="badge-secondary" style={{ padding: '0.25rem 0.5rem', background: '#e2e8f0', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                                {list.status.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                            <button
+                                                className="btn-icon"
+                                                title="Vezi Detalii"
+                                                onClick={() => fetchListDetails(list.id)}
+                                                style={{ marginRight: '0.5rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                <Archive size={18} />
+                                            </button>
+                                            <button
+                                                className="btn-icon"
+                                                title="Șterge"
+                                                onClick={(e) => deleteList(list.id, e)}
+                                                style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         );
@@ -351,59 +415,113 @@ const AdminProcurement = () => {
         const isClosed = selectedList.status === 'closed';
 
         return (
-            <div className="procurement-detail">
-                <div className="detail-header">
-                    <button className="btn-back" onClick={() => setSelectedList(null)}>← Înapoi</button>
-                    <div className="header-title">
-                        <h2>{selectedList.name}</h2>
-                        <span className={`badge ${isClosed ? 'badge-secondary' : 'badge-warning'}`}>{selectedList.status.toUpperCase()}</span>
-                    </div>
-                </div>
-
-                {!isClosed && (
-                    <div className="add-item-bar" style={{ display: 'flex', gap: '1rem' }}>
-                        <div style={{ flex: 1 }}>
-                            <InventorySearch
-                                items={items}
-                                placeholder="Caută și adaugă produs din Nomenclator..."
-                                onSelect={(item) => {
-                                    if (item) {
-                                        addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
-                                    }
-                                }}
-                            />
+            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100 }}>
+                <div className="modal-content procurement-detail-modal" style={{ background: '#f8fafc', padding: '0', borderRadius: '12px', width: '90%', maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                    <div className="detail-header" style={{ padding: '1.5rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <div className="header-title">
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a' }}>{selectedList.name}</h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                <span className={`badge ${isClosed ? 'badge-secondary' : 'badge-warning'}`}>{selectedList.status.toUpperCase()}</span>
+                                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>• {new Date(selectedList.created_at).toLocaleDateString('ro-RO')} • {selectedList.shopper_name}</span>
+                            </div>
                         </div>
-                        <button
-                            className="btn"
-                            style={{ background: '#e2e8f0', color: '#475569', whiteSpace: 'nowrap' }}
-                            onClick={() => {
-                                const name = prompt("Nume produs nou (care nu există în nomenclator):");
-                                if (name) addItemToList(selectedList.id, name);
-                            }}
-                        >
-                            + Produs Custom
+                        <button className="btn-icon" onClick={() => setSelectedList(null)} style={{ background: '#f1f5f9', padding: '0.5rem', borderRadius: '50%' }}>
+                            <X size={24} />
                         </button>
                     </div>
-                )}
 
-                <div className="shopping-list">
-                    {selectedList.items.map(item => (
-                        <div key={item.id} className={`shopping-item ${item.is_bought ? 'bought' : ''}`}>
-                            {!isClosed && (
-                                <div className="item-check" onClick={() => toggleBought(item)}>
-                                    {item.is_bought ? <Check size={20} color="white" /> : null}
+                    <div style={{ padding: '1.5rem' }}>
+                        {!isClosed && (
+                            <div className="add-item-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <InventorySearch
+                                        items={items}
+                                        placeholder="Caută și adaugă produs din Nomenclator..."
+                                        onSelect={(item) => {
+                                            if (item) {
+                                                addItemToList(selectedList.id, item.name, item.id, 1, item.unit);
+                                            }
+                                        }}
+                                    />
                                 </div>
-                            )}
+                                <button
+                                    className="btn"
+                                    style={{ background: '#e2e8f0', color: '#475569', whiteSpace: 'nowrap' }}
+                                    onClick={() => {
+                                        const name = prompt("Nume produs nou (care nu există în nomenclator):");
+                                        if (name) addItemToList(selectedList.id, name);
+                                    }}
+                                >
+                                    + Produs Custom
+                                </button>
+                            </div>
+                        )}
 
-                            <div className="item-main">
-                                <div className="item-header-row">
-                                    <div className="item-name">
-                                        <strong>{item.item_name}</strong>
-                                        <span className="text-muted">Necesar: {item.quantity_requested} {item.unit}</span>
-                                    </div>
+                        <div className="shopping-list">
+                            {selectedList.items.map(item => (
+                                <div key={item.id} className={`shopping-item ${item.is_bought ? 'bought' : ''}`}>
                                     {!isClosed && (
-                                        <button className="btn-delete-icon mobile-only" onClick={async (e) => {
-                                            e.stopPropagation();
+                                        <div className="item-check" onClick={() => toggleBought(item)}>
+                                            {item.is_bought ? <Check size={20} color="white" /> : null}
+                                        </div>
+                                    )}
+
+                                    <div className="item-main">
+                                        <div className="item-header-row">
+                                            <div className="item-name">
+                                                <strong>{item.item_name}</strong>
+                                                <span className="text-muted">Necesar: {item.quantity_requested} {item.unit}</span>
+                                            </div>
+                                            {!isClosed && (
+                                                <button className="btn-delete-icon mobile-only" onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm('Stergi produsul?')) {
+                                                        await supabase.from('procurement_items').delete().eq('id', item.id);
+                                                        logAction('ACHIZIȚII', `Șters produs din listă: ${item.item_name}`);
+                                                        fetchListDetails(selectedList.id);
+                                                    }
+                                                }}><X size={16} /></button>
+                                            )}
+                                        </div>
+
+                                        {(item.is_bought || isClosed) && (
+                                            <div className="item-inputs">
+                                                <div className="input-group">
+                                                    <label>Cantitate</label>
+                                                    <input
+                                                        type="number"
+                                                        value={item.quantity_bought}
+                                                        onChange={(e) => !isClosed && updateItem(item.id, 'quantity_bought', e.target.value)}
+                                                        readOnly={isClosed}
+                                                        placeholder={item.quantity_requested}
+                                                    />
+                                                </div>
+                                                <div className="input-group">
+                                                    <label>Preț (cu TVA)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={item.price_gross}
+                                                        onChange={(e) => !isClosed && updateItem(item.id, 'price_gross', e.target.value)}
+                                                        readOnly={isClosed}
+                                                    />
+                                                </div>
+                                                <div className="input-group full-width-mobile">
+                                                    <label>Furnizor</label>
+                                                    <select
+                                                        value={item.supplier_id || ''}
+                                                        onChange={(e) => !isClosed && updateItem(item.id, 'supplier_id', e.target.value)}
+                                                        disabled={isClosed}
+                                                    >
+                                                        <option value="">-</option>
+                                                        {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {!isClosed && (
+                                        <button className="btn-delete-icon desktop-only" onClick={async () => {
                                             if (confirm('Stergi produsul?')) {
                                                 await supabase.from('procurement_items').delete().eq('id', item.id);
                                                 logAction('ACHIZIȚII', `Șters produs din listă: ${item.item_name}`);
@@ -412,66 +530,21 @@ const AdminProcurement = () => {
                                         }}><X size={16} /></button>
                                     )}
                                 </div>
+                            ))}
+                        </div>
 
-                                {(item.is_bought || isClosed) && (
-                                    <div className="item-inputs">
-                                        <div className="input-group">
-                                            <label>Cantitate</label>
-                                            <input
-                                                type="number"
-                                                value={item.quantity_bought}
-                                                onChange={(e) => !isClosed && updateItem(item.id, 'quantity_bought', e.target.value)}
-                                                readOnly={isClosed}
-                                                placeholder={item.quantity_requested}
-                                            />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>Preț (cu TVA)</label>
-                                            <input
-                                                type="number"
-                                                value={item.price_gross}
-                                                onChange={(e) => !isClosed && updateItem(item.id, 'price_gross', e.target.value)}
-                                                readOnly={isClosed}
-                                            />
-                                        </div>
-                                        <div className="input-group full-width-mobile">
-                                            <label>Furnizor</label>
-                                            <select
-                                                value={item.supplier_id || ''}
-                                                onChange={(e) => !isClosed && updateItem(item.id, 'supplier_id', e.target.value)}
-                                                disabled={isClosed}
-                                            >
-                                                <option value="">-</option>
-                                                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
+                        <div className="list-footer-stats">
+                            <div className="stats-row">
+                                <div>Total Net: <strong>{totalNet.toFixed(2)}</strong></div>
+                                <div>Total Brut: <strong>{totalGross.toFixed(2)}</strong></div>
                             </div>
-
                             {!isClosed && (
-                                <button className="btn-delete-icon desktop-only" onClick={async () => {
-                                    if (confirm('Stergi produsul?')) {
-                                        await supabase.from('procurement_items').delete().eq('id', item.id);
-                                        logAction('ACHIZIȚII', `Șters produs din listă: ${item.item_name}`);
-                                        fetchListDetails(selectedList.id);
-                                    }
-                                }}><X size={16} /></button>
+                                <button className="btn-finalize" onClick={finalizeList}>
+                                    <Check size={18} /> Finalizează Lista
+                                </button>
                             )}
                         </div>
-                    ))}
-                </div>
-
-                <div className="list-footer-stats">
-                    <div className="stats-row">
-                        <div>Total Net: <strong>{totalNet.toFixed(2)}</strong></div>
-                        <div>Total Brut: <strong>{totalGross.toFixed(2)}</strong></div>
                     </div>
-                    {!isClosed && (
-                        <button className="btn-finalize" onClick={finalizeList}>
-                            <Check size={18} /> Finalizează Lista
-                        </button>
-                    )}
                 </div>
             </div>
         );
@@ -552,21 +625,19 @@ const AdminProcurement = () => {
 
     return (
         <div className="admin-procurement">
-            {!selectedList && (
-                <div className="procurement-tabs">
-                    <button className={activeTab === 'active_lists' ? 'active' : ''} onClick={() => setActiveTab('active_lists')}>Liste Active</button>
-                    <button className={activeTab === 'generator' ? 'active' : ''} onClick={() => setActiveTab('generator')}>Generator Necesar</button>
-                    <button className={activeTab === 'history' ? 'active' : ''} onClick={() => { setActiveTab('history'); fetchLists(); }}>Istoric</button>
-                </div>
-            )}
+            <div className="procurement-tabs">
+                <button className={activeTab === 'active_lists' ? 'active' : ''} onClick={() => setActiveTab('active_lists')}>Liste Active</button>
+                <button className={activeTab === 'generator' ? 'active' : ''} onClick={() => setActiveTab('generator')}>Generator Necesar</button>
+                <button className={activeTab === 'history' ? 'active' : ''} onClick={() => { setActiveTab('history'); fetchLists(); }}>Istoric</button>
+            </div>
 
             <div className="procurement-content">
-                {selectedList ? renderDetailView() : (
-                    activeTab === 'active_lists' ? renderActiveLists() : (
-                        activeTab === 'generator' ? renderGenerator() : renderHistoryLists()
-                    )
+                {activeTab === 'active_lists' ? renderActiveLists() : (
+                    activeTab === 'generator' ? renderGenerator() : renderHistoryLists()
                 )}
             </div>
+
+            {selectedList && renderDetailView()}
 
             <style>{`
                 .admin-procurement {
