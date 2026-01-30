@@ -386,7 +386,7 @@ const Products = () => {
                 </div>
             </div>
 
-            <div className="container content-wrapper">
+            <div className="container content-wrapper" style={{ display: 'block', gridTemplateColumns: 'none' }}>
                 <main className="products-grid-container" style={{ width: '100%' }}>
                     {/* Search & Sort Toolbar */}
                     <div className="products-toolbar" style={{
