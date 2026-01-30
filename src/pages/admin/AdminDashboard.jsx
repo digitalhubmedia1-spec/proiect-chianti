@@ -1000,12 +1000,9 @@ const AdminDashboard = () => {
                                     <label>Categorie</label>
                                     <select className="form-control" value={prodForm.category} onChange={e => setProdForm({ ...prodForm, category: e.target.value })} required>
                                         <option value="">Alege Categorie</option>
-                                        <optgroup label="Livrări">
-                                            {categories.filter(c => (!c.type || c.type === 'delivery')).map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                        </optgroup>
-                                        <optgroup label="Catering">
-                                            {categories.filter(c => c.type === 'catering').map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                        </optgroup>
+                                        {categories.map(c => (
+                                            <option key={c.id} value={c.name}>{c.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

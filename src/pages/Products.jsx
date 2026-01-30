@@ -398,7 +398,8 @@ const Products = () => {
                         padding: '1rem',
                         borderRadius: '12px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        width: '100%'
                     }}>
                         {/* BACK BUTTON for easy return to mode selection */}
                         <button
@@ -414,7 +415,8 @@ const Products = () => {
                                 border: '1px solid #e2e8f0',
                                 background: '#f8fafc',
                                 color: '#64748b',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                flexShrink: 0
                             }}
                         >
                             <Zap size={20} />

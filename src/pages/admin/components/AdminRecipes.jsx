@@ -286,41 +286,60 @@ const AdminRecipes = () => {
             {/* --- TAB 1: MANAGE RECIPES --- */}
             {activeTab === 'manage' && (
                 <div>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                        <button className="btn btn-primary" onClick={() => openModal()}>
-                            <Plus size={18} /> Adaugă Rețetă Nouă
-                        </button>
-                        <button className="btn btn-secondary" onClick={() => setIsCatManagerOpen(true)}>
-                            <Settings size={18} /> Gestionare Categorii
-                        </button>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button className="btn btn-primary" onClick={() => openModal()}>
+                                <Plus size={18} /> Adaugă Rețetă Nouă
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => setIsCatManagerOpen(true)}>
+                                <Settings size={18} /> Gestionare Categorii
+                            </button>
+                        </div>
+
+                        {/* CATEGORY FILTER */}
+                        <div style={{ minWidth: '200px' }}>
+                            <select
+                                className="form-control"
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            >
+                                <option value="">Toate Categoriile</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     <div className="recipes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                        {recipes.map(recipe => (
-                            <div key={recipe.id} className="recipe-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                    <h3 style={{ margin: 0 }}>{recipe.name}</h3>
-                                    <div>
-                                        <button className="btn-icon" onClick={() => openModal(recipe)} style={{ marginRight: '0.5rem' }}><Edit2 size={16} /></button>
-                                        <button className="btn-icon btn-delete" onClick={() => deleteRecipe(recipe.id)}><Trash2 size={16} /></button>
+                        {recipes
+                            .filter(r => !selectedCategory || r.category === selectedCategory)
+                            .map(recipe => (
+                                <div key={recipe.id} className="recipe-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <h3 style={{ margin: 0 }}>{recipe.name}</h3>
+                                        <div>
+                                            <button className="btn-icon" onClick={() => openModal(recipe)} style={{ marginRight: '0.5rem' }}><Edit2 size={16} /></button>
+                                            <button className="btn-icon btn-delete" onClick={() => deleteRecipe(recipe.id)}><Trash2 size={16} /></button>
+                                        </div>
                                     </div>
+                                    <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>
+                                        {recipe.ingredients.slice(0, 3).map((ing, i) => (
+                                            <li key={i}>• {ing.itemName || 'Nume lipsă'} ({ing.qty} {ing.unit})</li>
+                                        ))}
+                                        {recipe.ingredients.length > 3 && <li>... (+{recipe.ingredients.length - 3} altele)</li>}
+                                    </ul>
+                                    {recipe.preparation_method && (
+                                        <div style={{ fontSize: '0.85rem', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
+                                            <strong>Preparare:</strong>
+                                            <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                {recipe.preparation_method}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-                                <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>
-                                    {recipe.ingredients.slice(0, 3).map((ing, i) => (
-                                        <li key={i}>• {ing.itemName || 'Nume lipsă'} ({ing.qty} {ing.unit})</li>
-                                    ))}
-                                    {recipe.ingredients.length > 3 && <li>... (+{recipe.ingredients.length - 3} altele)</li>}
-                                </ul>
-                                {recipe.preparation_method && (
-                                    <div style={{ fontSize: '0.85rem', color: '#475569', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
-                                        <strong>Preparare:</strong>
-                                        <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                            {recipe.preparation_method}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
             )}
