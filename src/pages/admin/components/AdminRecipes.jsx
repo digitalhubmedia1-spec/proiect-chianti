@@ -431,6 +431,115 @@ const AdminRecipes = () => {
         )
     }
 
+    {/* --- TAB 2: COST CALCULATOR & REF PRICES --- */ }
+    {
+        activeTab === 'cost_calculator' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {/* REFERENCE PRICES SECTION */}
+                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <h3>Prețuri de Referință (per Unitate)</h3>
+                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Introduceți prețul de achiziție standard pentru fiecare ingredient. Acesta este folosit doar la estimarea costurilor rețetelor.</p>
+
+                    <div style={{ marginBottom: '1rem', maxWidth: '300px' }}>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Caută ingredient..."
+                            value={searchTermRef}
+                            onChange={e => setSearchTermRef(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem' }}
+                        />
+                    </div>
+
+                    <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
+                                <tr>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Ingredient</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Preț Referință (RON)</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Unitate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {inventoryItems
+                                    .filter(item => item.name.toLowerCase().includes(searchTermRef.toLowerCase()))
+                                    .map(item => (
+                                        <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
+                                            <td style={{ padding: '0.5rem 0.75rem' }}>{item.name}</td>
+                                            <td style={{ padding: '0.5rem 0.75rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="0.00"
+                                                        value={refPrices[item.id] || ''}
+                                                        onChange={(e) => handleUpdateRefPrice(item.id, e.target.value)}
+                                                        style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                                    />
+                                                    <span>RON</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '0.5rem 0.75rem', color: '#64748b' }}>/{item.unit}</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* COST CALCULATOR SECTION */}
+                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <h3>Calculator Cost Rețetă</h3>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                        <div style={{ flex: 1, maxWidth: '400px' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Alege Rețetă</label>
+                            <select
+                                className="form-control"
+                                value={selectedRecipeId}
+                                onChange={(e) => { setSelectedRecipeId(e.target.value); setRecipeCostResult(null); }}
+                                style={{ width: '100%', padding: '0.5rem' }}
+                            >
+                                <option value="">-- Selectează --</option>
+                                {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                            </select>
+                        </div>
+                        <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={!selectedRecipeId}>
+                            <Calculator size={18} /> Calculează Cost
+                        </button>
+                    </div>
+
+                    {recipeCostResult && (
+                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h4 style={{ margin: 0 }}>Cost Total: <span style={{ color: '#990000', fontSize: '1.2rem' }}>{recipeCostResult.total.toFixed(2)} RON</span></h4>
+                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid #ddd' }}>
+                                        <th style={{ textAlign: 'left', padding: '0.5rem' }}>Ingredient</th>
+                                        <th style={{ textAlign: 'left', padding: '0.5rem' }}>Cantitate</th>
+                                        <th style={{ textAlign: 'left', padding: '0.5rem' }}>Preț Unit. Ref.</th>
+                                        <th style={{ textAlign: 'left', padding: '0.5rem' }}>Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recipeCostResult.ingredients.map((ing, idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
+                                            <td style={{ padding: '0.5rem' }}>{ing.itemName}</td>
+                                            <td style={{ padding: '0.5rem' }}>{ing.qty} {ing.unit}</td>
+                                            <td style={{ padding: '0.5rem' }}>{ing.refPrice.toFixed(2)} RON</td>
+                                            <td style={{ padding: '0.5rem', fontWeight: 'bold' }}>{ing.totalCost.toFixed(2)} RON</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
     {/* --- TAB 3: PRODUCTION --- */ }
     {
         activeTab === 'production' && (
