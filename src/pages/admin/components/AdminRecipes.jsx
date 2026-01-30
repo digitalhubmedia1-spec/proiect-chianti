@@ -55,7 +55,7 @@ const AdminRecipes = () => {
         if (!newItemName.trim()) return;
         await addItem({
             name: newItemName,
-            category: 'Ingrediente',
+            category: 'Materii Prime', // Was 'Ingrediente' - must match existing category
             stock: 0,
             unit: newItemUnit
         });
@@ -343,22 +343,22 @@ const AdminRecipes = () => {
                                         <button
                                             className="btn btn-sm"
                                             onClick={() => approveRecipeAsProduct(recipe)}
-                                            disabled={!!recipe.linked_product_id}
+                                            disabled={!!recipe.linked_product_id && products.some(p => p.id === recipe.linked_product_id)}
                                             style={{
                                                 width: '100%',
-                                                background: recipe.linked_product_id ? '#e2e8f0' : '#16a34a',
-                                                color: recipe.linked_product_id ? '#94a3b8' : 'white',
-                                                cursor: recipe.linked_product_id ? 'not-allowed' : 'pointer',
+                                                background: (recipe.linked_product_id && products.some(p => p.id === recipe.linked_product_id)) ? '#e2e8f0' : '#16a34a',
+                                                color: (recipe.linked_product_id && products.some(p => p.id === recipe.linked_product_id)) ? '#94a3b8' : 'white',
+                                                cursor: (recipe.linked_product_id && products.some(p => p.id === recipe.linked_product_id)) ? 'not-allowed' : 'pointer',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
                                             }}
                                         >
-                                            {recipe.linked_product_id ? (
+                                            {(recipe.linked_product_id && products.some(p => p.id === recipe.linked_product_id)) ? (
                                                 <>
                                                     <CheckCircle size={16} /> Produs Aprobat
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Plus size={16} /> Aprobă ca Produs
+                                                    <Plus size={16} /> {recipe.linked_product_id ? 'Refă Produs (Link Spart)' : 'Aprobă ca Produs'}
                                                 </>
                                             )}
                                         </button>

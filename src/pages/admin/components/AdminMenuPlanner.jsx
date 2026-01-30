@@ -233,7 +233,8 @@ const AdminMenuPlanner = () => {
     // --- SHARED RENDER VARS ---
     const standardProducts = products.filter(p => {
         const cat = categories.find(c => c.name === p.category);
-        return cat && cat.type !== 'catering';
+        // Show if category not defined (fallback) OR if defined and NOT catering
+        return !cat || cat.type !== 'catering';
     });
     const displayProducts = filterCategory === "Toate" ? standardProducts : standardProducts.filter(p => p.category === filterCategory);
 
