@@ -83,7 +83,7 @@ const AdminDashboard = () => {
             // Allowed: Inventory stuff + PROCUREMENT
             // Achizitor needs procurement flow logic
             // Allowed: Inventory stuff + PROCUREMENT
-            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects'];
+            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
