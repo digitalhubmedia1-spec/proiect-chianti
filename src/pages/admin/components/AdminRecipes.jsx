@@ -84,16 +84,22 @@ const AdminRecipes = () => {
         }
     };
 
-    const handleUpdateRefPrice = async (ingredientId, price) => {
-        const val = parseFloat(price);
+    const handleLocalPriceChange = (ingredientId, value) => {
+        setRefPrices(prev => ({ ...prev, [ingredientId]: value }));
+    };
+
+    const saveRefPrice = async (ingredientId) => {
+        const rawValue = refPrices[ingredientId];
+        const val = parseFloat(rawValue);
         if (isNaN(val)) return;
 
         const { error } = await supabase
             .from('recipe_ref_prices')
             .upsert({ ingredient_id: ingredientId, price_per_unit: val }, { onConflict: 'ingredient_id' });
 
-        if (!error) {
-            setRefPrices(prev => ({ ...prev, [ingredientId]: val }));
+        if (error) {
+            console.error(error);
+            alert("Eroare la salvare! Verificați conexiunea sau dacă ați rulat scriptul SQL pentru 'recipe_ref_prices'.");
         }
     };
 
