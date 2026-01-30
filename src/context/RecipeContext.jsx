@@ -230,8 +230,18 @@ export const RecipeProvider = ({ children }) => {
     const approveRecipeAsProduct = async (recipe) => {
         try {
             if (recipe.linked_product_id) {
-                alert("Această rețetă aprobă deja un produs.");
-                return { success: false };
+                // Verify if the product actually exists
+                const { data: existing, error: checkErr } = await supabase
+                    .from('products')
+                    .select('id')
+                    .eq('id', recipe.linked_product_id)
+                    .maybeSingle();
+
+                if (existing) {
+                    alert("Această rețetă aprobă deja un produs existent.");
+                    return { success: false };
+                }
+                // If not found, it's a broken link, so we allow proceeding to re-create
             }
 
             // 1. Create Product
