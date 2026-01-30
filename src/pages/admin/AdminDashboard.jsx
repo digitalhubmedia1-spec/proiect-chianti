@@ -159,6 +159,7 @@ const AdminDashboard = () => {
     // Recommendation State
     const [currentRecommendations, setCurrentRecommendations] = useState([]);
     const [selectedRecId, setSelectedRecId] = useState("");
+    const [recSearchTerm, setRecSearchTerm] = useState(""); // Search term for recommendations
 
     // Image Preview State
     const [previewImage, setPreviewImage] = useState(null);
@@ -217,26 +218,23 @@ const AdminDashboard = () => {
         setIsProductModalOpen(true);
     };
 
-    const handleAddRec = async () => {
-        if (!selectedRecId) return;
-
-        const selectedProduct = products.find(p => p.id === parseInt(selectedRecId) || p.id === selectedRecId);
-        if (!selectedProduct) return;
+    const handleSelectRec = async (product) => {
+        if (!product) return;
 
         if (editingProduct) {
             // Immediate save for existing products
-            await addRecommendation(editingProduct.id, selectedRecId);
+            await addRecommendation(editingProduct.id, product.id);
             // Refresh
             const recs = await fetchRecommendations(editingProduct.id);
             setCurrentRecommendations(recs);
         } else {
             // Local state only for new products
             // Prevent duplicates
-            if (!currentRecommendations.some(r => r.id === selectedProduct.id)) {
-                setCurrentRecommendations([...currentRecommendations, selectedProduct]);
+            if (!currentRecommendations.some(r => r.id === product.id)) {
+                setCurrentRecommendations([...currentRecommendations, product]);
             }
         }
-        setSelectedRecId("");
+        setRecSearchTerm(""); // Clear search
     };
 
     const handleRemoveRec = async (recId) => {
@@ -1106,25 +1104,56 @@ const AdminDashboard = () => {
                             {/* RECOMMENDATIONS SECTION (Available for New and Edit) */}
                             <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
                                 <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Produse Recomandate (Extra)</label>
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <select
+                                <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                                    <input
+                                        type="text"
                                         className="form-control"
-                                        value={selectedRecId}
-                                        onChange={(e) => setSelectedRecId(e.target.value)}
-                                    >
-                                        <option value="">Alege un produs...</option>
-                                        {products
-                                            .filter(p => !editingProduct || p.id !== editingProduct.id) // Exclude self if editing
-                                            .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
-                                            .sort((a, b) => a.name.localeCompare(b.name))
-                                            .map(p => (
-                                                <option key={p.id} value={p.id}>{p.name} ({p.price} Lei)</option>
-                                            ))
-                                        }
-                                    </select>
-                                    <button type="button" className="btn btn-primary" onClick={handleAddRec} disabled={!selectedRecId}>
-                                        <Plus size={18} />
-                                    </button>
+                                        placeholder="Caută produs pentru recomandare..."
+                                        value={recSearchTerm}
+                                        onChange={(e) => setRecSearchTerm(e.target.value)}
+                                        style={{ width: '100%' }}
+                                    />
+                                    {recSearchTerm.length > 0 && (
+                                        <div className="rec-search-results" style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            background: 'white',
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            maxHeight: '200px',
+                                            overflowY: 'auto',
+                                            zIndex: 100,
+                                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                        }}>
+                                            {products
+                                                .filter(p => !editingProduct || p.id !== editingProduct.id) // Exclude self
+                                                .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
+                                                .filter(p => p.name.toLowerCase().includes(recSearchTerm.toLowerCase()))
+                                                .map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        onClick={() => handleSelectRec(p)}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            cursor: 'pointer',
+                                                            borderBottom: '1px solid #eee',
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between'
+                                                        }}
+                                                        onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                                        onMouseLeave={(e) => e.target.style.background = 'white'}
+                                                    >
+                                                        <span>{p.name}</span>
+                                                        <span style={{ color: '#888', fontSize: '0.9em' }}>{p.price} Lei</span>
+                                                    </div>
+                                                ))}
+                                            {products.filter(p => p.name.toLowerCase().includes(recSearchTerm.toLowerCase())).length === 0 && (
+                                                <div style={{ padding: '8px 12px', color: '#888' }}>Nu am găsit produse.</div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* List of current recommendations */}
