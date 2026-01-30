@@ -70,6 +70,8 @@ const AdminRecipes = () => {
     const [recipeCostResult, setRecipeCostResult] = useState(null); // For Cost Calculator
     const [refPrices, setRefPrices] = useState({}); // { ingredient_id: price }
     const [searchTermRef, setSearchTermRef] = useState('');
+    const [recipeSearchTerm, setRecipeSearchTerm] = useState('');
+    const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
 
     useEffect(() => {
         fetchRefPrices();
@@ -498,15 +500,47 @@ const AdminRecipes = () => {
                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
                                 <div style={{ flex: 1, maxWidth: '400px' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Alege Rețetă</label>
-                                    <select
-                                        className="form-control"
-                                        value={selectedRecipeId}
-                                        onChange={(e) => { setSelectedRecipeId(e.target.value); setRecipeCostResult(null); }}
-                                        style={{ width: '100%', padding: '0.5rem' }}
-                                    >
-                                        <option value="">-- Selectează --</option>
-                                        {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Caută rețetă..."
+                                            value={recipeSearchTerm}
+                                            onChange={(e) => {
+                                                setRecipeSearchTerm(e.target.value);
+                                                setShowRecipeDropdown(true);
+                                                if (!e.target.value) {
+                                                    setSelectedRecipeId('');
+                                                    setRecipeCostResult(null);
+                                                }
+                                            }}
+                                            onFocus={() => setShowRecipeDropdown(true)}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                        />
+                                        {showRecipeDropdown && recipeSearchTerm && (selectedRecipeId ? recipes.find(r => r.id == selectedRecipeId)?.name !== recipeSearchTerm : true) && (
+                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, maxHeight: '200px', overflowY: 'auto', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', zIndex: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                                {recipes
+                                                    .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
+                                                    .map(r => (
+                                                        <div
+                                                            key={r.id}
+                                                            onClick={() => {
+                                                                setSelectedRecipeId(r.id);
+                                                                setRecipeSearchTerm(r.name);
+                                                                setRecipeCostResult(null);
+                                                                setShowRecipeDropdown(false);
+                                                            }}
+                                                            style={{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', hover: { background: '#f8fafc' } }}
+                                                        >
+                                                            {r.name}
+                                                        </div>
+                                                    ))}
+                                                {recipes.filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase())).length === 0 && (
+                                                    <div style={{ padding: '0.5rem', color: '#64748b' }}>Nicio rețetă găsită.</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={!selectedRecipeId}>
                                     <Calculator size={18} /> Calculează Cost
