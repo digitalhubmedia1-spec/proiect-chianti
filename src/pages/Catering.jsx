@@ -249,7 +249,7 @@ const Catering = () => {
                                 )}
                             </div>
                         )}
-                        )}
+
                     </div>
 
                     {/* PAGINATION CONTROLS */}

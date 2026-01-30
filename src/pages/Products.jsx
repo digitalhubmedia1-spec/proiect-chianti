@@ -538,7 +538,7 @@ const Products = () => {
                                 <p>Nu am găsit produse conform criteriilor selectate.</p>
                             </div>
                         )}
-                        )}
+
                     </div>
 
                     {/* PAGINATION CONTROLS */}
