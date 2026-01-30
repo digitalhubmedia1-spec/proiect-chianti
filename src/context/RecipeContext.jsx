@@ -238,8 +238,22 @@ export const RecipeProvider = ({ children }) => {
                     .maybeSingle();
 
                 if (existing) {
-                    alert("Această rețetă aprobă deja un produs existent.");
-                    return { success: false };
+                    // Update and Reactivate existing product
+                    const { error: updateErr } = await supabase
+                        .from('products')
+                        .update({
+                            name: recipe.name,
+                            category: recipe.category || 'Meniu',
+                            description: recipe.preparation_method || '',
+                            is_active: true
+                        })
+                        .eq('id', existing.id);
+
+                    if (updateErr) throw updateErr;
+
+                    alert("Produsul existent a fost actualizat și reactivat!");
+                    fetchRecipes(); // Refresh locally
+                    return { success: true };
                 }
                 // If not found, it's a broken link, so we allow proceeding to re-create
             }
