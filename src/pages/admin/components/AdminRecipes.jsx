@@ -12,6 +12,7 @@ const AdminRecipes = () => {
     const { products, categories, addCategory, updateCategory, deleteCategory } = useMenu();
 
     const [activeTab, setActiveTab] = useState('manage');
+    const [selectedCategory, setSelectedCategory] = useState(''); // Category Filter State
 
     // --- MANAGE STATE ---
     const [isModalOpen, setIsModalOpen] = useState(false);
