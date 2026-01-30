@@ -1,18 +1,17 @@
-
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+require('dotenv').config();
 
-const supabaseUrl = 'https://atzmcflvnzezfumbmgiz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em1jZmx2bnplemZ1bWJtZ2l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzExMjcsImV4cCI6MjA4MzY0NzEyN30.LSiuLKxi_PEdD6eMxk691JpN6OjS4jmiNuJXkD4MYtk';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+// Actually need service role or just standard client if RLS allows. 
+// Standard client might not allow DDL.
+// Ideally I should have a service role key. 
+// But wait, the previous tools used `psql`? No, I likely used `run_schema_update.cjs` before.
+// I see `run_schema_update.cjs` in the file list. I can reuse it or check it.
 
-async function checkSchema() {
-    // Just select one item and print keys
-    const { data, error } = await supabase.from('inventory_items').select('*').limit(1);
-    if (error) console.error(error);
-    else if (data.length > 0) {
-        console.log("Columns:", Object.keys(data[0]));
-    } else {
-        console.log("No data in inventory_items to check columns, trying to insert dummy?");
-    }
-}
-checkSchema();
+// Let's check environment variables in .env first to see what I have.
+// I don't have access to .env content directly unless I read it.
+// I'll assume I can use the same pattern as `run_schema_update.cjs`.
+
+// Let's read `run_schema_update.cjs` to see how it works.

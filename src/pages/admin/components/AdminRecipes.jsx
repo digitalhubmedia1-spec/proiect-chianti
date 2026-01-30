@@ -3,25 +3,47 @@ import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
-import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
-    const { items: inventoryItems, addItem } = useInventory(); // Destructure addItem
-    const { products } = useMenu();
+    const { items: inventoryItems, addItem } = useInventory();
+    const { products, categories, addCategory, updateCategory, deleteCategory } = useMenu();
 
-    const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'calculator'
+    const [activeTab, setActiveTab] = useState('manage');
 
     // --- MANAGE STATE ---
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCatManagerOpen, setIsCatManagerOpen] = useState(false); // New Manager Modal
     const [editingId, setEditingId] = useState(null);
     const [recipeForm, setRecipeForm] = useState({
-        name: '', // Now explicit
-        linked_product_id: '', // Optional
+        name: '',
+        category: '', // New Field
+        linked_product_id: '',
         preparation_method: '',
-        ingredients: [] // { ingredient_id, qty, unit }
+        ingredients: []
     });
+
+    // --- CATEGORY MANAGER STATE ---
+    const [newCatName, setNewCatName] = useState('');
+    const [editingCatId, setEditingCatId] = useState(null);
+    const [editingCatName, setEditingCatName] = useState('');
+
+    const handleAddCategory = async () => {
+        if (!newCatName.trim()) return;
+        await addCategory(newCatName, 'catering'); // Default to catering as per request implied context? Or let user choose?
+        // User asked for "recipes categories". These are likely "Food" categories.
+        // Products usually use these.
+        setNewCatName('');
+    };
+
+    const handleUpdateCategory = async (id) => {
+        if (!editingCatName.trim()) return;
+        await updateCategory(id, { name: editingCatName });
+        setEditingCatId(null);
+        setEditingCatName('');
+    };
 
     // --- ITEM CREATION STATE ---
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -32,13 +54,12 @@ const AdminRecipes = () => {
         if (!newItemName.trim()) return;
         await addItem({
             name: newItemName,
-            category: 'Ingrediente', // Default
+            category: 'Ingrediente',
             stock: 0,
             unit: newItemUnit
         });
         setNewItemName('');
         setIsItemModalOpen(false);
-        // Context updates items, so they will appear in search
     };
 
     // --- CALCULATOR STATE ---
@@ -52,6 +73,7 @@ const AdminRecipes = () => {
             setEditingId(recipe.id);
             setRecipeForm({
                 name: recipe.name,
+                category: recipe.category || '', // Load category
                 linked_product_id: recipe.linked_product_id || '',
                 preparation_method: recipe.preparation_method || '',
                 ingredients: recipe.ingredients.map(i => ({
@@ -62,7 +84,7 @@ const AdminRecipes = () => {
             });
         } else {
             setEditingId(null);
-            setRecipeForm({ name: '', linked_product_id: '', ingredients: [], preparation_method: '' });
+            setRecipeForm({ name: '', category: '', linked_product_id: '', ingredients: [], preparation_method: '' }); // Reset category
         }
         setIsModalOpen(true);
     };
@@ -107,6 +129,7 @@ const AdminRecipes = () => {
 
         const data = {
             name: recipeForm.name,
+            category: recipeForm.category || null, // Include category
             linked_product_id: recipeForm.linked_product_id || null,
             preparation_method: recipeForm.preparation_method,
             ingredients: validIngredients.map(ing => ({
@@ -402,6 +425,100 @@ const AdminRecipes = () => {
                 </div>
             )}
 
+            {/* CATEGORY MANAGER MODAL */}
+            {isCatManagerOpen && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100 }}>
+                    <div className="modal-content" style={{ background: 'white', padding: '2rem', borderRadius: '8px', width: '500px', maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>Gestionare Categorii</h3>
+                            <button onClick={() => setIsCatManagerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+                        </div>
+
+                        {/* Add New Category */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Nume Categorie Nouă"
+                                value={newCatName}
+                                onChange={e => setNewCatName(e.target.value)}
+                                style={{ flex: 1, padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                            />
+                            <button className="btn btn-primary" onClick={handleAddCategory}>Adaugă</button>
+                        </div>
+
+                        {/* List */}
+                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ background: '#f8fafc' }}>
+                                    <tr>
+                                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Nume Categorie</th>
+                                        <th style={{ padding: '0.75rem', width: '100px', borderBottom: '1px solid #e2e8f0' }}>Acțiuni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {categories.map(cat => (
+                                        <tr key={cat.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                            <td style={{ padding: '0.75rem' }}>
+                                                {editingCatId === cat.id ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editingCatName}
+                                                        onChange={e => setEditingCatName(e.target.value)}
+                                                        className="form-control"
+                                                        autoFocus
+                                                        style={{ width: '100%', padding: '0.25rem' }}
+                                                    />
+                                                ) : (
+                                                    cat.name
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                                {editingCatId === cat.id ? (
+                                                    <>
+                                                        <button
+                                                            className="btn-icon text-success"
+                                                            onClick={() => handleUpdateCategory(cat.id)}
+                                                            title="Salvează"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                        <button
+                                                            className="btn-icon text-secondary"
+                                                            onClick={() => { setEditingCatId(null); setEditingCatName(''); }}
+                                                            title="Anulează"
+                                                        >
+                                                            <X size={18} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            className="btn-icon text-primary"
+                                                            onClick={() => { setEditingCatId(cat.id); setEditingCatName(cat.name); }}
+                                                            title="Editează"
+                                                        >
+                                                            <Edit2 size={18} />
+                                                        </button>
+                                                        <button
+                                                            className="btn-icon text-danger"
+                                                            onClick={() => deleteCategory(cat.name)}
+                                                            title="Șterge"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* --- MODAL --- */}
             {isModalOpen && (
                 <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
@@ -419,6 +536,32 @@ const AdminRecipes = () => {
                                     onChange={e => setRecipeForm({ ...recipeForm, name: e.target.value })}
                                     required
                                 />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Categorie Rețetă</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <select
+                                        className="form-control"
+                                        style={{ flex: 1, padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                        value={recipeForm.category}
+                                        onChange={e => setRecipeForm({ ...recipeForm, category: e.target.value })}
+                                    >
+                                        <option value="">-- Alege Categorie --</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={() => setIsCatManagerOpen(true)}
+                                        title="Gestionează Categorii"
+                                        style={{ display: 'flex', alignItems: 'center', padding: '0 10px' }}
+                                    >
+                                        <Settings size={18} />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>

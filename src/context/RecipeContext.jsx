@@ -24,6 +24,7 @@ export const RecipeProvider = ({ children }) => {
                 .select(`
                     id,
                     name,
+                    category,
                     preparation_method,
                     linked_product_id,
                     products (name),
@@ -46,6 +47,7 @@ export const RecipeProvider = ({ children }) => {
             const formatted = data.map(row => ({
                 id: row.id, // This is the Recipe Header ID
                 name: row.name,
+                category: row.category, // Mapped category
                 preparation_method: row.preparation_method,
                 linked_product_id: row.linked_product_id,
                 linked_product_name: row.products?.name,
@@ -72,6 +74,7 @@ export const RecipeProvider = ({ children }) => {
             // 1. Create Header
             const headerPayload = {
                 name: recipeData.name,
+                category: recipeData.category || null,
                 preparation_method: recipeData.preparation_method,
                 linked_product_id: recipeData.linked_product_id || null
             };
@@ -117,6 +120,7 @@ export const RecipeProvider = ({ children }) => {
                 .from('defined_recipes')
                 .update({
                     name: updatedData.name,
+                    category: updatedData.category || null,
                     preparation_method: updatedData.preparation_method,
                     linked_product_id: updatedData.linked_product_id || null
                 })
