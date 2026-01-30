@@ -108,7 +108,7 @@ const AdminDashboard = () => {
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
+    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
 
     const [activeProductTabType, setActiveProductTabType] = useState('catering'); // Default to catering since delivery is hidden
     const [searchTerm, setSearchTerm] = useState('');
@@ -187,7 +187,7 @@ const AdminDashboard = () => {
             }
         }
 
-        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
+        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
         setEditingProduct(null);
         setIsProductModalOpen(false);
         setCurrentRecommendations([]);
@@ -211,7 +211,7 @@ const AdminDashboard = () => {
             setCurrentRecommendations(recs);
         } else {
             setEditingProduct(null);
-            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', ingredients: '' });
+            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
             setCurrentRecommendations([]);
         }
         setIsProductModalOpen(true);
@@ -1000,9 +1000,11 @@ const AdminDashboard = () => {
                                     <label>Categorie</label>
                                     <select className="form-control" value={prodForm.category} onChange={e => setProdForm({ ...prodForm, category: e.target.value })} required>
                                         <option value="">Alege Categorie</option>
-                                        {categories.map(c => (
-                                            <option key={c.id} value={c.name}>{c.name}</option>
-                                        ))}
+                                        {categories
+                                            .filter(c => (!c.type || c.type === 'delivery') === (activeProductTabType === 'delivery'))
+                                            .map(c => (
+                                                <option key={c.id} value={c.name}>{c.name}</option>
+                                            ))}
                                     </select>
                                 </div>
                             </div>
@@ -1095,8 +1097,8 @@ const AdminDashboard = () => {
                                     <input type="text" className="form-control" value={prodForm.weight} onChange={e => setProdForm({ ...prodForm, weight: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Ingrediente</label>
-                                    <input type="text" className="form-control" value={prodForm.ingredients} onChange={e => setProdForm({ ...prodForm, ingredients: e.target.value })} />
+                                    <label>Alergeni</label>
+                                    <input type="text" className="form-control" value={prodForm.allergens || ''} onChange={e => setProdForm({ ...prodForm, allergens: e.target.value })} />
                                 </div>
                             </div>
 

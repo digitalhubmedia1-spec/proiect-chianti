@@ -170,7 +170,7 @@ const ProductDetails = () => {
                     <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>Îți recomandăm și...</h2>
                     <div className="recommendations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
                         {recommendations.map(rec => (
-                            <div key={rec.id} className="rec-card" style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s', border: '1px solid #f0f0f0' }}>
+                            <div key={rec.id} className="rec-card" onClick={() => navigate(`/produs/${rec.id}`)} style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s', border: '1px solid #f0f0f0', cursor: 'pointer' }}>
                                 <div style={{ height: '140px', overflow: 'hidden' }}>
                                     <img src={rec.image} alt={rec.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
@@ -178,7 +178,8 @@ const ProductDetails = () => {
                                     <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.5rem', height: '40px', overflow: 'hidden' }}>{rec.name}</h3>
                                     <p style={{ color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '1rem' }}>{rec.price.toFixed(2)} Lei</p>
                                     <button
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             addToCart(rec, 1);
                                             // Optional: simple alert or toast
                                         }}
