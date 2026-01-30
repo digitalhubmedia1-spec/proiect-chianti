@@ -110,7 +110,8 @@ const AdminRecipes = () => {
 
         const ingredientsCost = recipe.ingredients.map(ing => {
             if (!ing.ingredient_id) return null;
-            const price = refPrices[ing.ingredient_id] || 0;
+            const rawPrice = refPrices[ing.ingredient_id] || 0;
+            const price = parseFloat(rawPrice) || 0;
             const cost = parseFloat(ing.qty) * price;
             return {
                 ...ing,
