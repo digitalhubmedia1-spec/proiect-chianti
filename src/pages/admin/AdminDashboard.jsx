@@ -480,7 +480,7 @@ const AdminDashboard = () => {
                             <button
                                 className={`btn ${activeProductTabType === 'delivery' ? 'btn-primary' : 'btn-outline-primary'}`}
                                 onClick={() => setActiveProductTabType('delivery')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold', display: 'none' }} // HIDDEN PER USER REQUEST
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
                                 <Truck size={16} style={{ marginRight: '8px' }} /> Livrări
                             </button>
@@ -613,7 +613,7 @@ const AdminDashboard = () => {
                             <button
                                 className={`btn ${activeTabType === 'delivery' ? 'btn-primary' : 'btn-outline-primary'}`}
                                 onClick={() => setActiveTabType('delivery')}
-                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold', display: 'none' }} // HIDDEN PER USER REQUEST
+                                style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
                             >
                                 <Truck size={16} style={{ marginRight: '8px' }} /> Comenzi Rapide
                             </button>
@@ -1000,9 +1000,9 @@ const AdminDashboard = () => {
                                     <label>Categorie</label>
                                     <select className="form-control" value={prodForm.category} onChange={e => setProdForm({ ...prodForm, category: e.target.value })} required>
                                         <option value="">Alege Categorie</option>
-                                        {/* <optgroup label="Livrări">
+                                        <optgroup label="Livrări">
                                             {categories.filter(c => (!c.type || c.type === 'delivery')).map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                        </optgroup> HIDDEN PER USER REQUEST */}
+                                        </optgroup>
                                         <optgroup label="Catering">
                                             {categories.filter(c => c.type === 'catering').map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                         </optgroup>

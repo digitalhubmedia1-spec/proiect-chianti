@@ -399,9 +399,9 @@ const Products = () => {
                             </button>
                         </li>
                         {(() => {
-                            // 1. Filter visible matching types (Hide Delivery per request)
+                            // 1. Filter visible matching types (Show Delivery/Standard)
                             const visibleCats = categories.filter(cat =>
-                                (cat.type === 'catering') && cat.is_visible !== false
+                                (!cat.type || cat.type === 'delivery') && cat.is_visible !== false
                             );
 
                             // 2. Build Tree
