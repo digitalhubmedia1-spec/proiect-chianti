@@ -64,6 +64,24 @@ const Catering = () => {
         filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
     }
 
+    // --- PAGINATION LOGIC ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 9;
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeCategory, searchQuery, sortOrder]);
+
+    const indexOfLastProduct = currentPage * itemsPerPage;
+    const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+    const truncate = (str, n) => {
+        return (str && str.length > n) ? str.substr(0, n - 1) + "..." : str;
+    };
+
     const handleAddToCart = (e, product) => {
         e.preventDefault();
         e.stopPropagation();
@@ -200,15 +218,15 @@ const Catering = () => {
                     </div>
 
                     <div className="products-grid">
-                        {filteredProducts.length > 0 ? (
-                            filteredProducts.map(product => (
+                        {currentProducts.length > 0 ? (
+                            currentProducts.map(product => (
                                 <div key={product.id} className={`product-card ${product.is_available === false ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}`)} style={{ cursor: 'pointer' }}>
                                     <div className="product-image">
                                         <img src={product.image} alt={product.name} />
                                     </div>
                                     <div className="product-info">
                                         <h3 className="product-name">{product.name}</h3>
-                                        <p className="product-desc">{product.description}</p>
+                                        <p className="product-desc" title={product.description}>{truncate(product.description, 80)}</p>
                                         <div className="product-footer">
                                             <span className="product-price">{product.price.toFixed(2)} Lei</span>
                                             <button
@@ -231,7 +249,45 @@ const Catering = () => {
                                 )}
                             </div>
                         )}
+                        )}
                     </div>
+
+                    {/* PAGINATION CONTROLS */}
+                    {totalPages > 1 && (
+                        <div className="pagination" style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem', paddingBottom: '2rem' }}>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                style={{ padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '6px', background: currentPage === 1 ? '#f1f5f9' : 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                            >
+                                &laquo; Îmapoi
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '6px',
+                                        background: currentPage === i + 1 ? '#990000' : 'white',
+                                        color: currentPage === i + 1 ? 'white' : '#1e293b',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '6px', background: currentPage === totalPages ? '#f1f5f9' : 'white', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                            >
+                                Înainte &raquo;
+                            </button>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>
