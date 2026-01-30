@@ -528,9 +528,8 @@ const AdminReception = () => {
                                         value={item.vat_percent}
                                         onChange={e => updateReceptionItem(idx, 'vat_percent', e.target.value)}
                                     >
-                                        <option value="19">19%</option>
-                                        <option value="9">9%</option>
-                                        <option value="5">5%</option>
+                                        <option value="21">21%</option>
+                                        <option value="11">11%</option>
                                         <option value="0">0%</option>
                                     </select>
                                 </div>

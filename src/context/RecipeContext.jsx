@@ -242,7 +242,7 @@ export const RecipeProvider = ({ children }) => {
                     category: recipe.category || 'Meniu', // Fallback
                     price: 0,
                     description: recipe.preparation_method || '',
-                    is_active: false // Default inactive
+                    is_active: true // Active by default so it shows up
                 }])
                 .select()
                 .single();
