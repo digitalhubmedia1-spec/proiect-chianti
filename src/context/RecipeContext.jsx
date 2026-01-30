@@ -243,6 +243,7 @@ export const RecipeProvider = ({ children }) => {
                     price: 0,
                     description: recipe.preparation_method || '',
                     is_active: false, // Default inactive
+                    type: 'delivery' // Explicitly set type to delivery
                 }])
                 .select()
                 .single();

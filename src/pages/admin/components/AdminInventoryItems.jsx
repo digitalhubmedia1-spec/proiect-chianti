@@ -31,7 +31,7 @@ const AdminInventoryItems = () => {
         unit: 'kg',
         min_stock_alert: 5,
         sale_price: 0,
-        vat_rate: 19,
+        vat_rate: 21,
         is_asset: false,
         responsible_person: '',
         asset_state: 'Nou'
@@ -99,7 +99,7 @@ const AdminInventoryItems = () => {
             unit: activeCategory === 'Bauturi' ? 'l' : (activeCategory === 'Materii Prime' ? 'kg' : 'buc'),
             min_stock_alert: 5,
             sale_price: 0,
-            vat_rate: 19,
+            vat_rate: 21,
             is_asset: activeCategory === 'Obiecte Inventar',
             responsible_person: '',
             asset_state: 'Nou'
@@ -348,9 +348,8 @@ const AdminInventoryItems = () => {
                                         onChange={e => setFormData({ ...formData, vat_rate: e.target.value })}
                                         style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                     >
-                                        <option value="19">19%</option>
-                                        <option value="9">9%</option>
-                                        <option value="5">5%</option>
+                                        <option value="21">21%</option>
+                                        <option value="11">11%</option>
                                         <option value="0">0%</option>
                                     </select>
                                 </div>
