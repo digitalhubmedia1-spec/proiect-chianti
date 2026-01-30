@@ -227,6 +227,48 @@ export const RecipeProvider = ({ children }) => {
         }
     };
 
+    const approveRecipeAsProduct = async (recipe) => {
+        try {
+            if (recipe.linked_product_id) {
+                alert("Această rețetă aprobă deja un produs.");
+                return { success: false };
+            }
+
+            // 1. Create Product
+            const { data: product, error: prodErr } = await supabase
+                .from('products')
+                .insert([{
+                    name: recipe.name,
+                    category: recipe.category || 'Meniu', // Fallback
+                    price: 0,
+                    description: recipe.preparation_method || '',
+                    is_active: false, // Default inactive
+                }])
+                .select()
+                .single();
+
+            if (prodErr) throw prodErr;
+
+            // 2. Link Recipe to Product
+            const { error: linkErr } = await supabase
+                .from('defined_recipes')
+                .update({ linked_product_id: product.id })
+                .eq('id', recipe.id);
+
+            if (linkErr) throw linkErr;
+
+            logAction('REȚETAR', `Aprobat rețetă "${recipe.name}" ca produs #${product.id}`);
+
+            // Refresh
+            fetchRecipes();
+            return { success: true };
+        } catch (err) {
+            console.error("Error approving product:", err);
+            alert("Eroare aprobare: " + err.message);
+            return { success: false, error: err };
+        }
+    };
+
     return (
         <RecipeContext.Provider value={{
             recipes,
@@ -234,6 +276,7 @@ export const RecipeProvider = ({ children }) => {
             addRecipe,
             updateRecipe,
             deleteRecipe,
+            approveRecipeAsProduct, // Exposed
             refreshRecipes: fetchRecipes
         }}>
             {children}
