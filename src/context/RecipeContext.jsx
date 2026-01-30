@@ -17,9 +17,8 @@ export const RecipeProvider = ({ children }) => {
     const fetchRecipes = async () => {
         setLoading(true);
         try {
-            // Fetch defined_recipes with ingredients
-            // Note: 'recipes' table is now effectively 'recipe_ingredients'
-            const { data, error } = await supabase
+            // Attempt 1: Fetch WITH category (Ideal state)
+            let { data, error } = await supabase
                 .from('defined_recipes')
                 .select(`
                     id,
@@ -37,7 +36,30 @@ export const RecipeProvider = ({ children }) => {
                 `)
                 .order('name');
 
-            if (error) throw error;
+            if (error) {
+                // If error implies column missing, try fallback
+                console.warn("Fetch with category failed, attempting fallback...", error.message);
+
+                const { data: fallbackData, error: fallbackError } = await supabase
+                    .from('defined_recipes')
+                    .select(`
+                        id,
+                        name,
+                        preparation_method,
+                        linked_product_id,
+                        products (name),
+                        recipes (
+                            id,
+                            ingredient_id,
+                            quantity_required,
+                            inventory_items (name, unit)
+                        )
+                    `)
+                    .order('name');
+
+                if (fallbackError) throw fallbackError;
+                data = fallbackData;
+            }
 
             console.log("Fetched Recipes Data:", data);
 
@@ -47,7 +69,7 @@ export const RecipeProvider = ({ children }) => {
             const formatted = data.map(row => ({
                 id: row.id, // This is the Recipe Header ID
                 name: row.name,
-                category: row.category, // Mapped category
+                category: row.category || '', // Mapped category (might be undefined in fallback)
                 preparation_method: row.preparation_method,
                 linked_product_id: row.linked_product_id,
                 linked_product_name: row.products?.name,
@@ -79,13 +101,25 @@ export const RecipeProvider = ({ children }) => {
                 linked_product_id: recipeData.linked_product_id || null
             };
 
-            const { data: header, error: headerErr } = await supabase
+            let headerResult = await supabase
                 .from('defined_recipes')
                 .insert([headerPayload])
                 .select()
                 .single();
 
-            if (headerErr) throw headerErr;
+            if (headerResult.error) {
+                console.warn("Insert with category failed, retrying without...", headerResult.error.message);
+                const fallbackPayload = { ...headerPayload };
+                delete fallbackPayload.category;
+                headerResult = await supabase
+                    .from('defined_recipes')
+                    .insert([fallbackPayload])
+                    .select()
+                    .single();
+
+                if (headerResult.error) throw headerResult.error;
+            }
+            const header = headerResult.data;
 
             // 2. Insert Ingredients
             if (recipeData.ingredients && recipeData.ingredients.length > 0) {
@@ -116,7 +150,8 @@ export const RecipeProvider = ({ children }) => {
         // recipeId is defined_recipes.id
         try {
             // 1. Update Header
-            const { error: headerErr } = await supabase
+            // 1. Update Header
+            let headerErr = await supabase
                 .from('defined_recipes')
                 .update({
                     name: updatedData.name,
@@ -126,7 +161,19 @@ export const RecipeProvider = ({ children }) => {
                 })
                 .eq('id', recipeId);
 
-            if (headerErr) throw headerErr;
+            if (headerErr.error) {
+                console.warn("Update with category failed, retrying without...", headerErr.error.message);
+                headerErr = await supabase
+                    .from('defined_recipes')
+                    .update({
+                        name: updatedData.name,
+                        preparation_method: updatedData.preparation_method,
+                        linked_product_id: updatedData.linked_product_id || null
+                    })
+                    .eq('id', recipeId);
+
+                if (headerErr.error) throw headerErr.error;
+            }
 
             // 2. Update Ingredients (Delete Old -> Insert New)
             // Delete existing ingredients for this recipe

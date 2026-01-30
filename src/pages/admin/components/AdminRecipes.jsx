@@ -286,9 +286,14 @@ const AdminRecipes = () => {
             {/* --- TAB 1: MANAGE RECIPES --- */}
             {activeTab === 'manage' && (
                 <div>
-                    <button className="btn btn-primary mb-3" onClick={() => openModal()} style={{ marginBottom: '1rem' }}>
-                        <Plus size={18} /> Adaugă Rețetă Nouă
-                    </button>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                        <button className="btn btn-primary" onClick={() => openModal()}>
+                            <Plus size={18} /> Adaugă Rețetă Nouă
+                        </button>
+                        <button className="btn btn-secondary" onClick={() => setIsCatManagerOpen(true)}>
+                            <Settings size={18} /> Gestionare Categorii
+                        </button>
+                    </div>
 
                     <div className="recipes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
                         {recipes.map(recipe => (
