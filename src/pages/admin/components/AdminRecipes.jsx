@@ -476,7 +476,8 @@ const AdminRecipes = () => {
                                                                 step="0.01"
                                                                 placeholder="0.00"
                                                                 value={refPrices[item.id] || ''}
-                                                                onChange={(e) => handleUpdateRefPrice(item.id, e.target.value)}
+                                                                onChange={(e) => handleLocalPriceChange(item.id, e.target.value)}
+                                                                onBlur={() => saveRefPrice(item.id)}
                                                                 style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
                                                             />
                                                             <span>RON</span>
