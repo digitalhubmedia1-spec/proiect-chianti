@@ -84,7 +84,8 @@ const AdminRecipes = () => {
             data.forEach(item => {
                 map[item.ingredient_id] = {
                     price: item.price_per_unit || 0,
-                    vat: item.vat_rate || 9 // Default 9 or 0
+                    vat: item.vat_rate || 9,
+                    updated_at: item.updated_at
                 };
             });
             setRefPrices(map);
@@ -102,29 +103,36 @@ const AdminRecipes = () => {
             } else if (field === 'vat') {
                 newVat = parseInt(value) || 0;
             } else if (field === 'total') {
-                // Reverse calc: Price = Total / (1 + VAT/100)
                 const total = parseFloat(value) || 0;
                 newPrice = total / (1 + newVat / 100);
             }
 
-            return { ...prev, [ingredientId]: { price: newPrice, vat: newVat } };
+            return { ...prev, [ingredientId]: { ...current, price: newPrice, vat: newVat } };
         });
     };
 
     const saveRefPrice = async (ingredientId) => {
         const current = refPrices[ingredientId] || { price: 0, vat: 9 };
+        const now = new Date().toISOString();
 
         const { error } = await supabase
             .from('recipe_ref_prices')
             .upsert({
                 ingredient_id: ingredientId,
                 price_per_unit: current.price,
-                vat_rate: current.vat
+                vat_rate: current.vat,
+                updated_at: now
             }, { onConflict: 'ingredient_id' });
 
         if (error) {
             console.error(error);
-            alert("Eroare la salvare! Verificați dacă ați rulat scriptul SQL 'add_vat_to_ref_prices.sql'.");
+            alert("Eroare la salvare! Verificați dacă ați rulat scriptul SQL 'add_updated_at_to_ref_prices.sql'.");
+        } else {
+            // Update local state updated_at to show immediate feedback
+            setRefPrices(prev => ({
+                ...prev,
+                [ingredientId]: { ...current, updated_at: now }
+            }));
         }
     };
 
@@ -135,18 +143,27 @@ const AdminRecipes = () => {
 
         const ingredientsCost = recipe.ingredients.map(ing => {
             if (!ing.ingredient_id) return null;
-            const refData = refPrices[ing.ingredient_id] || { price: 0 };
+            const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 9 };
             const price = parseFloat(refData.price) || 0;
-            const cost = parseFloat(ing.qty) * price;
+            const vat = parseInt(refData.vat) || 9;
+
+            const costNoVat = parseFloat(ing.qty) * price;
+            const priceWithVat = price * (1 + vat / 100);
+            const costWithVat = parseFloat(ing.qty) * priceWithVat;
+
             return {
                 ...ing,
                 refPrice: price,
-                totalCost: cost
+                refVat: vat,
+                totalCostNoVat: costNoVat,
+                totalCostWithVat: costWithVat
             };
         }).filter(Boolean);
 
-        const total = ingredientsCost.reduce((acc, curr) => acc + curr.totalCost, 0);
-        setRecipeCostResult({ ingredients: ingredientsCost, total });
+        const totalNoVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostNoVat, 0);
+        const totalWithVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostWithVat, 0);
+
+        setRecipeCostResult({ ingredients: ingredientsCost, totalNoVat, totalWithVat });
     };
 
     // --- MANAGE HANDLERS ---
@@ -486,6 +503,7 @@ const AdminRecipes = () => {
                                         <tr>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Ingredient</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Preț Referință (RON)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Actualizat</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Unitate</th>
                                         </tr>
                                     </thead>
@@ -562,6 +580,9 @@ const AdminRecipes = () => {
                                                             </div>
                                                         </div>
                                                     </td>
+                                                    <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
+                                                        {refPrices[item.id]?.updated_at ? new Date(refPrices[item.id].updated_at).toLocaleDateString('ro-RO') : '-'}
+                                                    </td>
                                                     <td style={{ padding: '0.5rem 0.75rem', color: '#64748b' }}>/{item.unit}</td>
                                                 </tr>
                                             ))}
@@ -625,33 +646,46 @@ const AdminRecipes = () => {
 
                             {recipeCostResult && (
                                 <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h4 style={{ margin: 0 }}>Cost Total: <span style={{ color: '#990000', fontSize: '1.2rem' }}>{recipeCostResult.total.toFixed(2)} RON</span></h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                        <h4 style={{ margin: 0 }}>Cost Total (Fără TVA): <span style={{ color: '#0f172a', fontSize: '1.2rem' }}>{recipeCostResult.totalNoVat.toFixed(2)} RON</span></h4>
+                                        <h4 style={{ margin: 0 }}>Cost Total (Cu TVA): <span style={{ color: '#990000', fontSize: '1.4rem' }}>{recipeCostResult.totalWithVat.toFixed(2)} RON</span></h4>
+                                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#64748b' }}>Porții: {portions} | Cost/Porție (Cu TVA): <span style={{ color: '#0f172a' }}>{(recipeCostResult.totalWithVat / portions).toFixed(2)} RON</span></h4>
                                     </div>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ borderBottom: '2px solid #ddd' }}>
-                                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Ingredient</th>
-                                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Cantitate</th>
-                                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Preț Unit. Ref.</th>
-                                                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Cost</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {recipeCostResult.ingredients.map((ing, idx) => (
-                                                <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                                                    <td style={{ padding: '0.5rem' }}>{ing.itemName}</td>
-                                                    <td style={{ padding: '0.5rem' }}>{ing.qty} {ing.unit}</td>
-                                                    <td style={{ padding: '0.5rem' }}>{ing.refPrice.toFixed(2)} RON</td>
-                                                    <td style={{ padding: '0.5rem', fontWeight: 'bold' }}>{ing.totalCost.toFixed(2)} RON</td>
+
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                            <thead>
+                                                <tr style={{ background: '#e2e8f0' }}>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>Ingredient</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cantitate</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit. (Net)</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>TVA %</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit. (Brut)</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cost Total (Net)</th>
+                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cost Total (Brut)</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {recipeCostResult.ingredients.map((ing, idx) => (
+                                                    <tr key={idx} style={{ borderBottom: '1px solid #cbd5e1' }}>
+                                                        <td style={{ padding: '0.5rem' }}>
+                                                            {inventoryItems.find(i => i.id === ing.ingredient_id)?.name || 'Ingredient'}
+                                                        </td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refVat}%</td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{(ing.refPrice * (1 + ing.refVat / 100)).toFixed(2)}</td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </div >
                 )
             }
 
