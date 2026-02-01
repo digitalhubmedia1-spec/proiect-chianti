@@ -112,6 +112,20 @@ const AdminMenuPlanner = () => {
     };
 
     const saveDaily = async () => {
+        // Validation: Verify if all selected items have portions defined
+        const invalidItems = Array.from(activeItems).filter(id => {
+            const val = stockValues[id];
+            // Check if value is missing, empty string, or <= 0
+            return val === undefined || val === '' || parseInt(val) <= 0;
+        });
+
+        if (invalidItems.length > 0) {
+            // Optional: You could list the names of invalid items for better UX
+            const invalidNames = invalidItems.map(id => products.find(p => p.id === id)?.name).filter(Boolean).slice(0, 3).join(", ");
+            alert(`Eroare: Trebuie să setați un număr minim de porții (mai mare ca 0) pentru toate produsele selectate!\nVerificați: ${invalidNames}${invalidItems.length > 3 ? '...' : ''}`);
+            return;
+        }
+
         setSaving(true);
         const dateStr = formatDate(selectedDate);
 
@@ -121,11 +135,17 @@ const AdminMenuPlanner = () => {
             date: dateStr,
             product_id: id,
             is_available: true,
-            stock: stockValues[id] === '' || stockValues[id] === undefined ? null : parseInt(stockValues[id])
+            stock: parseInt(stockValues[id]) // We know it's valid integer > 0 now
         }));
 
         if (itemsToInsert.length > 0) {
-            await supabase.from('daily_menu_items').insert(itemsToInsert);
+            const { error } = await supabase.from('daily_menu_items').insert(itemsToInsert);
+            if (error) {
+                console.error(error);
+                alert("Eroare la salvare: " + error.message);
+                setSaving(false);
+                return;
+            }
         }
 
         logAction('MENIU_ZILNIC', `Configurat meniu pentru ${dateStr}: ${itemsToInsert.length} produse.`);
