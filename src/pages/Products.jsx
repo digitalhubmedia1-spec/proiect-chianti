@@ -24,6 +24,18 @@ const Products = () => {
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
     const [popupContent, setPopupContent] = useState({ title: "", message: "" });
 
+    // --- PAGINATION HOOKS HOISTED ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 9;
+
+    // Reset page when filters change (category, search, date)
+    // Note: This effect must exist even if we return early, though it might run needlessly. 
+    // Ideally, we move the conditional return logic to the END or use a sub-component.
+    // But hoisting hooks is the quick fix for Error #310.
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeCategory, searchQuery, sortOrder, selectedDate]);
+
     // Helper to get next N weekdays (Mon-Fri)
     const getNextWeekdays = (startDate = new Date(), count = 7) => {
         const days = [];
@@ -309,14 +321,7 @@ const Products = () => {
         return 0;
     });
 
-    // --- PAGINATION LOGIC ---
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 9;
 
-    // Reset page when filters change (category, search, date)
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [activeCategory, searchQuery, sortOrder, selectedDate]);   // Note: activeCategory isn't strictly used in sort/filter above if viewMode=catalog relies on URL params or internal state, but good to include.
 
     const indexOfLastProduct = currentPage * itemsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
