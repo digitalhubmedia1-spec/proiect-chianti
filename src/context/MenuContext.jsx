@@ -644,6 +644,51 @@ export const MenuProvider = ({ children }) => {
         fetchRecommendations,
         addRecommendation,
         removeRecommendation,
+        // Extras
+        fetchExtras: async (productId) => {
+            if (!supabase) return [];
+            try {
+                const { data, error } = await supabase
+                    .from('product_extras')
+                    .select(`
+                        id,
+                        extra_product_id,
+                        products:extra_product_id (*)
+                    `)
+                    .eq('parent_product_id', productId);
+
+                if (error) throw error;
+                return data.map(item => item.products);
+            } catch (error) {
+                console.error("Error fetching extras:", error);
+                return [];
+            }
+        },
+        addExtra: async (productId, extraProductId) => {
+            if (!supabase) return;
+            try {
+                const { error } = await supabase
+                    .from('product_extras')
+                    .insert([{ parent_product_id: productId, extra_product_id: extraProductId }]);
+                if (error && error.code !== '23505') throw error;
+            } catch (error) {
+                console.error("Error adding extra:", error);
+                alert("Eroare la adăugarea extra: " + error.message);
+            }
+        },
+        removeExtra: async (productId, extraProductId) => {
+            if (!supabase) return;
+            try {
+                const { error } = await supabase
+                    .from('product_extras')
+                    .delete()
+                    .match({ parent_product_id: productId, extra_product_id: extraProductId });
+                if (error) throw error;
+            } catch (error) {
+                console.error("Error removing extra:", error);
+                alert("Eroare la ștergerea extra: " + error.message);
+            }
+        },
         fetchDailyMenu
     };
 

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
+import ProductExtras from '../components/ProductExtras';
 import { isRestaurantOpen, getScheduleStatus } from '../utils/schedule';
 import { Search, Zap, UtensilsCrossed } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -534,6 +535,7 @@ const Products = () => {
                                                     {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
                                                 </button>
                                             </div>
+                                            <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
                                         </div>
                                     </div>
                                 );

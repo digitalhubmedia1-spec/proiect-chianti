@@ -37,6 +37,7 @@ const AdminDashboard = () => {
         bookedDates, toggleBooking,
         configuratorSteps, configuratorProducts, updateStep, addConfigProduct, updateConfigProduct, deleteConfigProduct,
         fetchRecommendations, addRecommendation, removeRecommendation,
+        fetchExtras, addExtra, removeExtra, // Added Extras
         toggleCategoryVisibility
     } = useMenu();
     const [activeTab, setActiveTab] = useState('orders'); // Default to orders as it's common
@@ -108,7 +109,7 @@ const AdminDashboard = () => {
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
+    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
 
     const [activeProductTabType, setActiveProductTabType] = useState('catering'); // Default to catering since delivery is hidden
     const [searchTerm, setSearchTerm] = useState('');
@@ -161,6 +162,10 @@ const AdminDashboard = () => {
     const [selectedRecId, setSelectedRecId] = useState("");
     const [recSearchTerm, setRecSearchTerm] = useState(""); // Search term for recommendations
 
+    // Extras State
+    const [currentExtras, setCurrentExtras] = useState([]);
+    const [extraSearchTerm, setExtraSearchTerm] = useState("");
+
     // Image Preview State
     const [previewImage, setPreviewImage] = useState(null);
 
@@ -186,12 +191,19 @@ const AdminDashboard = () => {
                     await addRecommendation(newProduct.id, rec.id);
                 }
             }
+            if (newProduct && currentExtras.length > 0) {
+                // Batch insert extras for the new product
+                for (const extra of currentExtras) {
+                    await addExtra(newProduct.id, extra.id);
+                }
+            }
         }
 
-        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
+        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
         setEditingProduct(null);
         setIsProductModalOpen(false);
         setCurrentRecommendations([]);
+        setCurrentExtras([]);
     };
 
     const handleCategorySubmit = (e) => {
@@ -210,10 +222,14 @@ const AdminDashboard = () => {
             // Fetch recommendations
             const recs = await fetchRecommendations(product.id);
             setCurrentRecommendations(recs);
+            // Fetch extras
+            const extras = await fetchExtras(product.id);
+            setCurrentExtras(extras);
         } else {
             setEditingProduct(null);
-            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '' });
+            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
             setCurrentRecommendations([]);
+            setCurrentExtras([]);
         }
         setIsProductModalOpen(true);
     };
@@ -244,6 +260,30 @@ const AdminDashboard = () => {
         } else {
             // Local state remove
             setCurrentRecommendations(prev => prev.filter(r => r.id !== recId));
+        }
+    };
+
+    // Extras Handlers
+    const handleSelectExtra = async (product) => {
+        if (!product) return;
+        if (editingProduct) {
+            await addExtra(editingProduct.id, product.id);
+            const extras = await fetchExtras(editingProduct.id);
+            setCurrentExtras(extras);
+        } else {
+            if (!currentExtras.some(r => r.id === product.id)) {
+                setCurrentExtras([...currentExtras, product]);
+            }
+        }
+        setExtraSearchTerm("");
+    };
+
+    const handleRemoveExtra = async (extraId) => {
+        if (editingProduct) {
+            await removeExtra(editingProduct.id, extraId);
+            setCurrentExtras(prev => prev.filter(r => r.id !== extraId));
+        } else {
+            setCurrentExtras(prev => prev.filter(r => r.id !== extraId));
         }
     };
 
@@ -1099,6 +1139,10 @@ const AdminDashboard = () => {
                                     <input type="text" className="form-control" value={prodForm.allergens || ''} onChange={e => setProdForm({ ...prodForm, allergens: e.target.value })} />
                                 </div>
                             </div>
+                            <div className="form-group">
+                                <label>Ingrediente</label>
+                                <textarea className="form-control" rows="2" value={prodForm.ingredients || ''} onChange={e => setProdForm({ ...prodForm, ingredients: e.target.value })} placeholder="Ex: Roșii, Mozzarella, Busuioc..." />
+                            </div>
 
 
                             {/* RECOMMENDATIONS SECTION (Available for New and Edit) */}
@@ -1179,6 +1223,76 @@ const AdminDashboard = () => {
                                         </div>
                                     ))}
                                     {currentRecommendations.length === 0 && <small className="text-muted">Niciun produs recomandat.</small>}
+                                </div>
+                            </div>
+
+                            {/* EXTRAS SECTION (Cross-sell) */}
+                            <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem', background: '#f0fdf4', padding: '1rem', borderRadius: '8px' }}>
+                                <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block', color: '#166534' }}>
+                                    <ShoppingCart size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+                                    Produse Extra / Completări (Cross-sell)
+                                </label>
+                                <p style={{ fontSize: '0.8rem', color: '#166534', marginBottom: '10px' }}>
+                                    Produse care apar <strong>imediat sub produs</strong> în meniu (ex: Ardei, Pâine, Smântână).
+                                </p>
+                                <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Caută produs extra (ex: Ardei)..."
+                                        value={extraSearchTerm}
+                                        onChange={(e) => setExtraSearchTerm(e.target.value)}
+                                        style={{ width: '100%', borderColor: '#bbf7d0' }}
+                                    />
+                                    {extraSearchTerm.length > 0 && (
+                                        <div className="rec-search-results" style={{
+                                            position: 'absolute', top: '100%', left: 0, right: 0,
+                                            background: 'white', border: '1px solid #ddd', borderRadius: '4px',
+                                            maxHeight: '200px', overflowY: 'auto', zIndex: 100, boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                        }}>
+                                            {products
+                                                .filter(p => !editingProduct || p.id !== editingProduct.id)
+                                                .filter(p => !currentExtras.some(r => r.id === p.id))
+                                                .filter(p => p.name.toLowerCase().includes(extraSearchTerm.toLowerCase()))
+                                                .map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        onClick={() => handleSelectExtra(p)}
+                                                        style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}
+                                                        onMouseEnter={(e) => e.target.style.background = '#f0fdf4'}
+                                                        onMouseLeave={(e) => e.target.style.background = 'white'}
+                                                    >
+                                                        <span>{p.name}</span>
+                                                        <span style={{ color: '#888', fontSize: '0.9em' }}>{p.price} Lei</span>
+                                                    </div>
+                                                ))}
+                                            {products.filter(p => p.name.toLowerCase().includes(extraSearchTerm.toLowerCase())).length === 0 && (
+                                                <div style={{ padding: '8px 12px', color: '#888' }}>Nu am găsit produse.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* List of current extras */}
+                                <div className="recommendations-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {currentExtras.map(ex => (
+                                        <div key={ex.id} style={{
+                                            display: 'flex', alignItems: 'center',
+                                            background: 'white', padding: '5px 10px',
+                                            borderRadius: '20px', fontSize: '0.9rem',
+                                            border: '1px solid #bbf7d0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                        }}>
+                                            <span style={{ fontWeight: '500', color: '#166534' }}>{ex.name}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveExtra(ex.id)}
+                                                style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', marginLeft: '8px', display: 'flex', alignItems: 'center' }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {currentExtras.length === 0 && <small className="text-muted" style={{ color: '#166534' }}>Niciun produs extra selectat.</small>}
                                 </div>
                             </div>
 
