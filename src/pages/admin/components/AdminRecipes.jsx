@@ -84,7 +84,7 @@ const AdminRecipes = () => {
             data.forEach(item => {
                 map[item.ingredient_id] = {
                     price: item.price_per_unit || 0,
-                    vat: item.vat_rate || 9,
+                    vat: item.vat_rate || 0,
                     updated_at: item.updated_at
                 };
             });
@@ -94,7 +94,7 @@ const AdminRecipes = () => {
 
     const handlePriceChange = (ingredientId, field, value) => {
         setRefPrices(prev => {
-            const current = prev[ingredientId] || { price: 0, vat: 9 };
+            const current = prev[ingredientId] || { price: 0, vat: 0 };
             let newPrice = current.price;
             let newVat = current.vat;
 
@@ -112,7 +112,7 @@ const AdminRecipes = () => {
     };
 
     const saveRefPrice = async (ingredientId) => {
-        const current = refPrices[ingredientId] || { price: 0, vat: 9 };
+        const current = refPrices[ingredientId] || { price: 0, vat: 0 };
         const now = new Date().toISOString();
 
         const { error } = await supabase
@@ -143,9 +143,9 @@ const AdminRecipes = () => {
 
         const ingredientsCost = recipe.ingredients.map(ing => {
             if (!ing.ingredient_id) return null;
-            const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 9 };
+            const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 0 };
             const price = parseFloat(refData.price) || 0;
-            const vat = parseInt(refData.vat) || 9;
+            const vat = parseInt(refData.vat) || 0;
 
             const costNoVat = parseFloat(ing.qty) * price;
             const priceWithVat = price * (1 + vat / 100);
@@ -536,7 +536,7 @@ const AdminRecipes = () => {
                                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>TVA</span>
                                                                 <select
-                                                                    value={refPrices[item.id]?.vat || 9}
+                                                                    value={refPrices[item.id]?.vat || 0}
                                                                     onChange={(e) => {
                                                                         handlePriceChange(item.id, 'vat', e.target.value);
                                                                         // Save immediately on select change usually better UX, but handlePriceChange updates state first.
@@ -549,10 +549,7 @@ const AdminRecipes = () => {
                                                                     style={{ padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', background: '#f8fafc' }}
                                                                 >
                                                                     <option value="0">0%</option>
-                                                                    <option value="5">5%</option>
-                                                                    <option value="9">9%</option>
                                                                     <option value="11">11%</option>
-                                                                    <option value="19">19%</option>
                                                                     <option value="21">21%</option>
                                                                 </select>
                                                             </div>
