@@ -133,7 +133,7 @@ const ProductDetails = () => {
 
                     <div className="product-meta">
                         <p><strong>Gramaj:</strong> {product.weight}</p>
-                        <p><strong>Ingrediente:</strong> {product.ingredients}</p>
+                        {product.ingredients && <p><strong>Ingrediente:</strong> {product.ingredients}</p>}
                         {stock !== null && (
                             <p style={{ color: stock > 0 ? '#16a34a' : '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>
                                 {stock > 0 ? `Stoc disponibil: ${stock} porții` : 'Stoc Epuizat'}

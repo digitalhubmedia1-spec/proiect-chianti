@@ -26,10 +26,19 @@ const ProductExtras = ({ productId, dailyMenuMap }) => {
     // If dailyMenuMap is null (standard catalog), maybe show all or check stock? 
     // Usually extras (bread, peppers) are always available or managed via daily menu too.
     // User requirement: "dacă sunt disponibile în ziua respectivă"
+    // However, some extras (bread, etc.) might not be explicitly in daily menu.
+    // Fallback: If in daily menu -> check stock. If NOT in daily menu -> check global is_available.
     const availableExtras = extras.filter(p => {
-        if (!dailyMenuMap) return true; // Fallback or strict? User implied daily context.
+        // If map not loaded yet, wait or show? (Loading state handles this)
+        if (!dailyMenuMap) return p.is_available !== false;
+
         const stock = dailyMenuMap[p.id];
-        return stock !== undefined && (stock === null || parseInt(stock) > 0);
+        if (stock !== undefined) {
+            // In daily menu: check stock
+            return stock === null || parseInt(stock) > 0;
+        }
+        // Not in daily menu: fallback to global availability
+        return p.is_available !== false;
     });
 
     if (loading || availableExtras.length === 0) return null;
