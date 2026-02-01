@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useMenu } from '../context/MenuContext';
+import ProductExtras from '../components/ProductExtras';
 import { isRestaurantOpen } from '../utils/schedule';
 import { ArrowLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
 import './ProductDetails.css';
@@ -10,7 +11,7 @@ const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { products, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
+    const { products, categories, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
     const [searchParams] = useSearchParams();
     const dateParam = searchParams.get('date');
     const [quantity, setQuantity] = useState(1);
@@ -19,6 +20,7 @@ const ProductDetails = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [stock, setStock] = useState(null); // null = unlimited/unknown
+    const [dailyMenuMap, setDailyMenuMap] = useState(null); // Ensure null initially
 
     const [activeImage, setActiveImage] = useState('');
 
@@ -31,9 +33,13 @@ const ProductDetails = () => {
             setActiveImage(foundProduct.image);
             fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
 
-            // Fetch Stock
+            // Fetch Stock & Daily Map
             const targetDate = dateParam || new Date().toISOString().split('T')[0];
             fetchDailyMenu(targetDate).then(data => {
+                const map = {};
+                (data || []).forEach(i => map[i.id] = i.stock);
+                setDailyMenuMap(map);
+
                 const item = data.find(i => i.id === foundProduct.id);
                 if (item && item.stock !== undefined) {
                     setStock(item.stock);
@@ -109,7 +115,17 @@ const ProductDetails = () => {
                 </div>
 
                 <div className="product-info-detailed">
-                    <span className="product-category-badge">{product.category}</span>
+                    {/* Hide badge for delivery products as requested */}
+                    {(() => {
+                        const cat = categories.find(c => c.name === product.category);
+                        const isDelivery = cat?.type === 'delivery' || (!cat && true); // Default to delivery if unknown? Or check context.
+                        // Actually, if distinct types exist, check explicitly.
+                        // Assuming 'catering' is the other one.
+                        if (cat && cat.type === 'catering') {
+                            return <span className="product-category-badge">{product.category}</span>;
+                        }
+                        return null;
+                    })()}
                     <h1 className="product-title-large">{product.name}</h1>
                     <p className="product-price-large">{product.price.toFixed(2)} Lei</p>
 
@@ -123,6 +139,7 @@ const ProductDetails = () => {
                                 {stock > 0 ? `Stoc disponibil: ${stock} porții` : 'Stoc Epuizat'}
                             </p>
                         )}
+                        <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
                     </div>
 
                     <div className="add-to-cart-section">
