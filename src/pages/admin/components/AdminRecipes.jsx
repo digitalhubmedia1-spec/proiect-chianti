@@ -81,27 +81,50 @@ const AdminRecipes = () => {
         const { data, error } = await supabase.from('recipe_ref_prices').select('*');
         if (data) {
             const map = {};
-            data.forEach(item => map[item.ingredient_id] = item.price_per_unit);
+            data.forEach(item => {
+                map[item.ingredient_id] = {
+                    price: item.price_per_unit || 0,
+                    vat: item.vat_rate || 9 // Default 9 or 0
+                };
+            });
             setRefPrices(map);
         }
     };
 
-    const handleLocalPriceChange = (ingredientId, value) => {
-        setRefPrices(prev => ({ ...prev, [ingredientId]: value }));
+    const handlePriceChange = (ingredientId, field, value) => {
+        setRefPrices(prev => {
+            const current = prev[ingredientId] || { price: 0, vat: 9 };
+            let newPrice = current.price;
+            let newVat = current.vat;
+
+            if (field === 'price') {
+                newPrice = parseFloat(value) || 0;
+            } else if (field === 'vat') {
+                newVat = parseInt(value) || 0;
+            } else if (field === 'total') {
+                // Reverse calc: Price = Total / (1 + VAT/100)
+                const total = parseFloat(value) || 0;
+                newPrice = total / (1 + newVat / 100);
+            }
+
+            return { ...prev, [ingredientId]: { price: newPrice, vat: newVat } };
+        });
     };
 
     const saveRefPrice = async (ingredientId) => {
-        const rawValue = refPrices[ingredientId];
-        const val = parseFloat(rawValue);
-        if (isNaN(val)) return;
+        const current = refPrices[ingredientId] || { price: 0, vat: 9 };
 
         const { error } = await supabase
             .from('recipe_ref_prices')
-            .upsert({ ingredient_id: ingredientId, price_per_unit: val }, { onConflict: 'ingredient_id' });
+            .upsert({
+                ingredient_id: ingredientId,
+                price_per_unit: current.price,
+                vat_rate: current.vat
+            }, { onConflict: 'ingredient_id' });
 
         if (error) {
             console.error(error);
-            alert("Eroare la salvare! Verificați conexiunea sau dacă ați rulat scriptul SQL pentru 'recipe_ref_prices'.");
+            alert("Eroare la salvare! Verificați dacă ați rulat scriptul SQL 'add_vat_to_ref_prices.sql'.");
         }
     };
 
@@ -112,8 +135,8 @@ const AdminRecipes = () => {
 
         const ingredientsCost = recipe.ingredients.map(ing => {
             if (!ing.ingredient_id) return null;
-            const rawPrice = refPrices[ing.ingredient_id] || 0;
-            const price = parseFloat(rawPrice) || 0;
+            const refData = refPrices[ing.ingredient_id] || { price: 0 };
+            const price = parseFloat(refData.price) || 0;
             const cost = parseFloat(ing.qty) * price;
             return {
                 ...ing,
@@ -473,17 +496,70 @@ const AdminRecipes = () => {
                                                 <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
                                                     <td style={{ padding: '0.5rem 0.75rem' }}>{item.name}</td>
                                                     <td style={{ padding: '0.5rem 0.75rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                placeholder="0.00"
-                                                                value={refPrices[item.id] || ''}
-                                                                onChange={(e) => handleLocalPriceChange(item.id, e.target.value)}
-                                                                onBlur={() => saveRefPrice(item.id)}
-                                                                style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                                            />
-                                                            <span>RON</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                            {/* Base Price */}
+                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Fără TVA</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        placeholder="0.00"
+                                                                        value={refPrices[item.id]?.price || ''}
+                                                                        onChange={(e) => handlePriceChange(item.id, 'price', e.target.value)}
+                                                                        onBlur={() => saveRefPrice(item.id)}
+                                                                        style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                                                    />
+                                                                    <span style={{ fontSize: '0.8rem' }}>RON</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* VAT Select */}
+                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>TVA</span>
+                                                                <select
+                                                                    value={refPrices[item.id]?.vat || 9}
+                                                                    onChange={(e) => {
+                                                                        handlePriceChange(item.id, 'vat', e.target.value);
+                                                                        // Save immediately on select change usually better UX, but handlePriceChange updates state first.
+                                                                        // We need to trigger save. We can't pass saveRefPrice directly to onChange because state hasn't updated yet.
+                                                                        // Actually, let's just trigger save onBlur of the select or a separate effect? 
+                                                                        // Simplest: just save onBlur or make user click out. Let's rely on onBlur or explicit save button? 
+                                                                        // We will use onBlur on the select as well.
+                                                                    }}
+                                                                    onBlur={() => saveRefPrice(item.id)}
+                                                                    style={{ padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', background: '#f8fafc' }}
+                                                                >
+                                                                    <option value="0">0%</option>
+                                                                    <option value="5">5%</option>
+                                                                    <option value="9">9%</option>
+                                                                    <option value="11">11%</option>
+                                                                    <option value="19">19%</option>
+                                                                    <option value="21">21%</option>
+                                                                </select>
+                                                            </div>
+
+                                                            {/* Total Price */}
+                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Cu TVA</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        placeholder="0.00"
+                                                                        // Calculate specific display value
+                                                                        value={
+                                                                            refPrices[item.id]
+                                                                                ? (refPrices[item.id].price * (1 + (refPrices[item.id].vat || 0) / 100)).toFixed(2)
+                                                                                : ''
+                                                                        }
+                                                                        onChange={(e) => handlePriceChange(item.id, 'total', e.target.value)}
+                                                                        onBlur={() => saveRefPrice(item.id)}
+                                                                        style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', fontWeight: 'bold' }}
+                                                                    />
+                                                                    <span style={{ fontSize: '0.8rem' }}>RON</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td style={{ padding: '0.5rem 0.75rem', color: '#64748b' }}>/{item.unit}</td>
