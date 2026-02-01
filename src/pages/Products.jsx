@@ -24,18 +24,6 @@ const Products = () => {
     const [sortOrder, setSortOrder] = useState("default"); // default, asc, desc
     const [popupContent, setPopupContent] = useState({ title: "", message: "" });
 
-    // --- PAGINATION HOOKS HOISTED ---
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 9;
-
-    // Reset page when filters change (category, search, date)
-    // Note: This effect must exist even if we return early, though it might run needlessly. 
-    // Ideally, we move the conditional return logic to the END or use a sub-component.
-    // But hoisting hooks is the quick fix for Error #310.
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [activeCategory, searchQuery, sortOrder, selectedDate]);
-
     // Helper to get next N weekdays (Mon-Fri)
     const getNextWeekdays = (startDate = new Date(), count = 7) => {
         const days = [];
@@ -64,6 +52,18 @@ const Products = () => {
     const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const validDates = getNextWeekdays(new Date(), 7);
     const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
+
+    // --- PAGINATION HOOKS HOISTED ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 9;
+
+    // Reset page when filters change (category, search, date)
+    // Note: This effect must exist even if we return early, though it might run needlessly. 
+    // Ideally, we move the conditional return logic to the END or use a sub-component.
+    // But hoisting hooks is the quick fix for Error #310.
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeCategory, searchQuery, sortOrder, selectedDate]);
 
     // Helper to get YYYY-MM-DD in LOCAL time
     const formatDate = (date) => {
