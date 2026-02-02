@@ -391,19 +391,21 @@ const AdminDashboard = () => {
                 />
             )}
 
+            {/* Sidebar - Desktop: Static/Sticky, Mobile: Fixed Overlay */}
             <div className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`} style={{
                 width: '280px',
                 background: '#1e293b',
                 color: 'white',
-                display: 'flex',
+                display: isMobile ? (isSidebarOpen ? 'flex' : 'none') : 'flex', // Desktop: Always flex, Mobile: Toggle
                 flexDirection: 'column',
-                position: isMobile ? 'fixed' : 'sticky',
+                position: isMobile ? 'fixed' : 'relative', // Desktop: Relative (Flow)
                 top: 0,
                 bottom: 0,
-                height: '100vh',
+                height: isMobile ? '100vh' : 'auto', // Desktop: Auto height (stretch)
+                minHeight: '100vh',
                 zIndex: 50,
-                transition: 'transform 0.3s ease',
-                transform: (isMobile && !isSidebarOpen) ? 'translateX(-100%)' : 'translateX(0)',
+                transition: isMobile ? 'transform 0.3s ease' : 'none',
+                // transform: isMobile ? ... handled by display/position mostly, or revert transform logic
                 overflowY: 'auto',
                 boxShadow: '4px 0 6px rgba(0,0,0,0.1)'
             }}>
@@ -472,18 +474,6 @@ const AdminDashboard = () => {
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}>
                     <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', color: 'white', display: 'flex' }}>
-                        {/* We need a Menu icon, but I can reuse ClipboardList or similar if Menu not imported. Wait, I didn't import Menu in replace. 
-                            I'll use "Menu" text or just ClipboardList as fallback since I know it's imported.
-                            Actually I can add 'Menu' to imports if I want, but let's stick to existing icons.
-                            'BookOpen' or 'LogOut' etc. 
-                            I'll use 'AlignJustify' or similar if available, otherwise just text/icon. 
-                            Actually 'Menu' is standard naming in Lucide usually. I'll check imports. 
-                            Imports: Plus, Edit2, Trash2... ShoppingCart. No 'Menu'.
-                            I will use 'BookOpen' temporarily or just SVG.
-                            Or I'll use `ArrowDown` rotated? No.
-                            I'll just use a simple SVG or one of the existing valid icons like 'Settings'.
-                            Or 'ClipboardList'.
-                         */}
                         <div style={{ padding: '5px' }}><Settings size={24} /></div>
                     </button>
                     <span style={{ marginLeft: '1rem', color: '#fbbf24', fontWeight: 'bold', fontSize: '1.2rem' }}>Chianti Admin</span>
@@ -496,8 +486,8 @@ const AdminDashboard = () => {
                 flex: 1,
                 padding: isMobile ? '70px 1rem 1rem 1rem' : '2rem',
                 overflowY: 'auto',
-                marginLeft: 0,
-                width: '100%' // Ensure it takes width
+                width: '100%',
+                background: '#f1f5f9'
             }}>
                 <div className="tab-content-container" style={{ maxWidth: '1600px', margin: '0 auto' }}>
                     {/* PROMO CODES TAB */}
