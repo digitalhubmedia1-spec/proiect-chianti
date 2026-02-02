@@ -465,7 +465,7 @@ const AdminDashboard = () => {
     );
 
     return (
-        <div className="admin-dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: '#f1f5f9' }}>
+        <div className="admin-dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: 'white' }}>
             {/* Mobile Header Toggle */}
             {isMobile && (
                 <div style={{
@@ -487,7 +487,7 @@ const AdminDashboard = () => {
                 padding: isMobile ? '70px 1rem 1rem 1rem' : '2rem',
                 overflowY: 'auto',
                 width: '100%',
-                background: '#f1f5f9'
+                background: 'white'
             }}>
                 <div className="tab-content-container" style={{ maxWidth: '1600px', margin: '0 auto' }}>
                     {/* PROMO CODES TAB */}
