@@ -396,16 +396,14 @@ const AdminDashboard = () => {
                 width: '280px',
                 background: 'white',
                 color: '#1e293b',
-                display: isMobile ? (isSidebarOpen ? 'flex' : 'none') : 'flex', // Desktop: Always flex, Mobile: Toggle
+                display: isMobile ? (isSidebarOpen ? 'flex' : 'none') : 'flex',
                 flexDirection: 'column',
-                position: isMobile ? 'fixed' : 'relative', // Desktop: Relative (Flow)
+                position: isMobile ? 'fixed' : 'relative',
                 top: 0,
                 bottom: 0,
-                height: isMobile ? '100vh' : 'auto', // Desktop: Auto height (stretch)
-                minHeight: '100vh',
+                height: isMobile ? '100vh' : '100%', // Desktop: 100% of parent which is 100vh
                 zIndex: 50,
                 transition: isMobile ? 'transform 0.3s ease' : 'none',
-                // transform: isMobile ? ... handled by display/position mostly, or revert transform logic
                 overflowY: 'auto',
                 boxShadow: '4px 0 6px rgba(0,0,0,0.1)'
             }}>
@@ -465,7 +463,7 @@ const AdminDashboard = () => {
     );
 
     return (
-        <div className="admin-dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: 'white' }}>
+        <div className="admin-dashboard-layout" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'white' }}>
             {/* Mobile Header Toggle */}
             {isMobile && (
                 <div style={{
@@ -486,6 +484,7 @@ const AdminDashboard = () => {
                 flex: 1,
                 padding: isMobile ? '70px 1rem 1rem 1rem' : '2rem',
                 overflowY: 'auto',
+                height: '100%',
                 width: '100%',
                 background: 'white'
             }}>
