@@ -74,6 +74,7 @@ const AdminRecipes = () => {
 
     // --- CALCULATOR STATE ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState(new Set());
+    const [selectedRecipeId, setSelectedRecipeId] = useState(''); // Singular for Production Tab
     const [portions, setPortions] = useState(1);
     const [calculationResult, setCalculationResult] = useState(null);
     const [recipeCostResult, setRecipeCostResult] = useState(null); // For Cost Calculator
