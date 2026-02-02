@@ -372,8 +372,8 @@ const AdminDashboard = () => {
         marginBottom: '0.5rem',
         borderRadius: '8px',
         border: 'none',
-        background: isActive ? '#fbbf24' : 'transparent',
-        color: isActive ? '#1e293b' : '#cbd5e1',
+        background: isActive ? '#990000' : 'transparent',
+        color: isActive ? 'white' : '#1e293b',
         fontWeight: isActive ? '600' : '400',
         cursor: 'pointer',
         textAlign: 'left',
@@ -394,8 +394,8 @@ const AdminDashboard = () => {
             {/* Sidebar - Desktop: Static/Sticky, Mobile: Fixed Overlay */}
             <div className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`} style={{
                 width: '280px',
-                background: '#1e293b',
-                color: 'white',
+                background: 'white',
+                color: '#1e293b',
                 display: isMobile ? (isSidebarOpen ? 'flex' : 'none') : 'flex', // Desktop: Always flex, Mobile: Toggle
                 flexDirection: 'column',
                 position: isMobile ? 'fixed' : 'relative', // Desktop: Relative (Flow)
@@ -410,13 +410,13 @@ const AdminDashboard = () => {
                 boxShadow: '4px 0 6px rgba(0,0,0,0.1)'
             }}>
                 <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fbbf24', margin: 0 }}>Chianti Admin</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#990000', margin: 0 }}>Chianti Admin</h2>
                     {isMobile && <button onClick={() => setIsSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'white' }}><X size={24} /></button>}
                 </div>
 
-                <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid #334155', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#334155', borderRadius: '8px' }}>
-                        <div style={{ padding: '8px', background: '#fbbf24', borderRadius: '50%', color: '#1e293b' }}>
+                <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid #f1f5f9', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
+                        <div style={{ padding: '8px', background: '#990000', borderRadius: '50%', color: 'white' }}>
                             <UserCog size={20} />
                         </div>
                         <div>
@@ -433,7 +433,7 @@ const AdminDashboard = () => {
                             // Check if user has access to at least one item in this section? 
                             // Simplification: Just show headers, or maybe filter out if no items visible. 
                             // For now simple render.
-                            return <div key={index} style={{ padding: '1rem 0 0.5rem 0', fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{item.header}</div>;
+                            return <div key={index} style={{ padding: '1rem 0 0.5rem 0', fontSize: '0.75rem', color: '#990000', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{item.header}</div>;
                         }
                         // Nav Item
                         if (canAccess(item.permission)) {
