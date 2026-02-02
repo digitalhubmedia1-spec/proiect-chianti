@@ -12,7 +12,16 @@ const AdminRecipes = () => {
     const { products, categories, addCategory, updateCategory, deleteCategory } = useMenu();
 
     const [activeTab, setActiveTab] = useState('manage');
-    const [selectedCategory, setSelectedCategory] = useState(''); // Category Filter State
+    const [selectedCategory, setSelectedCategory] = useState('');
+
+    // --- MOBILE CHECK ---
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
 
     // --- MANAGE STATE ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -409,11 +418,11 @@ const AdminRecipes = () => {
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
             {/* Header Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                 <button
                     className={`tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
                     onClick={() => setActiveTab('manage')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'manage' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'manage' ? '#990000' : '#64748b' }}
+                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'manage' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'manage' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
                 >
                     Gestionare Rețete
                 </button>
@@ -421,14 +430,14 @@ const AdminRecipes = () => {
                 <button
                     className={`tab-btn ${activeTab === 'cost_calculator' ? 'active' : ''}`}
                     onClick={() => setActiveTab('cost_calculator')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'cost_calculator' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'cost_calculator' ? '#990000' : '#64748b' }}
+                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'cost_calculator' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'cost_calculator' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
                 >
                     Prețuri Referință & Costuri
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'production' ? 'active' : ''}`}
                     onClick={() => setActiveTab('production')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'production' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'production' ? '#990000' : '#64748b' }}
+                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'production' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'production' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
                 >
                     Producție (Scădere Stoc)
                 </button>
@@ -634,7 +643,7 @@ const AdminRecipes = () => {
                                 </div>
                             </div>
 
-                            <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                            <div style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 10 }}>
                                         <tr>
@@ -752,65 +761,67 @@ const AdminRecipes = () => {
                                         </div>
                                     </div>
 
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-                                        <thead>
-                                            <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
-                                                <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Net)</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Brut)</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {recipeCostResult.recipes.map((res, idx) => (
-                                                <React.Fragment key={res.id}>
-                                                    <tr
-                                                        style={{ borderBottom: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
-                                                        onClick={() => setRecipeCostResult(prev => ({ ...prev, expandedId: prev.expandedId === res.id ? null : res.id }))}
-                                                    >
-                                                        <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
-                                                        </td>
-                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
-                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
-                                                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
-                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                            <button className="btn-text" style={{ color: '#2563eb' }}>Detalii</button>
-                                                        </td>
-                                                    </tr>
-                                                    {recipeCostResult.expandedId === res.id && (
-                                                        <tr style={{ background: '#f8fafc' }}>
-                                                            <td colSpan="5" style={{ padding: '1rem' }}>
-                                                                <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
-                                                                    <thead>
-                                                                        <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
-                                                                            <th style={{ padding: '0.5rem' }}>Ingredient</th>
-                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
-                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (Net)</th>
-                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Net)</th>
-                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Brut)</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {res.ingredients.map((ing, i) => (
-                                                                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
-                                                                                <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                                            <thead>
+                                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Net)</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Brut)</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {recipeCostResult.recipes.map((res, idx) => (
+                                                    <React.Fragment key={res.id}>
+                                                        <tr
+                                                            style={{ borderBottom: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
+                                                            onClick={() => setRecipeCostResult(prev => ({ ...prev, expandedId: prev.expandedId === res.id ? null : res.id }))}
+                                                        >
+                                                            <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
+                                                            </td>
+                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
+                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
+                                                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
+                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                                <button className="btn-text" style={{ color: '#2563eb' }}>Detalii</button>
                                                             </td>
                                                         </tr>
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                                        {recipeCostResult.expandedId === res.id && (
+                                                            <tr style={{ background: '#f8fafc' }}>
+                                                                <td colSpan="5" style={{ padding: '1rem' }}>
+                                                                    <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
+                                                                        <thead>
+                                                                            <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
+                                                                                <th style={{ padding: '0.5rem' }}>Ingredient</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (Net)</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Net)</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Brut)</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {res.ingredients.map((ing, i) => (
+                                                                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
+                                                                                    <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
+                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
+                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
+                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
                         </div>
