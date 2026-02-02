@@ -42,27 +42,81 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
 
     if (mode === 'large') {
         return (
-            <div className="product-extras-large" style={{ marginTop: '2rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                    🍽️ Completează masa cu:
+            <div className="product-extras-large" style={{ marginTop: '2.5rem' }}>
+                <h3 style={{
+                    fontSize: '1.25rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    color: '#1e293b',
+                    fontWeight: '700'
+                }}>
+                    <span style={{
+                        background: '#dcfce7',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#166534'
+                    }}>
+                        🍽️
+                    </span>
+                    Completează masa cu:
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '1rem' }}>
                     {availableExtras.map(extra => (
                         <div key={extra.id} onClick={(e) => { e.stopPropagation(); addToCart(extra); }}
                             style={{
-                                background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px',
-                                cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
+                                background: 'white',
+                                border: '1px solid #f1f5f9',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                                position: 'relative',
+                                overflow: 'hidden'
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#16a34a'; }}
-                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.06)';
+                                e.currentTarget.style.borderColor = '#bbf7d0';
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)';
+                                e.currentTarget.style.borderColor = '#f1f5f9';
+                            }}
                         >
                             {extra.image ? (
-                                <img src={extra.image} alt="" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px', border: '2px solid #f1f5f9' }} />
+                                <img src={extra.image} alt="" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }} />
                             ) : (
-                                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🥘</div>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f8fafc', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: '#cbd5e1' }}>🥘</div>
                             )}
-                            <span style={{ fontWeight: '600', fontSize: '0.95rem', color: '#334155', lineHeight: '1.2', marginBottom: '4px' }}>{extra.name}</span>
-                            <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '0.9rem' }}>+ {extra.price.toFixed(2)} Lei</span>
+                            <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#334155', lineHeight: '1.2', marginBottom: '8px', flex: 1 }}>{extra.name}</span>
+
+                            <button style={{
+                                width: '100%',
+                                background: '#f0fdf4',
+                                border: 'none',
+                                color: '#166534',
+                                fontSize: '0.8rem',
+                                fontWeight: '700',
+                                padding: '6px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                            }}>
+                                <Plus size={14} /> {extra.price.toFixed(2)} Lei
+                            </button>
                         </div>
                     ))}
                 </div>
