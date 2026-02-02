@@ -3,7 +3,7 @@ import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
-import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings } from 'lucide-react';
+import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
 
 const AdminRecipes = () => {
@@ -64,7 +64,7 @@ const AdminRecipes = () => {
     };
 
     // --- CALCULATOR STATE ---
-    const [selectedRecipeId, setSelectedRecipeId] = useState('');
+    const [selectedRecipeIds, setSelectedRecipeIds] = useState(new Set());
     const [portions, setPortions] = useState(1);
     const [calculationResult, setCalculationResult] = useState(null);
     const [recipeCostResult, setRecipeCostResult] = useState(null); // For Cost Calculator
@@ -136,34 +136,69 @@ const AdminRecipes = () => {
         }
     };
 
+    const toggleRecipeSelection = (id) => {
+        const newSet = new Set(selectedRecipeIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedRecipeIds(newSet);
+        setRecipeCostResult(null);
+    };
+
+    const getFilteredIngredients = () => {
+        if (selectedRecipeIds.size === 0) return inventoryItems;
+        const allowedIds = new Set();
+        recipes.forEach(r => {
+            if (selectedRecipeIds.has(r.id)) {
+                r.ingredients.forEach(i => allowedIds.add(i.ingredient_id));
+            }
+        });
+        return inventoryItems.filter(item => allowedIds.has(item.id));
+    };
+
     const calculateRecipeCost = () => {
-        if (!selectedRecipeId) return;
-        const recipe = recipes.find(r => r.id === parseInt(selectedRecipeId));
-        if (!recipe) return;
+        if (selectedRecipeIds.size === 0) return;
 
-        const ingredientsCost = recipe.ingredients.map(ing => {
-            if (!ing.ingredient_id) return null;
-            const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 0 };
-            const price = parseFloat(refData.price) || 0;
-            const vat = parseInt(refData.vat) || 0;
+        const selectedRecipes = recipes.filter(r => selectedRecipeIds.has(r.id));
 
-            const costNoVat = parseFloat(ing.qty) * price;
-            const priceWithVat = price * (1 + vat / 100);
-            const costWithVat = parseFloat(ing.qty) * priceWithVat;
+        let grandTotalNoVat = 0;
+        let grandTotalWithVat = 0;
+
+        const recipesResult = selectedRecipes.map(recipe => {
+            const ingredientsCost = recipe.ingredients.map(ing => {
+                if (!ing.ingredient_id) return null;
+                const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 0 };
+                const price = parseFloat(refData.price) || 0;
+                const vat = parseInt(refData.vat) || 0;
+
+                const costNoVat = parseFloat(ing.qty) * price;
+                const priceWithVat = price * (1 + vat / 100);
+                const costWithVat = parseFloat(ing.qty) * priceWithVat;
+
+                return {
+                    ...ing,
+                    refPrice: price,
+                    refVat: vat,
+                    totalCostNoVat: costNoVat,
+                    totalCostWithVat: costWithVat
+                };
+            }).filter(Boolean);
+
+            const totalNoVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostNoVat, 0);
+            const totalWithVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostWithVat, 0);
+
+            grandTotalNoVat += totalNoVat;
+            grandTotalWithVat += totalWithVat;
 
             return {
-                ...ing,
-                refPrice: price,
-                refVat: vat,
-                totalCostNoVat: costNoVat,
-                totalCostWithVat: costWithVat
+                id: recipe.id,
+                name: recipe.name,
+                ingredients: ingredientsCost,
+                totalNoVat,
+                totalWithVat
             };
-        }).filter(Boolean);
+        });
 
-        const totalNoVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostNoVat, 0);
-        const totalWithVat = ingredientsCost.reduce((acc, curr) => acc + curr.totalCostWithVat, 0);
-
-        setRecipeCostResult({ ingredients: ingredientsCost, totalNoVat, totalWithVat });
+        setRecipeCostResult({ recipes: recipesResult, grandTotalNoVat, grandTotalWithVat, expandedId: null });
     };
 
     // --- MANAGE HANDLERS ---
@@ -481,204 +516,275 @@ const AdminRecipes = () => {
             {
                 activeTab === 'cost_calculator' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        {/* REFERENCE PRICES SECTION */}
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h3>Prețuri de Referință (per Unitate)</h3>
-                            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Introduceți prețul de achiziție standard pentru fiecare ingredient. Acesta este folosit doar la estimarea costurilor rețetelor.</p>
 
-                            <div style={{ marginBottom: '1rem', maxWidth: '300px' }}>
-                                <input
-                                    type="text"
+                        {/* RECIPE MULTI-SELECTOR (SHARED) */}
+                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                            <h3>Selectare Rețete (Filtru & Calculator)</h3>
+                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                Selectați una sau mai multe rețete pentru a filtra lista de ingrediente (mai jos) și pentru a calcula costurile cumulate.
+                            </p>
+
+                            <div style={{ position: 'relative' }}>
+                                <div
                                     className="form-control"
-                                    placeholder="Caută ingredient..."
-                                    value={searchTermRef}
-                                    onChange={e => setSearchTermRef(e.target.value)}
-                                    style={{ width: '100%', padding: '0.5rem' }}
-                                />
+                                    onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
+                                    style={{ padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                >
+                                    <span>
+                                        {selectedRecipeIds.size === 0
+                                            ? 'Selectează Rețete...'
+                                            : `${selectedRecipeIds.size} rețete selectate (${Array.from(selectedRecipeIds).map(id => recipes.find(r => r.id === id)?.name).join(', ').slice(0, 50)}${selectedRecipeIds.size > 2 ? '...' : ''})`}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem' }}>▼</span>
+                                </div>
+
+                                {showRecipeDropdown && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                        maxHeight: '300px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '5px'
+                                    }}>
+                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Caută rețetă..."
+                                                value={recipeSearchTerm}
+                                                onChange={(e) => setRecipeSearchTerm(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                            />
+                                        </div>
+                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
+                                            <button
+                                                className="btn-text"
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set(recipes.map(r => r.id))); }}
+                                                style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Selectează Tot
+                                            </button>
+                                            <button
+                                                className="btn-text"
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set()); }}
+                                                style={{ fontSize: '0.8rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Deselectează Tot
+                                            </button>
+                                        </div>
+                                        {recipes
+                                            .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
+                                            .map(r => (
+                                                <div
+                                                    key={r.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleRecipeSelection(r.id);
+                                                    }}
+                                                    style={{
+                                                        padding: '0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                                        background: selectedRecipeIds.has(r.id) ? '#f0f9ff' : 'white'
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width: '18px', height: '18px', borderRadius: '4px', border: '2px solid #cbd5e1',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        background: selectedRecipeIds.has(r.id) ? '#0284c7' : 'white',
+                                                        borderColor: selectedRecipeIds.has(r.id) ? '#0284c7' : '#cbd5e1'
+                                                    }}>
+                                                        {selectedRecipeIds.has(r.id) && <Check size={12} color="white" />}
+                                                    </div>
+                                                    <span>{r.name}</span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* REFERENCE PRICES SECTION (FILTERED) */}
+                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <div>
+                                    <h3>Prețuri de Referință (Ingrediente)</h3>
+                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                                        {selectedRecipeIds.size > 0
+                                            ? `Se afișează ingredientele pentru cele ${selectedRecipeIds.size} rețete selectate.`
+                                            : 'Se afișează TOATE ingredientele din sistem.'}
+                                    </p>
+                                </div>
+                                <div style={{ maxWidth: '300px' }}>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Caută în listă..."
+                                        value={searchTermRef}
+                                        onChange={e => setSearchTermRef(e.target.value)}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    />
+                                </div>
                             </div>
 
-                            <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                            <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
+                                    <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 10 }}>
                                         <tr>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Ingredient</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Preț Referință (RON)</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Actualizat</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Unitate</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Ingredient</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Unitate</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (Net)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>TVA</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (Brut)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Ultima Actualizare</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {inventoryItems
+                                        {getFilteredIngredients()
                                             .filter(item => item.name.toLowerCase().includes(searchTermRef.toLowerCase()))
                                             .map(item => (
-                                                <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                                                    <td style={{ padding: '0.5rem 0.75rem' }}>{item.name}</td>
-                                                    <td style={{ padding: '0.5rem 0.75rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                                            {/* Base Price */}
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Fără TVA</span>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="0.00"
-                                                                        value={refPrices[item.id]?.price || ''}
-                                                                        onChange={(e) => handlePriceChange(item.id, 'price', e.target.value)}
-                                                                        onBlur={() => saveRefPrice(item.id)}
-                                                                        style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                                                    />
-                                                                    <span style={{ fontSize: '0.8rem' }}>RON</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* VAT Select */}
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>TVA</span>
-                                                                <select
-                                                                    value={refPrices[item.id]?.vat || 0}
-                                                                    onChange={(e) => {
-                                                                        handlePriceChange(item.id, 'vat', e.target.value);
-                                                                        // Save immediately on select change usually better UX, but handlePriceChange updates state first.
-                                                                        // We need to trigger save. We can't pass saveRefPrice directly to onChange because state hasn't updated yet.
-                                                                        // Actually, let's just trigger save onBlur of the select or a separate effect? 
-                                                                        // Simplest: just save onBlur or make user click out. Let's rely on onBlur or explicit save button? 
-                                                                        // We will use onBlur on the select as well.
-                                                                    }}
-                                                                    onBlur={() => saveRefPrice(item.id)}
-                                                                    style={{ padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', background: '#f8fafc' }}
-                                                                >
-                                                                    <option value="0">0%</option>
-                                                                    <option value="11">11%</option>
-                                                                    <option value="21">21%</option>
-                                                                </select>
-                                                            </div>
-
-                                                            {/* Total Price */}
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Cu TVA</span>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="0.00"
-                                                                        // Calculate specific display value
-                                                                        value={
-                                                                            refPrices[item.id]
-                                                                                ? (refPrices[item.id].price * (1 + (refPrices[item.id].vat || 0) / 100)).toFixed(2)
-                                                                                : ''
-                                                                        }
-                                                                        onChange={(e) => handlePriceChange(item.id, 'total', e.target.value)}
-                                                                        onBlur={() => saveRefPrice(item.id)}
-                                                                        style={{ width: '80px', padding: '4px', border: '1px solid #cbd5e1', borderRadius: '4px', fontWeight: 'bold' }}
-                                                                    />
-                                                                    <span style={{ fontSize: '0.8rem' }}>RON</span>
-                                                                </div>
-                                                            </div>
+                                                <tr key={item.id} style={{ borderBottom: '1px solid #eee', background: 'white' }}>
+                                                    <td style={{ padding: '0.75rem', fontWeight: '500' }}>{item.name}</td>
+                                                    <td style={{ padding: '0.75rem', color: '#64748b' }}>{item.unit}</td>
+                                                    <td style={{ padding: '0.75rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                placeholder="0.00"
+                                                                value={refPrices[item.id]?.price || ''}
+                                                                onChange={(e) => handlePriceChange(item.id, 'price', e.target.value)}
+                                                                onBlur={() => saveRefPrice(item.id)}
+                                                                style={{ width: '90px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                                            />
+                                                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>RON</span>
                                                         </div>
                                                     </td>
-                                                    <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', color: '#64748b' }}>
+                                                    <td style={{ padding: '0.75rem' }}>
+                                                        <select
+                                                            value={refPrices[item.id]?.vat || 0}
+                                                            onChange={(e) => handlePriceChange(item.id, 'vat', e.target.value)}
+                                                            onBlur={() => saveRefPrice(item.id)}
+                                                            style={{ padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc' }}
+                                                        >
+                                                            <option value="0">0%</option>
+                                                            <option value="9">9%</option>
+                                                            <option value="19">19%</option>
+                                                        </select>
+                                                    </td>
+                                                    <td style={{ padding: '0.75rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                placeholder="0.00"
+                                                                value={refPrices[item.id] ? (refPrices[item.id].price * (1 + (refPrices[item.id].vat || 0) / 100)).toFixed(2) : ''}
+                                                                onChange={(e) => handlePriceChange(item.id, 'total', e.target.value)}
+                                                                onBlur={() => saveRefPrice(item.id)}
+                                                                style={{ width: '90px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold' }}
+                                                            />
+                                                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>RON</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
                                                         {refPrices[item.id]?.updated_at ? new Date(refPrices[item.id].updated_at).toLocaleDateString('ro-RO') : '-'}
                                                     </td>
-                                                    <td style={{ padding: '0.5rem 0.75rem', color: '#64748b' }}>/{item.unit}</td>
                                                 </tr>
                                             ))}
+                                        {getFilteredIngredients().length === 0 && (
+                                            <tr>
+                                                <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                                    Niciun ingredient găsit. Încercați să selectați alte rețete sau ștergeți filtrul.
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        {/* COST CALCULATOR SECTION */}
+                        {/* COST CALCULATOR SECTION (MULTI) */}
                         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h3>Calculator Cost Rețetă</h3>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-                                <div style={{ flex: 1, maxWidth: '400px' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Alege Rețetă</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="Caută rețetă..."
-                                            value={recipeSearchTerm}
-                                            onChange={(e) => {
-                                                setRecipeSearchTerm(e.target.value);
-                                                setShowRecipeDropdown(true);
-                                                if (!e.target.value) {
-                                                    setSelectedRecipeId('');
-                                                    setRecipeCostResult(null);
-                                                }
-                                            }}
-                                            onFocus={() => setShowRecipeDropdown(true)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                        />
-                                        {showRecipeDropdown && recipeSearchTerm && (selectedRecipeId ? recipes.find(r => r.id == selectedRecipeId)?.name !== recipeSearchTerm : true) && (
-                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, maxHeight: '200px', overflowY: 'auto', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', zIndex: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                                                {recipes
-                                                    .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
-                                                    .map(r => (
-                                                        <div
-                                                            key={r.id}
-                                                            onClick={() => {
-                                                                setSelectedRecipeId(r.id);
-                                                                setRecipeSearchTerm(r.name);
-                                                                setRecipeCostResult(null);
-                                                                setShowRecipeDropdown(false);
-                                                            }}
-                                                            style={{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', hover: { background: '#f8fafc' } }}
-                                                        >
-                                                            {r.name}
-                                                        </div>
-                                                    ))}
-                                                {recipes.filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase())).length === 0 && (
-                                                    <div style={{ padding: '0.5rem', color: '#64748b' }}>Nicio rețetă găsită.</div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3>Calculator Costuri Multi-Rețetă</h3>
+                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Calculează costul total pentru rețetele selectate mai sus.</p>
                                 </div>
-                                <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={!selectedRecipeId}>
-                                    <Calculator size={18} /> Calculează Cost
+                                <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={selectedRecipeIds.size === 0}>
+                                    <Calculator size={18} /> Calculează Costuri
                                 </button>
                             </div>
 
                             {recipeCostResult && (
-                                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                                        <h4 style={{ margin: 0 }}>Cost Total (Fără TVA): <span style={{ color: '#0f172a', fontSize: '1.2rem' }}>{recipeCostResult.totalNoVat.toFixed(2)} RON</span></h4>
-                                        <h4 style={{ margin: 0 }}>Cost Total (Cu TVA): <span style={{ color: '#990000', fontSize: '1.4rem' }}>{recipeCostResult.totalWithVat.toFixed(2)} RON</span></h4>
-                                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#64748b' }}>Porții: {portions} | Cost/Porție (Cu TVA): <span style={{ color: '#0f172a' }}>{(recipeCostResult.totalWithVat / portions).toFixed(2)} RON</span></h4>
+                                <div style={{ marginTop: '2rem' }}>
+                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                        <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
+                                            <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (NET)</div>
+                                            <div style={{ fontSize: '1.8rem', color: '#16a34a', fontWeight: 'bold' }}>{recipeCostResult.grandTotalNoVat?.toFixed(2)} RON</div>
+                                        </div>
+                                        <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
+                                            <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (BRUT)</div>
+                                            <div style={{ fontSize: '1.8rem', color: '#dc2626', fontWeight: 'bold' }}>{recipeCostResult.grandTotalWithVat?.toFixed(2)} RON</div>
+                                        </div>
                                     </div>
 
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                                            <thead>
-                                                <tr style={{ background: '#e2e8f0' }}>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'left' }}>Ingredient</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cantitate</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit. (Net)</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>TVA %</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit. (Brut)</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cost Total (Net)</th>
-                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cost Total (Brut)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {recipeCostResult.ingredients.map((ing, idx) => (
-                                                    <tr key={idx} style={{ borderBottom: '1px solid #cbd5e1' }}>
-                                                        <td style={{ padding: '0.5rem' }}>
-                                                            {inventoryItems.find(i => i.id === ing.ingredient_id)?.name || 'Ingredient'}
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                                        <thead>
+                                            <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                                                <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
+                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
+                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Net)</th>
+                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Brut)</th>
+                                                <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {recipeCostResult.recipes.map((res, idx) => (
+                                                <React.Fragment key={res.id}>
+                                                    <tr
+                                                        style={{ borderBottom: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
+                                                        onClick={() => setRecipeCostResult(prev => ({ ...prev, expandedId: prev.expandedId === res.id ? null : res.id }))}
+                                                    >
+                                                        <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
                                                         </td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refVat}%</td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{(ing.refPrice * (1 + ing.refVat / 100)).toFixed(2)}</td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
-                                                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
+                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
+                                                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
+                                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                            <button className="btn-text" style={{ color: '#2563eb' }}>Detalii</button>
+                                                        </td>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                    {recipeCostResult.expandedId === res.id && (
+                                                        <tr style={{ background: '#f8fafc' }}>
+                                                            <td colSpan="5" style={{ padding: '1rem' }}>
+                                                                <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
+                                                                    <thead>
+                                                                        <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
+                                                                            <th style={{ padding: '0.5rem' }}>Ingredient</th>
+                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
+                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (Net)</th>
+                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Net)</th>
+                                                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Brut)</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {res.ingredients.map((ing, i) => (
+                                                                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
+                                                                                <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </div>
