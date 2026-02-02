@@ -134,12 +134,12 @@ const ProductDetails = () => {
                     <div className="product-meta">
                         <p><strong>Gramaj:</strong> {product.weight}</p>
                         {product.ingredients && <p><strong>Ingrediente:</strong> {product.ingredients}</p>}
+                        {product.allergens && <p><strong>Alergeni:</strong> {product.allergens}</p>}
                         {stock !== null && (
                             <p style={{ color: stock > 0 ? '#16a34a' : '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>
                                 {stock > 0 ? `Stoc disponibil: ${stock} porții` : 'Stoc Epuizat'}
                             </p>
                         )}
-                        <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
                     </div>
 
                     <div className="add-to-cart-section">
@@ -178,6 +178,8 @@ const ProductDetails = () => {
                             <ShoppingCart size={20} /> {isOutOfStock ? "Stoc Epuizat" : (isOpen ? "Adaugă în Coș" : "Indisponibil")}
                         </button>
                     </div>
+
+                    <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} mode="large" />
                 </div>
             </div>
 

@@ -3,7 +3,7 @@ import { useMenu } from '../context/MenuContext';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
-const ProductExtras = ({ productId, dailyMenuMap }) => {
+const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
     const { fetchExtras } = useMenu();
     const { addToCart } = useCart();
     const [extras, setExtras] = useState([]);
@@ -22,9 +22,6 @@ const ProductExtras = ({ productId, dailyMenuMap }) => {
         return () => { mounted = false; };
     }, [productId, fetchExtras]);
 
-    // Filter available extras based on Daily Menu logic (if dailyMenuMap provided)
-    // If dailyMenuMap is null (standard catalog), maybe show all or check stock? 
-    // Usually extras (bread, peppers) are always available or managed via daily menu too.
     // User requirement: "dacă sunt disponibile în ziua respectivă"
     // However, some extras (bread, etc.) might not be explicitly in daily menu.
     // Fallback: If in daily menu -> check stock. If NOT in daily menu -> check global is_available.
@@ -42,6 +39,36 @@ const ProductExtras = ({ productId, dailyMenuMap }) => {
     });
 
     if (loading || availableExtras.length === 0) return null;
+
+    if (mode === 'large') {
+        return (
+            <div className="product-extras-large" style={{ marginTop: '2rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
+                    🍽️ Completează masa cu:
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                    {availableExtras.map(extra => (
+                        <div key={extra.id} onClick={(e) => { e.stopPropagation(); addToCart(extra); }}
+                            style={{
+                                background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px',
+                                cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#16a34a'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                        >
+                            {extra.image ? (
+                                <img src={extra.image} alt="" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px', border: '2px solid #f1f5f9' }} />
+                            ) : (
+                                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🥘</div>
+                            )}
+                            <span style={{ fontWeight: '600', fontSize: '0.95rem', color: '#334155', lineHeight: '1.2', marginBottom: '4px' }}>{extra.name}</span>
+                            <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '0.9rem' }}>+ {extra.price.toFixed(2)} Lei</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="product-extras-section" style={{
