@@ -73,9 +73,17 @@ const AdminRecipes = () => {
     const [recipeSearchTerm, setRecipeSearchTerm] = useState('');
     const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
 
+    const [suppliers, setSuppliers] = useState([]);
+
     useEffect(() => {
         fetchRefPrices();
+        fetchSuppliers();
     }, []);
+
+    const fetchSuppliers = async () => {
+        const { data } = await supabase.from('suppliers').select('id, name').order('name');
+        if (data) setSuppliers(data);
+    };
 
     const fetchRefPrices = async () => {
         const { data, error } = await supabase.from('recipe_ref_prices').select('*');
@@ -85,6 +93,7 @@ const AdminRecipes = () => {
                 map[item.ingredient_id] = {
                     price: item.price_per_unit || 0,
                     vat: item.vat_rate || 0,
+                    supplier_id: item.supplier_id || null,
                     updated_at: item.updated_at
                 };
             });
@@ -94,25 +103,25 @@ const AdminRecipes = () => {
 
     const handlePriceChange = (ingredientId, field, value) => {
         setRefPrices(prev => {
-            const current = prev[ingredientId] || { price: 0, vat: 0 };
+            const current = prev[ingredientId] || { price: 0, vat: 0, supplier_id: null };
             let newPrice = current.price;
             let newVat = current.vat;
+            let newSupplierId = current.supplier_id;
 
-            if (field === 'price') {
-                newPrice = parseFloat(value) || 0;
-            } else if (field === 'vat') {
-                newVat = parseInt(value) || 0;
-            } else if (field === 'total') {
+            if (field === 'price') newPrice = parseFloat(value) || 0;
+            else if (field === 'vat') newVat = parseInt(value) || 0;
+            else if (field === 'supplier') newSupplierId = value ? parseInt(value) : null;
+            else if (field === 'total') {
                 const total = parseFloat(value) || 0;
                 newPrice = total / (1 + newVat / 100);
             }
 
-            return { ...prev, [ingredientId]: { ...current, price: newPrice, vat: newVat } };
+            return { ...prev, [ingredientId]: { ...current, price: newPrice, vat: newVat, supplier_id: newSupplierId } };
         });
     };
 
     const saveRefPrice = async (ingredientId) => {
-        const current = refPrices[ingredientId] || { price: 0, vat: 0 };
+        const current = refPrices[ingredientId] || { price: 0, vat: 0, supplier_id: null };
         const now = new Date().toISOString();
 
         const { error } = await supabase
@@ -121,14 +130,14 @@ const AdminRecipes = () => {
                 ingredient_id: ingredientId,
                 price_per_unit: current.price,
                 vat_rate: current.vat,
+                supplier_id: current.supplier_id,
                 updated_at: now
             }, { onConflict: 'ingredient_id' });
 
         if (error) {
             console.error(error);
-            alert("Eroare la salvare! Verificați dacă ați rulat scriptul SQL 'add_updated_at_to_ref_prices.sql'.");
+            alert("Eroare la salvare! Verificați conexiunea.");
         } else {
-            // Update local state updated_at to show immediate feedback
             setRefPrices(prev => ({
                 ...prev,
                 [ingredientId]: { ...current, updated_at: now }
@@ -633,7 +642,8 @@ const AdminRecipes = () => {
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Unitate</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (Net)</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>TVA</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (Brut)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Price Unit. (Brut)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Furnizor</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Ultima Actualizare</th>
                                         </tr>
                                     </thead>
@@ -683,6 +693,22 @@ const AdminRecipes = () => {
                                                             />
                                                             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>RON</span>
                                                         </div>
+                                                    </td>
+                                                    <td style={{ padding: '0.75rem' }}>
+                                                        <select
+                                                            value={refPrices[item.id]?.supplier_id || ''}
+                                                            onChange={(e) => {
+                                                                handlePriceChange(item.id, 'supplier', e.target.value);
+                                                                // Trigger save on change for supplier (better UX or onBlur? onBlur consistent but select often changes immediately)
+                                                            }}
+                                                            onBlur={() => saveRefPrice(item.id)}
+                                                            style={{ maxWidth: '150px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff' }}
+                                                        >
+                                                            <option value="">Fără Furnizor</option>
+                                                            {suppliers.map(s => (
+                                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                                            ))}
+                                                        </select>
                                                     </td>
                                                     <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
                                                         {refPrices[item.id]?.updated_at ? new Date(refPrices[item.id].updated_at).toLocaleDateString('ro-RO') : '-'}
