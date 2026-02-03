@@ -162,13 +162,86 @@ const AdminMenuPlanner = () => {
 
         const { data: ingredientsData, error: ingError } = await supabase
             .from('recipes') // The ingredients table
-            .select('recipe_id, ingredient_id, quantity_required')
+            .select(`
+                recipe_id, 
+                ingredient_id, 
+                quantity_required,
+                inventory_items (name, unit)
+            `)
             .in('recipe_id', recipeIds);
 
         if (ingError) {
             alert("Eroare la citire ingrediente: " + ingError.message);
             setSaving(false);
             return;
+        }
+
+        // 1. Calculate TOTAL Required Stock per Ingredient
+        const requiredStock = {}; // ingredient_id -> { qty, name, unit }
+
+        activeIds.forEach(prodId => {
+            const portions = parseInt(stockValues[prodId]);
+            const recipeId = productToRecipeMap[prodId];
+            const recIngredients = ingredientsData.filter(ri => ri.recipe_id === recipeId);
+
+            recIngredients.forEach(ing => {
+                const qtyNeeded = ing.quantity_required * portions;
+                if (!requiredStock[ing.ingredient_id]) {
+                    requiredStock[ing.ingredient_id] = {
+                        qty: 0,
+                        name: ing.inventory_items?.name || 'Unknown',
+                        unit: ing.inventory_items?.unit || ''
+                    };
+                }
+                requiredStock[ing.ingredient_id].qty += qtyNeeded;
+            });
+        });
+
+        // 2. Fetch Available Stock from Inventory Batches
+        const requiredIngredientIds = Object.keys(requiredStock);
+        if (requiredIngredientIds.length > 0) {
+            const { data: batches, error: batchError } = await supabase
+                .from('inventory_batches')
+                .select('item_id, quantity')
+                .in('item_id', requiredIngredientIds)
+                .gt('quantity', 0); // Only consider positive stock
+
+            if (batchError) {
+                alert("Eroare la verificare stoc: " + batchError.message);
+                setSaving(false);
+                return;
+            }
+
+            // Sum up available stock
+            const availableStock = {};
+            batches?.forEach(b => {
+                availableStock[b.item_id] = (availableStock[b.item_id] || 0) + Number(b.quantity);
+            });
+
+            // 3. Compare and Validate
+            const missingItems = [];
+            for (const [ingId, req] of Object.entries(requiredStock)) {
+                const available = availableStock[ingId] || 0;
+                // Use a small epsilon for floating point comparison if needed, but usually strict < is fine
+                if (available < req.qty) {
+                    missingItems.push({
+                        name: req.name,
+                        needed: req.qty,
+                        available: available,
+                        unit: req.unit
+                    });
+                }
+            }
+
+            if (missingItems.length > 0) {
+                const errorMsg = missingItems.map(m =>
+                    `- ${m.name}: Necesar ${m.needed.toFixed(2)} ${m.unit} (Disponibil: ${m.available.toFixed(2)} ${m.unit})`
+                ).join('\n');
+
+                alert(`STOC INSUFICIENT!\nNu se poate realiza producția pentru meniul selectat.\n\n${errorMsg}\n\nVă rugăm să faceți recepție sau să scădeți numărul de porții.`);
+                setSaving(false);
+                return;
+            }
         }
 
         const transactions = [];
