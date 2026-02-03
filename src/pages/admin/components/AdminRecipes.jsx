@@ -46,6 +46,9 @@ const AdminRecipes = () => {
     const [productSearchTerm, setProductSearchTerm] = useState('');
     const [showProductDropdown, setShowProductDropdown] = useState(false);
 
+    // --- RECIPE LIST SEARCH STATE ---
+    const [recipeListSearchTerm, setRecipeListSearchTerm] = useState('');
+
     const handleAddCategory = async () => {
         if (!newCatName.trim()) return;
         await addCategory(newCatName, 'catering'); // Default to catering as per request implied context? Or let user choose?
@@ -537,25 +540,41 @@ const AdminRecipes = () => {
                                 </button>
                             </div>
 
-                            {/* CATEGORY FILTER */}
-                            <div style={{ minWidth: '200px' }}>
-                                <select
-                                    className="form-control"
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                >
-                                    <option value="">Toate Categoriile</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                    ))}
-                                </select>
+                            {/* SEARCH & CATEGORY FILTER */}
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div style={{ position: 'relative', minWidth: '200px', flex: 1 }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Caută rețetă..."
+                                        value={recipeListSearchTerm}
+                                        onChange={(e) => setRecipeListSearchTerm(e.target.value)}
+                                        style={{ padding: '0.5rem', paddingLeft: '2rem', width: '100%', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                    />
+                                    <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                                </div>
+                                <div style={{ minWidth: '200px' }}>
+                                    <select
+                                        className="form-control"
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
+                                    >
+                                        <option value="">Toate Categoriile</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
                         <div className="recipes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
                             {recipes
-                                .filter(r => !selectedCategory || r.category === selectedCategory)
+                                .filter(r => {
+                                    const matchesCategory = !selectedCategory || r.category === selectedCategory;
+                                    const matchesSearch = r.name.toLowerCase().includes(recipeListSearchTerm.toLowerCase());
+                                    return matchesCategory && matchesSearch;
+                                })
                                 .map(recipe => (
                                     <div key={recipe.id} className="recipe-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
