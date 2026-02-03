@@ -157,7 +157,7 @@ const AdminDashboard = () => {
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
+    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
 
     const [activeProductTabType, setActiveProductTabType] = useState('catering');
     const [searchTerm, setSearchTerm] = useState('');
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
             }
         }
 
-        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
+        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
         setEditingProduct(null);
         setIsProductModalOpen(false);
         setCurrentRecommendations([]);
@@ -266,7 +266,7 @@ const AdminDashboard = () => {
             setCurrentExtras(extras);
         } else {
             setEditingProduct(null);
-            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
+            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], description: '', weight: '', allergens: '', ingredients: '' });
             setCurrentRecommendations([]);
             setCurrentExtras([]);
         }
@@ -1214,6 +1214,67 @@ const AdminDashboard = () => {
                                                         setProdForm(prev => ({
                                                             ...prev,
                                                             gallery: prev.gallery.filter((_, i) => i !== idx)
+                                                        }));
+                                                    }}
+                                                    style={{
+                                                        position: 'absolute', top: -5, right: -5,
+                                                        background: 'red', color: 'white', borderRadius: '50%',
+                                                        width: '20px', height: '20px', border: 'none', cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                                                    }}
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* PRODUCTION GALLERY SECTION (Internal) */}
+                                <div className="form-group" style={{ background: '#fef2f2', padding: '10px', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+                                    <label style={{ color: '#990000', fontWeight: 'bold' }}>Galerie Producție (Uz Intern)</label>
+                                    <p style={{ fontSize: '0.8rem', color: '#7f1d1d', marginTop: '-5px', marginBottom: '10px' }}>
+                                        Poze cu produsul final ambalat pentru angajați (nu sunt vizibile clienților).
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="form-control"
+                                            onChange={async (e) => {
+                                                const files = Array.from(e.target.files);
+                                                for (const file of files) {
+                                                    try {
+                                                        const base64 = await compressImage(file, 800, 0.6);
+                                                        setProdForm(prev => ({
+                                                            ...prev,
+                                                            production_gallery: [...(prev.production_gallery || []), base64]
+                                                        }));
+                                                    } catch (err) {
+                                                        console.error("Error uploading production gallery image", err);
+                                                    }
+                                                }
+                                            }}
+                                            style={{ width: 'auto' }}
+                                        />
+                                        <span style={{ fontSize: '0.8rem', color: '#666' }}>Max 800px</span>
+                                    </div>
+                                    <div className="gallery-preview" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                                        {(prodForm.production_gallery || []).map((img, idx) => (
+                                            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                                <img
+                                                    src={img}
+                                                    alt={`Prod Gallery ${idx}`}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd', cursor: 'zoom-in' }}
+                                                    onClick={() => setPreviewImage(img)}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setProdForm(prev => ({
+                                                            ...prev,
+                                                            production_gallery: prev.production_gallery.filter((_, i) => i !== idx)
                                                         }));
                                                     }}
                                                     style={{

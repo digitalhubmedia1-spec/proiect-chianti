@@ -74,6 +74,7 @@ export const MenuProvider = ({ children }) => {
                 category: prodData.category,
                 image: prodData.image || '',
                 gallery: prodData.gallery || [],
+                production_gallery: prodData.production_gallery || [],
                 description: prodData.description || '',
                 weight: prodData.weight || '',
                 ingredients: prodData.ingredients || '',

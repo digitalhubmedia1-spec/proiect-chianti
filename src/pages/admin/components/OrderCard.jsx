@@ -1,7 +1,12 @@
-import React from 'react';
-import { Phone, Clock, MapPin, Utensils, User, Check, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
+import { useMenu } from '../../../context/MenuContext';
 
 const OrderCard = ({ order, showActions = false, onConfirm }) => {
+    const { products } = useMenu();
+    const [lightboxImages, setLightboxImages] = useState(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
     const deliveryMethod = order.customer.deliveryMethod;
     const isDelivery = deliveryMethod === 'delivery' || deliveryMethod === 'event-location';
     const isCatering = order.isCatering || deliveryMethod.startsWith('event-');
@@ -28,12 +33,61 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
         methodColor = '#7c3aed';
     }
 
+    const openGallery = (images) => {
+        if (images && images.length > 0) {
+            setLightboxImages(images);
+            setCurrentImageIndex(0);
+        }
+    };
+
+    const nextImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex(prev => (prev + 1) % lightboxImages.length);
+    };
+
+    const prevImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+    };
+
     return (
         <div className="order-card-inner" style={{
             background: 'white',
-            padding: '1.5rem', // increased padding
-            // Box shadow and radius removed as they are handled by parent in premium view
+            padding: '1.5rem',
         }}>
+            {/* Lightbox */}
+            {lightboxImages && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.9)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }} onClick={() => setLightboxImages(null)}>
+
+                    <button onClick={(e) => { e.stopPropagation(); setLightboxImages(null); }} style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: 'white' }}>
+                        <X size={32} />
+                    </button>
+
+                    <button onClick={prevImage} style={{ position: 'absolute', left: 20, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', padding: '10px' }}>
+                        <ChevronLeft size={32} />
+                    </button>
+
+                    <div style={{ maxWidth: '90%', maxHeight: '90%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <img
+                            src={lightboxImages[currentImageIndex]}
+                            alt={`Gallery ${currentImageIndex}`}
+                            style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px' }}
+                        />
+                        <div style={{ position: 'absolute', bottom: -30, left: 0, right: 0, textAlign: 'center', color: 'white' }}>
+                            {currentImageIndex + 1} / {lightboxImages.length}
+                        </div>
+                    </div>
+
+                    <button onClick={nextImage} style={{ position: 'absolute', right: 20, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', padding: '10px' }}>
+                        <ChevronRight size={32} />
+                    </button>
+                </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontWeight: '800', color: '#1e293b', fontSize: '1.1rem' }}>#{order.id.slice(-6)}</span>
@@ -85,12 +139,40 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                 marginBottom: '1rem',
                 border: '1px solid #e2e8f0'
             }}>
-                {order.items && order.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#334155' }}>
-                        <span><span style={{ fontWeight: '700' }}>{item.quantity}x</span> {item.name}</span>
-                        <span>{(item.price * item.quantity).toFixed(2)} Lei</span>
-                    </div>
-                ))}
+                {order.items && order.items.map((item, idx) => {
+                    const product = products.find(p => p.id === item.id);
+                    const productionImages = product?.production_gallery || [];
+                    const hasProductionImages = productionImages.length > 0;
+
+                    return (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: '#334155' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {/* Quantity */}
+                                <span style={{ fontWeight: '700' }}>{item.quantity}x</span>
+
+                                {/* Production Image Thumbnail */}
+                                {hasProductionImages && (
+                                    <div
+                                        onClick={() => openGallery(productionImages)}
+                                        style={{
+                                            width: '30px', height: '30px',
+                                            borderRadius: '4px', overflow: 'hidden',
+                                            cursor: 'pointer', border: '1px solid #cbd5e1',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: '#fff'
+                                        }}
+                                        title="Vezi poze ambalare"
+                                    >
+                                        <img src={productionImages[0]} alt="Ref" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                )}
+
+                                <span>{item.name}</span>
+                            </div>
+                            <span>{(item.price * item.quantity).toFixed(2)} Lei</span>
+                        </div>
+                    );
+                })}
                 {/* Show Delivery Cost Line if exists */}
                 {order.deliveryCost > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#64748b', fontStyle: 'italic' }}>
