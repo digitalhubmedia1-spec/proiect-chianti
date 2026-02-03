@@ -476,7 +476,7 @@ const AdminRecipes = () => {
         // Generate Table
         autoTable(doc, {
             startY: 35,
-            head: [['Ingredient', 'UM', 'Pret Net', 'TVA', 'Pret Brut', 'Actualizat', 'Furnizor']],
+            head: [['Ingredient', 'UM', 'Pret FARA TVA', 'TVA', 'Pret CU TVA', 'Actualizat', 'Furnizor']],
             body: tableData,
             headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' }, // #990000
             alternateRowStyles: { fillColor: [248, 250, 252] }, // #f8fafc
@@ -738,9 +738,9 @@ const AdminRecipes = () => {
                                         <tr>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Ingredient</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Unitate</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (Net)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (FĂRĂ TVA)</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>TVA</th>
-                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Price Unit. (Brut)</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Preț Unit. (CU TVA)</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Furnizor</th>
                                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Ultima Actualizare</th>
                                         </tr>
@@ -841,11 +841,11 @@ const AdminRecipes = () => {
                                 <div style={{ marginTop: '2rem' }}>
                                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                                         <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
-                                            <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (NET)</div>
+                                            <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (FĂRĂ TVA)</div>
                                             <div style={{ fontSize: '1.8rem', color: '#16a34a', fontWeight: 'bold' }}>{recipeCostResult.grandTotalNoVat?.toFixed(2)} RON</div>
                                         </div>
                                         <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
-                                            <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (BRUT)</div>
+                                            <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (CU TVA)</div>
                                             <div style={{ fontSize: '1.8rem', color: '#dc2626', fontWeight: 'bold' }}>{recipeCostResult.grandTotalWithVat?.toFixed(2)} RON</div>
                                         </div>
                                     </div>
@@ -856,8 +856,8 @@ const AdminRecipes = () => {
                                                 <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
                                                     <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
                                                     <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Net)</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (Brut)</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (FĂRĂ TVA)</th>
+                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (CU TVA)</th>
                                                     <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
                                                 </tr>
                                             </thead>
@@ -886,9 +886,9 @@ const AdminRecipes = () => {
                                                                             <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
                                                                                 <th style={{ padding: '0.5rem' }}>Ingredient</th>
                                                                                 <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (Net)</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Net)</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (Brut)</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (FĂRĂ TVA)</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (FĂRĂ TVA)</th>
+                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (CU TVA)</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
