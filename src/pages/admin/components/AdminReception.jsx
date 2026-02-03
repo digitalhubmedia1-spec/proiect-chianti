@@ -24,6 +24,7 @@ const AdminReception = () => {
     // --- DATA FETCHING ---
     const [suppliers, setSuppliers] = useState([]);
     const [products, setProducts] = useState([]); // All inventory items for search fallback
+    const [locations, setLocations] = useState([]); // Storage locations
 
     // --- HISTORY/REPORTS FILTER ---
     const [filters, setFilters] = useState({
@@ -44,6 +45,7 @@ const AdminReception = () => {
     useEffect(() => {
         fetchSuppliers();
         fetchProducts();
+        fetchLocations();
     }, []);
 
     useEffect(() => {
@@ -62,6 +64,11 @@ const AdminReception = () => {
     const fetchProducts = async () => {
         const { data } = await supabase.from('inventory_items').select('id, name, unit, vat_rate').order('name');
         if (data) setProducts(data);
+    };
+
+    const fetchLocations = async () => {
+        const { data } = await supabase.from('locations').select('id, name, type').order('name');
+        if (data) setLocations(data);
     };
 
     const fetchReceptions = async () => {
@@ -126,7 +133,8 @@ const AdminReception = () => {
             price: 0, // Net Price
             price_gross: 0, // Gross Price (display/calc)
             vat_percent: item.vat_rate || 19,
-            expiration_date: ''
+            expiration_date: '',
+            location_id: locations.length > 0 ? locations[0].id : null // Default to first location
         };
         setNewReception({ ...newReception, items: [...newReception.items, newItem] });
     };
@@ -159,6 +167,11 @@ const AdminReception = () => {
             // Changed VAT -> Recalc Gross (keeping Net constant usually preferred in B2B, but let's see)
             // Or recalc Net if we assume Gross is fixed? Usually Net is base.
             item.price_gross = +(item.price * (1 + val / 100)).toFixed(4);
+        } else if (field === 'location_id') {
+            item.location_id = parseInt(value) || null;
+            updated[index] = item; // Update immediately for non-numeric fields logic below relies on 'val' which is fine but let's be safe
+            setNewReception({ ...newReception, items: updated });
+            return;
         }
 
         updated[index] = item;
@@ -223,7 +236,7 @@ const AdminReception = () => {
                 initial_quantity: i.quantity,
                 purchase_price: i.price, // Saving Net Price
                 vat_percent: i.vat_percent,
-                location_id: null // Unspecified location logic for now
+                location_id: i.location_id // Selected location
             }));
 
             const { error: batchError } = await supabase.from('inventory_batches').insert(batches);
@@ -499,6 +512,7 @@ const AdminReception = () => {
                         {/* Header Row for Items */}
                         <div className="items-header-row">
                             <div className="col-hf" style={{ flex: 2 }}>Produs</div>
+                            <div className="col-hf" style={{ flex: 1.5 }}>Gestiune</div>
                             <div className="col-hf">Cantitate</div>
                             <div className="col-hf">TVA</div>
                             <div className="col-hf">Preț Fără TVA</div>
@@ -512,6 +526,19 @@ const AdminReception = () => {
                                 <div className="col-name" style={{ flex: 2 }}>
                                     <strong>{item.name}</strong>
                                     <span className="unit-badge">{item.unit}</span>
+                                </div>
+
+                                <div className="col-input" style={{ flex: 1.5 }}>
+                                    <select
+                                        value={item.location_id || ''}
+                                        onChange={e => updateReceptionItem(idx, 'location_id', e.target.value)}
+                                        style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                    >
+                                        <option value="">Alege...</option>
+                                        {locations.map(loc => (
+                                            <option key={loc.id} value={loc.id}>{loc.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="col-input">
@@ -575,7 +602,7 @@ const AdminReception = () => {
                     {isSaving ? 'Se procesează...' : 'SALVEAZĂ RECEPȚIA'}
                 </button>
             </div>
-        </div>
+        </div >
     );
 
     const renderHistory = () => (
