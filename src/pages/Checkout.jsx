@@ -383,9 +383,9 @@ const Checkout = () => {
                                                 Ref: "cand cineva comanda produse de catering... daca alege alta locatie... livrare gratuita in roman dar daca e in sat..."
                                                 So this logic specifically applies to Catering. Standard delivery rules weren't explicitly changed to allow villages yet.
                                             */}
-                                            {Object.keys(DELIVERY_COSTS).map(city => (
-                                                <option key={city} value={city}>
-                                                    {city} {DELIVERY_COSTS[city] > 0 ? `(+${DELIVERY_COSTS[city]} Lei)` : '(Gratuit)'}
+                                            {deliveryZones.map(zone => (
+                                                <option key={zone.id || zone.city} value={zone.city}>
+                                                    {zone.city} {Number(zone.price) > 0 ? `(+${Number(zone.price)} Lei)` : '(Gratuit)'}
                                                 </option>
                                             ))}
                                         </select>
