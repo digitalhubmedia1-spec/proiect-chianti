@@ -128,24 +128,28 @@ const AdminMenuPlanner = () => {
 
         // --- VALIDATION: CHECK IF RECIPES EXIST ---
         const activeIds = Array.from(activeItems);
-        const { data: recipesData, error: recipeError } = await supabase
-            .from('recipes')
-            .select('product_id, ingredient_id, quantity_required')
-            .in('product_id', activeIds);
 
-        if (recipeError) {
-            alert("Eroare la verificare rețete: " + recipeError.message);
+        // Query HEADERS (defined_recipes) by linked_product_id
+        const { data: recipeHeaders, error: headError } = await supabase
+            .from('defined_recipes')
+            .select('id, linked_product_id, name')
+            .in('linked_product_id', activeIds);
+
+        if (headError) {
+            alert("Eroare la verificare rețete: " + headError.message);
             return;
         }
 
-        // Map product_id -> bool (has recipe)
-        const productHasRecipe = {};
-        recipesData.forEach(r => productHasRecipe[r.product_id] = true);
+        // Map product_id -> defined_recipe_id
+        const productToRecipeMap = {};
+        recipeHeaders.forEach(r => {
+            if (r.linked_product_id) productToRecipeMap[r.linked_product_id] = r.id;
+        });
 
-        const missingRecipeProducts = activeIds.filter(id => !productHasRecipe[id]);
+        const missingRecipeProducts = activeIds.filter(id => !productToRecipeMap[id]);
         if (missingRecipeProducts.length > 0) {
             const missingNames = missingRecipeProducts.map(id => products.find(p => p.id === id)?.name).join(", ");
-            alert(`EROARE PLANIFICARE:\nUrmătoarele produse selectate NU au o rețetă asociată:\n\n${missingNames}\n\nVă rugăm să asociați rețete acestor produse în secțiunea 'Rețete' înainte de a planifica.`);
+            alert(`EROARE PLANIFICARE:\nUrmătoarele produse selectate NU au o rețetă asociată:\n\n${missingNames}\n\nVă rugăm să asociați rețete acestor produse în secțiunea 'Rețete' (butonul 'Aprobă ca Produs' sau editând rețeta) înainte de a planifica.`);
             return;
         }
 
@@ -153,21 +157,34 @@ const AdminMenuPlanner = () => {
         const dateStr = formatDate(selectedDate);
 
         // --- PRODUCTION LOGIC (STOCK DEDUCTION) ---
-        // For each product * portions, deduct ingredients.
-        // We need to group ingredients by ID to sum them up before deducting? Or just insert multiple transactions.
-        // Let's create a list of transactions.
+        // Need to fetch INGREDIENTS for the identified recipes
+        const recipeIds = Object.values(productToRecipeMap);
+
+        const { data: ingredientsData, error: ingError } = await supabase
+            .from('recipes') // The ingredients table
+            .select('recipe_id, ingredient_id, quantity_required')
+            .in('recipe_id', recipeIds);
+
+        if (ingError) {
+            alert("Eroare la citire ingrediente: " + ingError.message);
+            setSaving(false);
+            return;
+        }
 
         const transactions = [];
 
         activeIds.forEach(prodId => {
             const portions = parseInt(stockValues[prodId]);
-            const prodRecipes = recipesData.filter(r => r.product_id === prodId);
+            const recipeId = productToRecipeMap[prodId];
 
-            prodRecipes.forEach(rec => {
-                const qtyNeeded = rec.quantity_required * portions;
+            // Find ingredients for this recipe
+            const recIngredients = ingredientsData.filter(ri => ri.recipe_id === recipeId);
+
+            recIngredients.forEach(ing => {
+                const qtyNeeded = ing.quantity_required * portions;
                 transactions.push({
                     transaction_type: 'OUT', // Consumption / Production
-                    item_id: rec.ingredient_id,
+                    item_id: ing.ingredient_id,
                     quantity: qtyNeeded,
                     reason: `Productie Meniu ${dateStr} - ${products.find(p => p.id === prodId)?.name} (${portions} portii)`,
                     operator_name: localStorage.getItem('admin_name') || 'Admin Planner',
@@ -181,9 +198,6 @@ const AdminMenuPlanner = () => {
             if (transError) {
                 console.error("Stock deduction error", transError);
                 alert("Atentie! Planificarea s-a salvat dar scaderea din stoc a esuat: " + transError.message);
-                // We typically shouldn't proceed if stock fails, but let's continue to save the menu schedule or rollback?
-                // For now, let's treat it as a hard error/blocker? User said "sa se scada automat", implying it's critical.
-                // Reverting saving...
                 setSaving(false);
                 return;
             }
