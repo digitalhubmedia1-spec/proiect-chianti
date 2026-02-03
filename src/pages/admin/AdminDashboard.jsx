@@ -468,13 +468,13 @@ const AdminDashboard = () => {
             {isMobile && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, height: '60px',
-                    background: '#1e293b', zIndex: 40, display: 'flex', alignItems: 'center', padding: '0 1rem',
+                    background: '#990000', zIndex: 40, display: 'flex', alignItems: 'center', padding: '0 1rem',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}>
                     <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', color: 'white', display: 'flex' }}>
                         <div style={{ padding: '5px' }}><Settings size={24} /></div>
                     </button>
-                    <span style={{ marginLeft: '1rem', color: '#fbbf24', fontWeight: 'bold', fontSize: '1.2rem' }}>Chianti Admin</span>
+                    <span style={{ marginLeft: '1rem', color: 'white', fontWeight: 'bold', fontSize: '1.2rem' }}>Chianti Admin</span>
                 </div>
             )}
 
