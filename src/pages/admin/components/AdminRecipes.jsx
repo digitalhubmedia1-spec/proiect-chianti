@@ -431,13 +431,17 @@ const AdminRecipes = () => {
     // Helper to get unique ingredient names for Select
     const uniqueInventoryNames = [...new Set(inventoryItems.map(i => i.name))].sort();
 
+    const removeDiacritics = (str) => {
+        return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ț/g, "t").replace(/Ț/g, "T").replace(/ș/g, "s").replace(/Ș/g, "S") : "";
+    }
+
     const exportToPDF = () => {
         const doc = new jsPDF();
 
         // Title
         doc.setFontSize(18);
         doc.setTextColor(153, 0, 0); // #990000
-        doc.text("Prețuri Referință Ingrediente", 14, 22);
+        doc.text(removeDiacritics("Prețuri Referință Ingrediente"), 14, 22);
 
         // Subtitle (Date + Filter Info)
         doc.setFontSize(11);
@@ -445,9 +449,9 @@ const AdminRecipes = () => {
         const dateStr = new Date().toLocaleDateString('ro-RO');
         let filterText = "Toate ingredientele";
         if (selectedRecipeIds.size > 0) {
-            filterText = `${selectedRecipeIds.size} rețete selectate`;
+            filterText = `${selectedRecipeIds.size} retete selectate`;
         }
-        doc.text(`Data: ${dateStr} | Filtru: ${filterText}`, 14, 30);
+        doc.text(removeDiacritics(`Data: ${dateStr} | Filtru: ${filterText}`), 14, 30);
 
         // Table Data
         const filteredItems = getFilteredIngredients();
@@ -459,20 +463,20 @@ const AdminRecipes = () => {
             const priceWithVat = price * (1 + vat / 100);
 
             return [
-                item.name,
-                item.unit,
+                removeDiacritics(item.name || ''),
+                removeDiacritics(item.unit || ''),
                 `${price.toFixed(2)} RON`,
                 `${vat}%`,
                 `${priceWithVat.toFixed(2)} RON`,
                 refData.updated_at ? new Date(refData.updated_at).toLocaleDateString('ro-RO') : '-',
-                supplier ? supplier.name : '-'
+                removeDiacritics(supplier ? supplier.name : '-')
             ];
         });
 
         // Generate Table
         autoTable(doc, {
             startY: 35,
-            head: [['Ingredient', 'UM', 'Preț Net', 'TVA', 'Preț Brut', 'Actualizat', 'Furnizor']],
+            head: [['Ingredient', 'UM', 'Pret Net', 'TVA', 'Pret Brut', 'Actualizat', 'Furnizor']],
             body: tableData,
             headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' }, // #990000
             alternateRowStyles: { fillColor: [248, 250, 252] }, // #f8fafc
