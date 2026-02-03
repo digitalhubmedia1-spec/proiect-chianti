@@ -3,8 +3,10 @@ import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
-import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check, FileDown } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminRecipes = () => {
     const { recipes, addRecipe, updateRecipe, deleteRecipe, approveRecipeAsProduct } = useRecipes();
@@ -429,6 +431,66 @@ const AdminRecipes = () => {
     // Helper to get unique ingredient names for Select
     const uniqueInventoryNames = [...new Set(inventoryItems.map(i => i.name))].sort();
 
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+
+        // Title
+        doc.setFontSize(18);
+        doc.setTextColor(153, 0, 0); // #990000
+        doc.text("Prețuri Referință Ingrediente", 14, 22);
+
+        // Subtitle (Date + Filter Info)
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        const dateStr = new Date().toLocaleDateString('ro-RO');
+        let filterText = "Toate ingredientele";
+        if (selectedRecipeIds.size > 0) {
+            filterText = `${selectedRecipeIds.size} rețete selectate`;
+        }
+        doc.text(`Data: ${dateStr} | Filtru: ${filterText}`, 14, 30);
+
+        // Table Data
+        const filteredItems = getFilteredIngredients();
+        const tableData = filteredItems.map(item => {
+            const refData = refPrices[item.id] || { price: 0, vat: 0, supplier_id: null, updated_at: null };
+            const supplier = suppliers.find(s => s.id === refData.supplier_id);
+            const price = parseFloat(refData.price) || 0;
+            const vat = parseInt(refData.vat) || 0;
+            const priceWithVat = price * (1 + vat / 100);
+
+            return [
+                item.name,
+                item.unit,
+                `${price.toFixed(2)} RON`,
+                `${vat}%`,
+                `${priceWithVat.toFixed(2)} RON`,
+                refData.updated_at ? new Date(refData.updated_at).toLocaleDateString('ro-RO') : '-',
+                supplier ? supplier.name : '-'
+            ];
+        });
+
+        // Generate Table
+        autoTable(doc, {
+            startY: 35,
+            head: [['Ingredient', 'UM', 'Preț Net', 'TVA', 'Preț Brut', 'Actualizat', 'Furnizor']],
+            body: tableData,
+            headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' }, // #990000
+            alternateRowStyles: { fillColor: [248, 250, 252] }, // #f8fafc
+            styles: { fontSize: 9, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 'auto' }, // Ingredient
+                1: { cellWidth: 15 }, // UM
+                2: { cellWidth: 25, halign: 'right' }, // Net
+                3: { cellWidth: 15, halign: 'center' }, // TVA
+                4: { cellWidth: 25, halign: 'right' }, // Brut
+                5: { cellWidth: 25, halign: 'center' }, // Date
+                6: { cellWidth: 'auto' } // Supplier
+            }
+        });
+
+        doc.save(`Preturi_Referinta_${dateStr.replace(/\./g, '-')}.pdf`);
+    };
+
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
             {/* Header Tabs */}
@@ -645,15 +707,24 @@ const AdminRecipes = () => {
                                             : 'Se afișează TOATE ingredientele din sistem.'}
                                     </p>
                                 </div>
-                                <div style={{ maxWidth: '300px' }}>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Caută în listă..."
-                                        value={searchTermRef}
-                                        onChange={e => setSearchTermRef(e.target.value)}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    />
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                    <div style={{ position: 'relative', maxWidth: '300px', flex: 1 }}>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Caută în listă..."
+                                            value={searchTermRef}
+                                            onChange={e => setSearchTermRef(e.target.value)}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                        />
+                                    </div>
+                                    <button
+                                        className="btn"
+                                        onClick={exportToPDF}
+                                        style={{ background: '#990000', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}
+                                    >
+                                        <FileDown size={18} /> Export PDF
+                                    </button>
                                 </div>
                             </div>
 
@@ -959,6 +1030,8 @@ const AdminRecipes = () => {
                                 <h3 style={{ margin: 0 }}>Gestionare Categorii</h3>
                                 <button onClick={() => setIsCatManagerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                             </div>
+
+
 
                             {/* Add New Category */}
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
