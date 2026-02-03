@@ -40,6 +40,10 @@ const AdminRecipes = () => {
     const [editingCatId, setEditingCatId] = useState(null);
     const [editingCatName, setEditingCatName] = useState('');
 
+    // --- PRODUCT SEARCH STATE ---
+    const [productSearchTerm, setProductSearchTerm] = useState('');
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
+
     const handleAddCategory = async () => {
         if (!newCatName.trim()) return;
         await addCategory(newCatName, 'catering'); // Default to catering as per request implied context? Or let user choose?
@@ -235,9 +239,18 @@ const AdminRecipes = () => {
                     unit: i.unit
                 }))
             });
+
+            // Pre-fill product search term
+            if (recipe.linked_product_id) {
+                const linkedProd = products.find(p => p.id === recipe.linked_product_id);
+                setProductSearchTerm(linkedProd ? linkedProd.name : '');
+            } else {
+                setProductSearchTerm('');
+            }
         } else {
             setEditingId(null);
             setRecipeForm({ name: '', category: '', linked_product_id: '', ingredients: [], preparation_method: '' }); // Reset category
+            setProductSearchTerm('');
         }
         setIsModalOpen(true);
     };
@@ -1079,27 +1092,75 @@ const AdminRecipes = () => {
                                     </div>
                                 </div>
 
-                                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <div className="form-group" style={{ marginBottom: '1rem', position: 'relative' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asociază cu Produs din Meniu (Opțional)</label>
-                                    <select
+                                    <input
+                                        type="text"
                                         className="form-control"
                                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                        value={recipeForm.linked_product_id}
-                                        onChange={e => {
-                                            const p = products.find(prod => prod.id == e.target.value);
-                                            setRecipeForm({
-                                                ...recipeForm,
-                                                linked_product_id: e.target.value,
-                                                // Auto-fill name only if empty
-                                                name: (recipeForm.name === '' && p) ? p.name : recipeForm.name
-                                            });
+                                        placeholder="Caută și selectează produs..."
+                                        value={productSearchTerm}
+                                        onChange={(e) => {
+                                            setProductSearchTerm(e.target.value);
+                                            setShowProductDropdown(true);
+                                            if (e.target.value === '') {
+                                                setRecipeForm({ ...recipeForm, linked_product_id: '' });
+                                            }
                                         }}
-                                    >
-                                        <option value="">-- Niciunul (Doar rețetă internă) --</option>
-                                        {products.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
-                                        ))}
-                                    </select>
+                                        onFocus={() => setShowProductDropdown(true)}
+                                    />
+                                    {showProductDropdown && (
+                                        <div style={{
+                                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60,
+                                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '4px',
+                                            maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                        }}>
+                                            <div
+                                                onClick={() => {
+                                                    setRecipeForm({ ...recipeForm, linked_product_id: '' });
+                                                    setProductSearchTerm('');
+                                                    setShowProductDropdown(false);
+                                                }}
+                                                style={{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', color: '#dc2626' }}
+                                            >
+                                                -- Niciunul (Elimină Asocierea) --
+                                            </div>
+                                            {products
+                                                .filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase()))
+                                                .map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        onClick={() => {
+                                                            setRecipeForm({
+                                                                ...recipeForm,
+                                                                linked_product_id: p.id,
+                                                                name: (recipeForm.name === '' && p) ? p.name : recipeForm.name
+                                                            });
+                                                            setProductSearchTerm(p.name);
+                                                            setShowProductDropdown(false);
+                                                        }}
+                                                        style={{
+                                                            padding: '0.5rem',
+                                                            cursor: 'pointer',
+                                                            borderBottom: '1px solid #f1f5f9',
+                                                            background: recipeForm.linked_product_id === p.id ? '#f0f9ff' : 'white'
+                                                        }}
+                                                    >
+                                                        {p.name} <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>({p.category})</span>
+                                                    </div>
+                                                ))}
+                                            {products.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).length === 0 && (
+                                                <div style={{ padding: '0.5rem', color: '#94a3b8' }}>Niciun rezultat.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {/* Overlay to close dropdown when clicking outside */}
+                                    {showProductDropdown && (
+                                        <div
+                                            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 55, background: 'transparent' }}
+                                            onClick={() => setShowProductDropdown(false)}
+                                        />
+                                    )}
                                     <small style={{ color: '#64748b' }}>Dacă selectați un produs, calculatorul va putea fi folosit automat din Meniu.</small>
                                 </div>
 
