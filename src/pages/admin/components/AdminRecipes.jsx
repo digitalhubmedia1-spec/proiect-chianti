@@ -793,8 +793,8 @@ const AdminRecipes = () => {
                                                             style={{ padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc' }}
                                                         >
                                                             <option value="0">0%</option>
-                                                            <option value="9">9%</option>
-                                                            <option value="19">19%</option>
+                                                            <option value="11">11%</option>
+                                                            <option value="21">21%</option>
                                                         </select>
                                                     </td>
                                                     <td style={{ padding: '0.75rem' }}>

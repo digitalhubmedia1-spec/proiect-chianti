@@ -126,8 +126,68 @@ const AdminMenuPlanner = () => {
             return;
         }
 
+        // --- VALIDATION: CHECK IF RECIPES EXIST ---
+        const activeIds = Array.from(activeItems);
+        const { data: recipesData, error: recipeError } = await supabase
+            .from('recipes')
+            .select('product_id, ingredient_id, quantity_required')
+            .in('product_id', activeIds);
+
+        if (recipeError) {
+            alert("Eroare la verificare rețete: " + recipeError.message);
+            return;
+        }
+
+        // Map product_id -> bool (has recipe)
+        const productHasRecipe = {};
+        recipesData.forEach(r => productHasRecipe[r.product_id] = true);
+
+        const missingRecipeProducts = activeIds.filter(id => !productHasRecipe[id]);
+        if (missingRecipeProducts.length > 0) {
+            const missingNames = missingRecipeProducts.map(id => products.find(p => p.id === id)?.name).join(", ");
+            alert(`EROARE PLANIFICARE:\nUrmătoarele produse selectate NU au o rețetă asociată:\n\n${missingNames}\n\nVă rugăm să asociați rețete acestor produse în secțiunea 'Rețete' înainte de a planifica.`);
+            return;
+        }
+
         setSaving(true);
         const dateStr = formatDate(selectedDate);
+
+        // --- PRODUCTION LOGIC (STOCK DEDUCTION) ---
+        // For each product * portions, deduct ingredients.
+        // We need to group ingredients by ID to sum them up before deducting? Or just insert multiple transactions.
+        // Let's create a list of transactions.
+
+        const transactions = [];
+
+        activeIds.forEach(prodId => {
+            const portions = parseInt(stockValues[prodId]);
+            const prodRecipes = recipesData.filter(r => r.product_id === prodId);
+
+            prodRecipes.forEach(rec => {
+                const qtyNeeded = rec.quantity_required * portions;
+                transactions.push({
+                    transaction_type: 'OUT', // Consumption / Production
+                    item_id: rec.ingredient_id,
+                    quantity: qtyNeeded,
+                    reason: `Productie Meniu ${dateStr} - ${products.find(p => p.id === prodId)?.name} (${portions} portii)`,
+                    operator_name: localStorage.getItem('admin_name') || 'Admin Planner',
+                    created_at: new Date().toISOString()
+                });
+            });
+        });
+
+        if (transactions.length > 0) {
+            const { error: transError } = await supabase.from('inventory_transactions').insert(transactions);
+            if (transError) {
+                console.error("Stock deduction error", transError);
+                alert("Atentie! Planificarea s-a salvat dar scaderea din stoc a esuat: " + transError.message);
+                // We typically shouldn't proceed if stock fails, but let's continue to save the menu schedule or rollback?
+                // For now, let's treat it as a hard error/blocker? User said "sa se scada automat", implying it's critical.
+                // Reverting saving...
+                setSaving(false);
+                return;
+            }
+        }
 
         await supabase.from('daily_menu_items').delete().eq('date', dateStr);
 
@@ -135,22 +195,22 @@ const AdminMenuPlanner = () => {
             date: dateStr,
             product_id: id,
             is_available: true,
-            stock: parseInt(stockValues[id]) // We know it's valid integer > 0 now
+            stock: parseInt(stockValues[id])
         }));
 
         if (itemsToInsert.length > 0) {
             const { error } = await supabase.from('daily_menu_items').insert(itemsToInsert);
             if (error) {
                 console.error(error);
-                alert("Eroare la salvare: " + error.message);
+                alert("Eroare la salvare meniu: " + error.message);
                 setSaving(false);
                 return;
             }
         }
 
-        logAction('MENIU_ZILNIC', `Configurat meniu pentru ${dateStr}: ${itemsToInsert.length} produse.`);
+        logAction('MENIU_ZILNIC', `Configurat meniu pentru ${dateStr}: ${itemsToInsert.length} produse. Scazut stoc automat.`);
         setSaving(false);
-        alert("Configurație salvată!");
+        alert("Configurație salvată și stoc actualizat (Producție Înregistrată)!");
     };
 
     const copyFromYesterday = async () => {
