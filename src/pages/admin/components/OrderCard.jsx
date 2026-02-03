@@ -145,31 +145,37 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                     const hasProductionImages = productionImages.length > 0;
 
                     return (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: '#334155' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {/* Quantity */}
-                                <span style={{ fontWeight: '700' }}>{item.quantity}x</span>
-
-                                {/* Production Image Thumbnail */}
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', color: '#334155', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                {/* Production Image Thumbnail - Larger and at the start */}
                                 {hasProductionImages && (
                                     <div
-                                        onClick={() => openGallery(productionImages)}
+                                        onClick={(e) => { e.stopPropagation(); openGallery(productionImages); }}
                                         style={{
-                                            width: '30px', height: '30px',
-                                            borderRadius: '4px', overflow: 'hidden',
-                                            cursor: 'pointer', border: '1px solid #cbd5e1',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            width: '60px', height: '60px',
+                                            borderRadius: '8px', overflow: 'hidden',
+                                            cursor: 'pointer', border: '2px solid #e2e8f0',
+                                            flexShrink: 0,
+                                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                            transition: 'transform 0.2s',
                                             background: '#fff'
                                         }}
-                                        title="Vezi poze ambalare"
+                                        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                        onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                                        title="Vezi mod de ambalare"
                                     >
                                         <img src={productionImages[0]} alt="Ref" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                 )}
 
-                                <span>{item.name}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: hasProductionImages ? '40px' : 'auto' }}>
+                                    <span style={{ fontSize: '1rem', lineHeight: '1.4' }}>
+                                        <span style={{ fontWeight: '800', marginRight: '6px', color: '#0f172a' }}>{item.quantity}x</span>
+                                        {item.name}
+                                    </span>
+                                </div>
                             </div>
-                            <span>{(item.price * item.quantity).toFixed(2)} Lei</span>
+                            <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '1rem' }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
                         </div>
                     );
                 })}
