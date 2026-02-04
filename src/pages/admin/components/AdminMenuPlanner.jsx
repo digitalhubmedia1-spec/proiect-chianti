@@ -238,9 +238,10 @@ const AdminMenuPlanner = () => {
                     `- ${m.name}: Necesar ${m.needed.toFixed(2)} ${m.unit} (Disponibil: ${m.available.toFixed(2)} ${m.unit})`
                 ).join('\n');
 
-                alert(`STOC INSUFICIENT!\nNu se poate realiza producția pentru meniul selectat.\n\n${errorMsg}\n\nVă rugăm să faceți recepție sau să scădeți numărul de porții.`);
-                setSaving(false);
-                return;
+                if (!confirm(`STOC INSUFICIENT!\nUrmătoarele produse nu au suficiente ingrediente:\n\n${errorMsg}\n\nDoriți să continuați totuși? (Stocul va deveni negativ)`)) {
+                    setSaving(false);
+                    return;
+                }
             }
         }
 
