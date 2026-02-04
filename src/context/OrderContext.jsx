@@ -17,7 +17,9 @@ export const OrderProvider = ({ children }) => {
         deliveryCost: dbOrder.delivery_cost,
         assignedDriverId: dbOrder.assigned_driver_id,
         driverStatus: dbOrder.driver_status,
-        isCatering: dbOrder.is_catering
+        isCatering: dbOrder.is_catering,
+        orderNumber: dbOrder.order_number,
+        userId: dbOrder.user_id
     });
 
     useEffect(() => {
@@ -69,7 +71,8 @@ export const OrderProvider = ({ children }) => {
             total: orderData.finalTotal, // Store in both generic total and specific final
             delivery_cost: orderData.deliveryCost || 0,
             is_catering: orderData.isCatering || false,
-            archived: false
+            archived: false,
+            user_id: orderData.userId || null
         };
 
         const { error } = await supabase.from('orders').insert([newOrder]);

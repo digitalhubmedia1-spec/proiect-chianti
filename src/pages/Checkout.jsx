@@ -193,7 +193,8 @@ const Checkout = () => {
             subtotal: cartTotal,
             deliveryCost: deliveryCost,
             isCatering: hasCateringItems,
-            discount: discount ? { code: discount.code, amount: discountAmount, percent: discount.percent } : null
+            discount: discount ? { code: discount.code, amount: discountAmount, percent: discount.percent } : null,
+            userId: user?.id || null
         });
 
         // 4. Clear Cart & Redirect

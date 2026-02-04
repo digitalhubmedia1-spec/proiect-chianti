@@ -72,8 +72,8 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
                             border: '1px solid #f0f0f0',
                             borderTop: 'none'
                         }}>
-                            {/* Driver Assignment for Delivering Orders */}
-                            {status === 'delivering' && (
+                            {/* Driver Assignment for Delivering Orders - ONLY for Delivery Methods */}
+                            {status === 'delivering' && (order.customer?.deliveryMethod === 'delivery' || order.customer?.deliveryMethod === 'event-location') && (
                                 <div className="mb-3">
                                     <label style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '4px', display: 'block' }}>
                                         ASIGNEAZĂ LIVRATOR

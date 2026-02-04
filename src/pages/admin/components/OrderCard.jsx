@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
+import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog } from 'lucide-react';
 import { useMenu } from '../../../context/MenuContext';
 
 const OrderCard = ({ order, showActions = false, onConfirm }) => {
@@ -90,7 +90,20 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontWeight: '800', color: '#1e293b', fontSize: '1.1rem' }}>#{order.id.slice(-6)}</span>
+                    <span style={{ fontWeight: '800', color: '#1e293b', fontSize: '1.1rem' }}>
+                        #{order.orderNumber ? order.orderNumber : order.id.slice(-6)}
+                    </span>
+                    {order.userId && (
+                        <div title="Client Înregistrat" style={{
+                            background: '#dbeafe',
+                            color: '#1e40af',
+                            borderRadius: '50%',
+                            padding: '4px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <UserCog size={14} />
+                        </div>
+                    )}
                     {isCatering && (
                         <span style={{
                             background: '#f3e8ff',
@@ -103,9 +116,14 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                         }}>Catering</span>
                     )}
                 </div>
-                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>
-                    {order.date && !isNaN(new Date(order.date)) ? new Date(order.date).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : ''}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>
+                        {order.created_at ? new Date(order.created_at).toLocaleDateString('ro-RO') : ''}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        {order.created_at ? new Date(order.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                </div>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
