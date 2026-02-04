@@ -646,92 +646,91 @@ const AdminRecipes = () => {
                 activeTab === 'cost_calculator' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-                        {/* RECIPE MULTI-SELECTOR (SHARED) - HIDDEN FOR COST_PRODUCTIE */}
-                        {adminRole !== 'cost_productie' && (
-                            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                <h3>Selectare Rețete (Filtru & Calculator)</h3>
-                                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                                    Selectați una sau mai multe rețete pentru a filtra lista de ingrediente (mai jos) și pentru a calcula costurile cumulate.
-                                </p>
+                        {/* RECIPE MULTI-SELECTOR (SHARED) */}
+                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                            <h3>Filtrare Rețete</h3>
+                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                Selectați una sau mai multe rețete pentru a filtra lista de ingrediente (mai jos) și pentru a calcula costurile cumulate.
+                            </p>
 
-                                <div style={{ position: 'relative' }}>
-                                    <div
-                                        className="form-control"
-                                        onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
-                                        style={{ padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                    >
-                                        <span>
-                                            {selectedRecipeIds.size === 0
-                                                ? 'Selectează Rețete...'
-                                                : `${selectedRecipeIds.size} rețete selectate (${Array.from(selectedRecipeIds).map(id => recipes.find(r => r.id === id)?.name).join(', ').slice(0, 50)}${selectedRecipeIds.size > 2 ? '...' : ''})`}
-                                        </span>
-                                        <span style={{ fontSize: '0.8rem' }}>▼</span>
-                                    </div>
-
-                                    {showRecipeDropdown && (
-                                        <div style={{
-                                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
-                                            maxHeight: '300px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '5px'
-                                        }}>
-                                            <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    placeholder="Caută rețetă..."
-                                                    value={recipeSearchTerm}
-                                                    onChange={(e) => setRecipeSearchTerm(e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                                />
-                                            </div>
-                                            <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
-                                                <button
-                                                    className="btn-text"
-                                                    onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set(recipes.map(r => r.id))); }}
-                                                    style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                >
-                                                    Selectează Tot
-                                                </button>
-                                                <button
-                                                    className="btn-text"
-                                                    onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set()); }}
-                                                    style={{ fontSize: '0.8rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                >
-                                                    Deselectează Tot
-                                                </button>
-                                            </div>
-                                            {recipes
-                                                .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
-                                                .map(r => (
-                                                    <div
-                                                        key={r.id}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleRecipeSelection(r.id);
-                                                        }}
-                                                        style={{
-                                                            padding: '0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
-                                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                                            background: selectedRecipeIds.has(r.id) ? '#f0f9ff' : 'white'
-                                                        }}
-                                                    >
-                                                        <div style={{
-                                                            width: '18px', height: '18px', borderRadius: '4px', border: '2px solid #cbd5e1',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            background: selectedRecipeIds.has(r.id) ? '#0284c7' : 'white',
-                                                            borderColor: selectedRecipeIds.has(r.id) ? '#0284c7' : '#cbd5e1'
-                                                        }}>
-                                                            {selectedRecipeIds.has(r.id) && <Check size={12} color="white" />}
-                                                        </div>
-                                                        <span>{r.name}</span>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
+                            <div style={{ position: 'relative' }}>
+                                <div
+                                    className="form-control"
+                                    onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
+                                    style={{ padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                >
+                                    <span>
+                                        {selectedRecipeIds.size === 0
+                                            ? 'Selectează Rețete...'
+                                            : `${selectedRecipeIds.size} rețete selectate (${Array.from(selectedRecipeIds).map(id => recipes.find(r => r.id === id)?.name).join(', ').slice(0, 50)}${selectedRecipeIds.size > 2 ? '...' : ''})`}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem' }}>▼</span>
                                 </div>
+
+                                {showRecipeDropdown && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                        maxHeight: '300px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '5px'
+                                    }}>
+                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Caută rețetă..."
+                                                value={recipeSearchTerm}
+                                                onChange={(e) => setRecipeSearchTerm(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                            />
+                                        </div>
+                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
+                                            <button
+                                                className="btn-text"
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set(recipes.map(r => r.id))); }}
+                                                style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Selectează Tot
+                                            </button>
+                                            <button
+                                                className="btn-text"
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set()); }}
+                                                style={{ fontSize: '0.8rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Deselectează Tot
+                                            </button>
+                                        </div>
+                                        {recipes
+                                            .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
+                                            .map(r => (
+                                                <div
+                                                    key={r.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleRecipeSelection(r.id);
+                                                    }}
+                                                    style={{
+                                                        padding: '0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                                        background: selectedRecipeIds.has(r.id) ? '#f0f9ff' : 'white'
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width: '18px', height: '18px', borderRadius: '4px', border: '2px solid #cbd5e1',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        background: selectedRecipeIds.has(r.id) ? '#0284c7' : 'white',
+                                                        borderColor: selectedRecipeIds.has(r.id) ? '#0284c7' : '#cbd5e1'
+                                                    }}>
+                                                        {selectedRecipeIds.has(r.id) && <Check size={12} color="white" />}
+                                                    </div>
+                                                    <span>{r.name}</span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
+
 
                         {/* REFERENCE PRICES SECTION (FILTERED) */}
                         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>

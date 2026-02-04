@@ -146,6 +146,7 @@ const AdminDashboard = () => {
             return ['orders', 'recipes'].includes(tab);
         }
         if (adminRole === 'cost_productie') {
+            if (tab === 'procurement') return false;
             return ['recipes'].includes(tab);
         }
         return false;
