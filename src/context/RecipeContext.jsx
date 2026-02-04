@@ -141,7 +141,11 @@ export const RecipeProvider = ({ children }) => {
             return { success: true };
         } catch (err) {
             console.error("Error adding recipe:", err);
-            alert("Eroare la salvarea rețetei: " + err.message);
+            if (err.code === '23505') {
+                alert("Există deja o rețetă cu acest nume! Vă rugăm să alegeți alt nume.");
+            } else {
+                alert("Eroare la salvarea rețetei: " + err.message);
+            }
             return { success: false, error: err };
         }
     };
@@ -204,7 +208,11 @@ export const RecipeProvider = ({ children }) => {
             return { success: true };
         } catch (err) {
             console.error("Error updating recipe:", err);
-            alert("Eroare update: " + err.message);
+            if (err.code === '23505') {
+                alert("Există deja o rețetă cu acest nume! Vă rugăm să alegeți alt nume.");
+            } else {
+                alert("Eroare update: " + err.message);
+            }
             return { success: false };
         }
     };
