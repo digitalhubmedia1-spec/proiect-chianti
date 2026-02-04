@@ -16,6 +16,16 @@ const AdminRecipes = () => {
     const [activeTab, setActiveTab] = useState('manage');
     const [selectedCategory, setSelectedCategory] = useState('');
 
+    // --- ROLE & PERMISSIONS ---
+    const [adminRole, setAdminRole] = useState(null);
+    useEffect(() => {
+        const role = localStorage.getItem('admin_role');
+        setAdminRole(role);
+        if (role === 'cost_productie') {
+            setActiveTab('cost_calculator');
+        }
+    }, []);
+
     // --- MOBILE CHECK ---
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     useEffect(() => {
@@ -500,31 +510,33 @@ const AdminRecipes = () => {
 
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
-            {/* Header Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-                <button
-                    className={`tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('manage')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'manage' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'manage' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
-                >
-                    Gestionare Rețete
-                </button>
+            {/* Header Tabs (Hidden for cost_productie) */}
+            {adminRole !== 'cost_productie' && (
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                    <button
+                        className={`tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('manage')}
+                        style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'manage' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'manage' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
+                    >
+                        Gestionare Rețete
+                    </button>
 
-                <button
-                    className={`tab-btn ${activeTab === 'cost_calculator' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('cost_calculator')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'cost_calculator' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'cost_calculator' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
-                >
-                    Prețuri Referință & Costuri
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'production' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('production')}
-                    style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'production' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'production' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
-                >
-                    Producție (Scădere Stoc)
-                </button>
-            </div>
+                    <button
+                        className={`tab-btn ${activeTab === 'cost_calculator' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('cost_calculator')}
+                        style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'cost_calculator' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'cost_calculator' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
+                    >
+                        Prețuri Referință & Costuri
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'production' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('production')}
+                        style={{ padding: '1rem', border: 'none', background: 'none', borderBottom: activeTab === 'production' ? '2px solid #990000' : 'none', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'production' ? '#990000' : '#64748b', flex: isMobile ? '1 1 100%' : 'initial' }}
+                    >
+                        Producție (Scădere Stoc)
+                    </button>
+                </div>
+            )}
 
             {/* --- TAB 1: MANAGE RECIPES --- */}
             {
@@ -634,90 +646,92 @@ const AdminRecipes = () => {
                 activeTab === 'cost_calculator' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-                        {/* RECIPE MULTI-SELECTOR (SHARED) */}
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <h3>Selectare Rețete (Filtru & Calculator)</h3>
-                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                                Selectați una sau mai multe rețete pentru a filtra lista de ingrediente (mai jos) și pentru a calcula costurile cumulate.
-                            </p>
+                        {/* RECIPE MULTI-SELECTOR (SHARED) - HIDDEN FOR COST_PRODUCTIE */}
+                        {adminRole !== 'cost_productie' && (
+                            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                <h3>Selectare Rețete (Filtru & Calculator)</h3>
+                                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                    Selectați una sau mai multe rețete pentru a filtra lista de ingrediente (mai jos) și pentru a calcula costurile cumulate.
+                                </p>
 
-                            <div style={{ position: 'relative' }}>
-                                <div
-                                    className="form-control"
-                                    onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
-                                    style={{ padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                >
-                                    <span>
-                                        {selectedRecipeIds.size === 0
-                                            ? 'Selectează Rețete...'
-                                            : `${selectedRecipeIds.size} rețete selectate (${Array.from(selectedRecipeIds).map(id => recipes.find(r => r.id === id)?.name).join(', ').slice(0, 50)}${selectedRecipeIds.size > 2 ? '...' : ''})`}
-                                    </span>
-                                    <span style={{ fontSize: '0.8rem' }}>▼</span>
-                                </div>
-
-                                {showRecipeDropdown && (
-                                    <div style={{
-                                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
-                                        maxHeight: '300px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '5px'
-                                    }}>
-                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
-                                            <input
-                                                autoFocus
-                                                type="text"
-                                                placeholder="Caută rețetă..."
-                                                value={recipeSearchTerm}
-                                                onChange={(e) => setRecipeSearchTerm(e.target.value)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                                            />
-                                        </div>
-                                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
-                                            <button
-                                                className="btn-text"
-                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set(recipes.map(r => r.id))); }}
-                                                style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                Selectează Tot
-                                            </button>
-                                            <button
-                                                className="btn-text"
-                                                onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set()); }}
-                                                style={{ fontSize: '0.8rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                Deselectează Tot
-                                            </button>
-                                        </div>
-                                        {recipes
-                                            .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
-                                            .map(r => (
-                                                <div
-                                                    key={r.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleRecipeSelection(r.id);
-                                                    }}
-                                                    style={{
-                                                        padding: '0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
-                                                        display: 'flex', alignItems: 'center', gap: '10px',
-                                                        background: selectedRecipeIds.has(r.id) ? '#f0f9ff' : 'white'
-                                                    }}
-                                                >
-                                                    <div style={{
-                                                        width: '18px', height: '18px', borderRadius: '4px', border: '2px solid #cbd5e1',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        background: selectedRecipeIds.has(r.id) ? '#0284c7' : 'white',
-                                                        borderColor: selectedRecipeIds.has(r.id) ? '#0284c7' : '#cbd5e1'
-                                                    }}>
-                                                        {selectedRecipeIds.has(r.id) && <Check size={12} color="white" />}
-                                                    </div>
-                                                    <span>{r.name}</span>
-                                                </div>
-                                            ))}
+                                <div style={{ position: 'relative' }}>
+                                    <div
+                                        className="form-control"
+                                        onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
+                                        style={{ padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                    >
+                                        <span>
+                                            {selectedRecipeIds.size === 0
+                                                ? 'Selectează Rețete...'
+                                                : `${selectedRecipeIds.size} rețete selectate (${Array.from(selectedRecipeIds).map(id => recipes.find(r => r.id === id)?.name).join(', ').slice(0, 50)}${selectedRecipeIds.size > 2 ? '...' : ''})`}
+                                        </span>
+                                        <span style={{ fontSize: '0.8rem' }}>▼</span>
                                     </div>
-                                )}
+
+                                    {showRecipeDropdown && (
+                                        <div style={{
+                                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                            maxHeight: '300px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '5px'
+                                        }}>
+                                            <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    placeholder="Caută rețetă..."
+                                                    value={recipeSearchTerm}
+                                                    onChange={(e) => setRecipeSearchTerm(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                                />
+                                            </div>
+                                            <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
+                                                <button
+                                                    className="btn-text"
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set(recipes.map(r => r.id))); }}
+                                                    style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                >
+                                                    Selectează Tot
+                                                </button>
+                                                <button
+                                                    className="btn-text"
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedRecipeIds(new Set()); }}
+                                                    style={{ fontSize: '0.8rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                >
+                                                    Deselectează Tot
+                                                </button>
+                                            </div>
+                                            {recipes
+                                                .filter(r => r.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
+                                                .map(r => (
+                                                    <div
+                                                        key={r.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleRecipeSelection(r.id);
+                                                        }}
+                                                        style={{
+                                                            padding: '0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                                                            display: 'flex', alignItems: 'center', gap: '10px',
+                                                            background: selectedRecipeIds.has(r.id) ? '#f0f9ff' : 'white'
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            width: '18px', height: '18px', borderRadius: '4px', border: '2px solid #cbd5e1',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            background: selectedRecipeIds.has(r.id) ? '#0284c7' : 'white',
+                                                            borderColor: selectedRecipeIds.has(r.id) ? '#0284c7' : '#cbd5e1'
+                                                        }}>
+                                                            {selectedRecipeIds.has(r.id) && <Check size={12} color="white" />}
+                                                        </div>
+                                                        <span>{r.name}</span>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* REFERENCE PRICES SECTION (FILTERED) */}
                         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
@@ -844,95 +858,97 @@ const AdminRecipes = () => {
                             </div>
                         </div>
 
-                        {/* COST CALCULATOR SECTION (MULTI) */}
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <h3>Calculator Costuri Multi-Rețetă</h3>
-                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Calculează costul total pentru rețetele selectate mai sus.</p>
-                                </div>
-                                <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={selectedRecipeIds.size === 0}>
-                                    <Calculator size={18} /> Calculează Costuri
-                                </button>
-                            </div>
-
-                            {recipeCostResult && (
-                                <div style={{ marginTop: '2rem' }}>
-                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                                        <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
-                                            <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (FĂRĂ TVA)</div>
-                                            <div style={{ fontSize: '1.8rem', color: '#16a34a', fontWeight: 'bold' }}>{recipeCostResult.grandTotalNoVat?.toFixed(2)} RON</div>
-                                        </div>
-                                        <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
-                                            <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (CU TVA)</div>
-                                            <div style={{ fontSize: '1.8rem', color: '#dc2626', fontWeight: 'bold' }}>{recipeCostResult.grandTotalWithVat?.toFixed(2)} RON</div>
-                                        </div>
+                        {/* COST CALCULATOR SECTION (MULTI) - HIDDEN FOR COST_PRODUCTIE */}
+                        {adminRole !== 'cost_productie' && (
+                            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <h3>Calculator Costuri Multi-Rețetă</h3>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Calculează costul total pentru rețetele selectate mai sus.</p>
                                     </div>
+                                    <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={selectedRecipeIds.size === 0}>
+                                        <Calculator size={18} /> Calculează Costuri
+                                    </button>
+                                </div>
 
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-                                            <thead>
-                                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
-                                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (FĂRĂ TVA)</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (CU TVA)</th>
-                                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {recipeCostResult.recipes.map((res, idx) => (
-                                                    <React.Fragment key={res.id}>
-                                                        <tr
-                                                            style={{ borderBottom: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
-                                                            onClick={() => setRecipeCostResult(prev => ({ ...prev, expandedId: prev.expandedId === res.id ? null : res.id }))}
-                                                        >
-                                                            <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
-                                                            </td>
-                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
-                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
-                                                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
-                                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                                <button className="btn-text" style={{ color: '#2563eb' }}>Detalii</button>
-                                                            </td>
-                                                        </tr>
-                                                        {recipeCostResult.expandedId === res.id && (
-                                                            <tr style={{ background: '#f8fafc' }}>
-                                                                <td colSpan="5" style={{ padding: '1rem' }}>
-                                                                    <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
-                                                                        <thead>
-                                                                            <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
-                                                                                <th style={{ padding: '0.5rem' }}>Ingredient</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (FĂRĂ TVA)</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (FĂRĂ TVA)</th>
-                                                                                <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (CU TVA)</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {res.ingredients.map((ing, i) => (
-                                                                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
-                                                                                    <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
-                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
-                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
-                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
-                                                                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
+                                {recipeCostResult && (
+                                    <div style={{ marginTop: '2rem' }}>
+                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
+                                                <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (FĂRĂ TVA)</div>
+                                                <div style={{ fontSize: '1.8rem', color: '#16a34a', fontWeight: 'bold' }}>{recipeCostResult.grandTotalNoVat?.toFixed(2)} RON</div>
+                                            </div>
+                                            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
+                                                <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (CU TVA)</div>
+                                                <div style={{ fontSize: '1.8rem', color: '#dc2626', fontWeight: 'bold' }}>{recipeCostResult.grandTotalWithVat?.toFixed(2)} RON</div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                                                <thead>
+                                                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (FĂRĂ TVA)</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (CU TVA)</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {recipeCostResult.recipes.map((res, idx) => (
+                                                        <React.Fragment key={res.id}>
+                                                            <tr
+                                                                style={{ borderBottom: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
+                                                                onClick={() => setRecipeCostResult(prev => ({ ...prev, expandedId: prev.expandedId === res.id ? null : res.id }))}
+                                                            >
+                                                                <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
+                                                                </td>
+                                                                <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
+                                                                <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
+                                                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
+                                                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                                    <button className="btn-text" style={{ color: '#2563eb' }}>Detalii</button>
                                                                 </td>
                                                             </tr>
-                                                        )}
-                                                    </React.Fragment>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                            {recipeCostResult.expandedId === res.id && (
+                                                                <tr style={{ background: '#f8fafc' }}>
+                                                                    <td colSpan="5" style={{ padding: '1rem' }}>
+                                                                        <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
+                                                                            <thead>
+                                                                                <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
+                                                                                    <th style={{ padding: '0.5rem' }}>Ingredient</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (FĂRĂ TVA)</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (FĂRĂ TVA)</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (CU TVA)</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {res.ingredients.map((ing, i) => (
+                                                                                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
+                                                                                        <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </div >
                 )
             }

@@ -71,6 +71,9 @@ const AdminDashboard = () => {
         if (role === 'chef') {
             setActiveTab('orders');
         }
+        if (role === 'cost_productie') {
+            setActiveTab('recipes');
+        }
     }, []);
 
     // Navigation Config
@@ -141,6 +144,9 @@ const AdminDashboard = () => {
         }
         if (adminRole === 'chef') {
             return ['orders', 'recipes'].includes(tab);
+        }
+        if (adminRole === 'cost_productie') {
+            return ['recipes'].includes(tab);
         }
         return false;
     };
