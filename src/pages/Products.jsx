@@ -401,17 +401,26 @@ const Products = () => {
                                 setSelectedDate(newDate);
                             }}
                             style={{
-                                padding: '10px 20px',
-                                fontSize: '1rem',
-                                borderRadius: '8px',
-                                border: '1px solid #ddd',
+                                padding: '16px 24px',
+                                fontSize: '1.3rem',
+                                fontWeight: '700',
+                                borderRadius: '12px',
+                                border: '2px solid #e2e8f0',
                                 background: 'white',
-                                color: '#333',
+                                color: '#1e293b',
                                 cursor: 'pointer',
                                 outline: 'none',
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                                minWidth: '250px',
-                                textAlign: 'center'
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                minWidth: '320px',
+                                textAlign: 'center',
+                                transition: 'all 0.2s ease',
+                                height: 'auto',
+                                appearance: 'none', // Remove default arrow to style better if needed, but standard select is safer for now
+                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                backgroundPosition: 'right 1rem center',
+                                backgroundRepeat: 'no-repeat',
+                                backgroundSize: '1.5em 1.5em',
+                                paddingRight: '3.5rem' // Make space for custom arrow
                             }}
                         >
                             {validDates.map((date, i) => {
