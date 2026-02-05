@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog } from 'lucide-react';
+import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog, Info } from 'lucide-react';
 import { useMenu } from '../../../context/MenuContext';
 
 const OrderCard = ({ order, showActions = false, onConfirm }) => {
     const { products } = useMenu();
     const [lightboxImages, setLightboxImages] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [instructionModal, setInstructionModal] = useState(null); // { title: '', text: '' }
 
     const deliveryMethod = order.customer.deliveryMethod;
     const isDelivery = deliveryMethod === 'delivery' || deliveryMethod === 'event-location';
@@ -86,7 +87,29 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                         <ChevronRight size={32} />
                     </button>
                 </div>
-            )}
+{/* Instructions Modal */}
+            {
+                instructionModal && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }} onClick={() => setInstructionModal(null)}>
+                        <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '500px', width: '90%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setInstructionModal(null)} style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X size={24} />
+                            </button>
+                            <h3 style={{ marginTop: 0, color: '#990000', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>{instructionModal.title}</h3>
+                            <div style={{ marginTop: '1rem', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                {instructionModal.text}
+                            </div>
+                            <button onClick={() => setInstructionModal(null)} style={{ marginTop: '1.5rem', width: '100%', padding: '10px', background: '#990000', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                Am înțeles
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -191,6 +214,20 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                         <span style={{ fontWeight: '800', marginRight: '6px', color: '#0f172a' }}>{item.quantity}x</span>
                                         {item.name}
                                     </span>
+                                    {product?.internal_instructions && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setInstructionModal({ title: `Instrucțiuni: ${item.name}`, text: product.internal_instructions }); }}
+                                            style={{
+                                                marginTop: '4px',
+                                                background: '#fee2e2', color: '#990000', border: '1px solid #fecaca',
+                                                borderRadius: '4px', padding: '4px 8px', fontSize: '0.8rem',
+                                                display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                                                width: 'fit-content', fontWeight: 'bold'
+                                            }}
+                                        >
+                                            <Info size={14} /> Vezi Instrucțiuni
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '1rem' }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
@@ -256,32 +293,34 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                 )}
             </div>
 
-            {showActions && (
-                <button
-                    onClick={() => onConfirm(order.id)}
-                    className="btn"
-                    style={{
-                        width: '100%',
-                        background: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.75rem',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        marginTop: '1rem',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '1rem',
-                        boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)'
-                    }}
-                >
-                    <Check size={18} /> Confirmă Comanda
-                </button>
-            )}
-        </div>
+            {
+                showActions && (
+                    <button
+                        onClick={() => onConfirm(order.id)}
+                        className="btn"
+                        style={{
+                            width: '100%',
+                            background: '#16a34a',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.75rem',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            marginTop: '1rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 6px -1px rgba(22, 163, 74, 0.2)'
+                        }}
+                    >
+                        <Check size={18} /> Confirmă Comanda
+                    </button>
+                )
+            }
+        </div >
     );
 };
 
