@@ -188,7 +188,7 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
 
                     return (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', color: '#334155', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
                                 {/* Production Image Thumbnail - Larger and at the start */}
                                 {hasProductionImages && (
                                     <div
@@ -216,8 +216,8 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                     </div>
                                 )}
 
-                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: hasProductionImages ? '40px' : 'auto' }}>
-                                    <span style={{ fontSize: '1rem', lineHeight: '1.4' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: hasProductionImages ? '40px' : 'auto', flex: 1, minWidth: 0 }}>
+                                    <span style={{ fontSize: '1rem', lineHeight: '1.4', wordWrap: 'break-word' }}>
                                         <span style={{ fontWeight: '800', marginRight: '6px', color: '#0f172a' }}>{item.quantity}x</span>
                                         {item.name}
                                     </span>
@@ -237,7 +237,7 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                     )}
                                 </div>
                             </div>
-                            <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '1rem' }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
+                            <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '0.5rem', flexShrink: 0 }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
                         </div>
                     );
                 })}
