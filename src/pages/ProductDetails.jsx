@@ -135,11 +135,9 @@ const ProductDetails = () => {
                         <p><strong>Gramaj:</strong> {product.weight}</p>
                         {product.ingredients && <p><strong>Ingrediente:</strong> {product.ingredients}</p>}
                         {product.allergens && <p><strong>Alergeni:</strong> {product.allergens}</p>}
-                        {stock !== null && (
+                        {stock !== null && (stock < 10 || stock === 0) && (
                             <p style={{ color: stock > 0 ? '#16a34a' : '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>
-                                {stock === 0
-                                    ? 'Stoc Epuizat'
-                                    : (stock < 10 ? `Stoc disponibil: ${stock} porții` : 'Stoc disponibil')}
+                                {stock === 0 ? 'Stoc Epuizat' : `Stoc disponibil: ${stock} porții`}
                             </p>
                         )}
                     </div>
