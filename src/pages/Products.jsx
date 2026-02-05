@@ -50,8 +50,35 @@ const Products = () => {
     };
 
     // Date Selection State
-    const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const validDates = getNextWeekdays(new Date(), 7);
+
+    // Initial Date Logic: Check URL param -> Fallback to valid logic
+    const getInitialDateFromUrl = () => {
+        const dateParam = searchParams.get('date');
+        if (dateParam) {
+            const parsed = new Date(dateParam);
+            // Basic validation: is it a valid date?
+            if (!isNaN(parsed.getTime())) {
+                return parsed;
+            }
+        }
+        return getInitialDate();
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getInitialDateFromUrl());
+
+    // Update URL when selectedDate changes (OPTIONAL: Do this in the change handler instead to avoid loops if needed, but effect is cleaner)
+    useEffect(() => {
+        const currentStr = formatDate(selectedDate);
+        const urlStr = searchParams.get('date');
+
+        if (currentStr !== urlStr) {
+            setSearchParams(prev => {
+                prev.set('date', currentStr);
+                return prev;
+            }, { replace: true });
+        }
+    }, [selectedDate, setSearchParams]);
     const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
 
     // --- PAGINATION HOOKS HOISTED ---

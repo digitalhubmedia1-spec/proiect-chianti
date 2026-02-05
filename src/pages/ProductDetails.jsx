@@ -72,7 +72,16 @@ const ProductDetails = () => {
 
     return (
         <div className="product-details-page container">
-            <button onClick={() => navigate(-1)} className="btn-back">
+            <button
+                onClick={() => {
+                    if (dateParam) {
+                        navigate(`/produse?view=catalog&date=${dateParam}`);
+                    } else {
+                        navigate(-1);
+                    }
+                }}
+                className="btn-back"
+            >
                 <ArrowLeft size={20} /> Înapoi la Meniu
             </button>
 
