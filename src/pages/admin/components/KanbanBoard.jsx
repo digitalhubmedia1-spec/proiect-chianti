@@ -1,7 +1,7 @@
 import React from 'react';
 import OrderCard from './OrderCard';
 import { useOrder } from '../../../context/OrderContext';
-import { ArrowRight, Check, Trash2 } from 'lucide-react';
+import { ArrowRight, Check, Trash2, ArrowLeft } from 'lucide-react';
 
 import { useAuth } from '../../../context/AuthContext';
 
@@ -143,27 +143,49 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
                                     </button>
                                 )}
                                 {status === 'delivering' && (
-                                    <button
-                                        onClick={() => onMove(order.id, 'completed')}
-                                        style={{
-                                            flex: 1,
-                                            background: '#10b981', // Emerald Green
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '8px 12px',
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem',
-                                            fontWeight: '600',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '6px',
-                                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
-                                        }}
-                                    >
-                                        Finalizează <Check size={14} />
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={() => onMove(order.id, 'preparing')}
+                                            style={{
+                                                background: '#f1f5f9',
+                                                color: '#475569',
+                                                border: '1px solid #cbd5e1',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.85rem',
+                                                fontWeight: '600',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px'
+                                            }}
+                                            title="Înapoi la Preparare"
+                                        >
+                                            <ArrowLeft size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => onMove(order.id, 'completed')}
+                                            style={{
+                                                flex: 1, // Take remaining space
+                                                background: '#10b981', // Emerald Green
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.85rem',
+                                                fontWeight: '600',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px',
+                                                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+                                            }}
+                                        >
+                                            Finalizează <Check size={14} />
+                                        </button>
+                                    </>
                                 )}
                                 {(status === 'completed' || status === 'cancelled') && (
                                     <button
