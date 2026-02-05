@@ -79,7 +79,7 @@ const ProductDetails = () => {
             <div className="product-details-grid">
                 <div className="product-image-section">
                     <div className="product-image-large" onClick={openImageModal} style={{ cursor: 'zoom-in', position: 'relative' }}>
-                        {stock !== null && stock <= 10 && stock > 0 && (
+                        {stock !== null && stock < 10 && stock > 0 && (
                             <div style={{
                                 position: 'absolute',
                                 top: '15px',
@@ -137,7 +137,9 @@ const ProductDetails = () => {
                         {product.allergens && <p><strong>Alergeni:</strong> {product.allergens}</p>}
                         {stock !== null && (
                             <p style={{ color: stock > 0 ? '#16a34a' : '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>
-                                {stock > 0 ? `Stoc disponibil: ${stock} porții` : 'Stoc Epuizat'}
+                                {stock === 0
+                                    ? 'Stoc Epuizat'
+                                    : (stock < 10 ? `Stoc disponibil: ${stock} porții` : 'Stoc disponibil')}
                             </p>
                         )}
                     </div>

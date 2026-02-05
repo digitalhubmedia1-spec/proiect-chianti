@@ -494,7 +494,7 @@ const Products = () => {
                                 if (stock !== null && stock !== undefined) stock = parseInt(stock);
 
                                 const isOutOfStock = stock === 0;
-                                const isLowStock = stock !== null && stock !== undefined && stock <= 10 && stock > 0;
+                                const isLowStock = stock !== null && stock !== undefined && stock < 10 && stock > 0;
 
                                 return (
                                     <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}`)} style={{ cursor: 'pointer', position: 'relative' }}>
