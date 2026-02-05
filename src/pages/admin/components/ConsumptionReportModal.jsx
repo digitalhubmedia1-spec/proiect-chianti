@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, FileText, ShoppingCart, Check, Download, AlertTriangle } from 'lucide-react';
 import { useConsumption } from '../../../hooks/useConsumption';
 import { supabase } from '../../../supabaseClient';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { logAction } from '../../../utils/adminLogger';
 
@@ -67,34 +67,45 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, pr
     };
 
     const exportPDF = () => {
-        const doc = new jsPDF();
-        doc.setFont("helvetica");
-        doc.setFontSize(18);
-        doc.text(previewData ? "Raport Necesar (PREVIZUALIZARE)" : "Raport Necesar Consum", 14, 20);
+        try {
+            const doc = new jsPDF();
+            doc.setFont("helvetica");
+            doc.setFontSize(18);
+            doc.text(previewData ? "Raport Necesar (PREVIZUALIZARE)" : "Raport Necesar Consum", 14, 20);
 
-        doc.setFontSize(10);
-        doc.text(`Perioada: ${dateRange?.start || '-'} - ${dateRange?.end || '-'}`, 14, 30);
-        doc.text(`Categorie: ${categoryFilter}`, 14, 35);
-        doc.text(`Generat la: ${new Date().toLocaleString('ro-RO')}`, 14, 40);
+            doc.setFontSize(10);
+            const dateStr = dateRange?.start ? `${dateRange.start} - ${dateRange.end}` : 'Nespecificat';
+            doc.text(`Perioada: ${dateStr}`, 14, 30);
+            doc.text(`Categorie: ${categoryFilter || 'Toate'}`, 14, 35);
+            doc.text(`Generat la: ${new Date().toLocaleString('ro-RO')}`, 14, 40);
 
-        const tableData = needs.map(item => [
-            sanitizeForPDF(item.name),
-            `${item.required.toFixed(2)} ${item.unit}`,
-            `${item.stock.toFixed(2)} ${item.unit}`,
-            item.to_buy > 0 ? `${item.to_buy.toFixed(2)} ${item.unit}` : 'OK',
-            item.to_buy > 0 ? `${item.estimated_cost.toFixed(2)} RON` : '-'
-        ]);
+            // Note: jsPDF default Helvetica does not support all Romanian diacritics. 
+            // We sanitize to ensure PDF generates without error/garbage.
+            const tableData = needs.map(item => [
+                sanitizeForPDF(item.name),
+                `${item.required.toFixed(2)} ${item.unit}`,
+                `${item.stock.toFixed(2)} ${item.unit}`,
+                item.to_buy > 0 ? `${item.to_buy.toFixed(2)} ${item.unit}` : 'OK',
+                item.to_buy > 0 ? `${item.estimated_cost.toFixed(2)} RON` : '-'
+            ]);
 
-        doc.autoTable({
-            startY: 45,
-            head: [['Produs', 'Necesar', 'Stoc', 'De Cumparat', 'Est. Cost']],
-            body: tableData,
-            theme: 'grid',
-            styles: { font: "helvetica", fontSize: 9 },
-            headStyles: { fillColor: [22, 163, 74] }
-        });
+            doc.autoTable({
+                startY: 45,
+                head: [['Produs', 'Necesar', 'Stoc', 'De Cumparat', 'Est. Cost']],
+                body: tableData,
+                theme: 'grid',
+                styles: { font: "helvetica", fontSize: 9 },
+                headStyles: { fillColor: [22, 163, 74] },
+                didDrawPage: (data) => {
+                    // Footer if needed
+                }
+            });
 
-        doc.save(`necesar_${dateRange?.start || 'preview'}.pdf`);
+            doc.save(`necesar_${dateRange?.start || 'preview'}.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la generare PDF: " + err.message);
+        }
     };
 
     const approveAndSend = async () => {
@@ -173,7 +184,7 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, pr
                     <div className="report-summary" style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
                         <div>
                             <div className="label">Perioada</div>
-                            <div className="value">{dateRange.start} : {dateRange.end}</div>
+                            <div className="value">{dateRange?.start || '-'} : {dateRange?.end || '-'}</div>
                         </div>
                         <div>
                             <div className="label">Produse Analizate</div>
@@ -192,7 +203,7 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, pr
                     {error && (
                         <div style={{ padding: '1rem', marginBottom: '1rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <AlertTriangle size={20} />
-                            <span>Eroare calcul: {error}</span>
+                            <span>Eroare calcul: {error.message || error}</span>
                         </div>
                     )}
 
@@ -210,8 +221,8 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, pr
                                 </tr>
                             </thead>
                             <tbody>
-                                {needs.map(item => (
-                                    <tr key={item.id} style={{ background: item.to_buy > 0 ? '#fef2f2' : 'white' }}>
+                                {needs.map((item, idx) => (
+                                    <tr key={item.id || idx} style={{ background: item.to_buy > 0 ? '#fef2f2' : 'white' }}>
                                         <td>
                                             <div style={{ fontWeight: '600' }}>{item.name}</div>
                                         </td>
