@@ -19,21 +19,24 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
     return (
         <div style={{
             flex: 1,
-            background: '#f8fafc', // Very light gray/blueish for column background
+            background: '#f8fafc',
             padding: '1.25rem',
             borderRadius: '16px',
-            minHeight: '600px',
+            height: 'calc(100vh - 220px)', // Fixed height to force internal scroll
+            minHeight: '500px',
             border: '1px solid #e2e8f0',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            overflow: 'hidden' // Ensure children don't bleed out
         }}>
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '1.5rem',
+                marginBottom: '1rem',
                 borderBottom: `2px solid ${getStatusColor()}`,
-                paddingBottom: '0.75rem'
+                paddingBottom: '0.75rem',
+                flexShrink: 0 // Prevent header from shrinking
             }}>
                 <h4 style={{
                     margin: 0,
@@ -57,7 +60,15 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
                 </span>
             </div>
 
-            <div className="kanban-cards" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="kanban-cards" style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                overflowY: 'auto', // ENABLE SCROLL HERE
+                paddingRight: '6px', // Space for scrollbar
+                paddingBottom: '10px'
+            }}>
                 {orders.map(order => (
                     <div key={order.id} style={{ position: 'relative', transition: 'transform 0.2s' }}>
                         <OrderCard order={order} />
