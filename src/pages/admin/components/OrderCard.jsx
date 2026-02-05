@@ -54,7 +54,7 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
     return (
         <div className="order-card-inner" style={{
             background: 'white',
-            padding: '1.5rem',
+            padding: '1rem', // Reduced padding
         }}>
             {/* Lightbox */}
             {lightboxImages && (
@@ -194,11 +194,11 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                     <div
                                         onClick={(e) => { e.stopPropagation(); openGallery(productionImages); }}
                                         style={{
-                                            width: '60px', height: '60px',
-                                            borderRadius: '8px', overflow: 'hidden',
-                                            cursor: 'pointer', border: '2px solid #e2e8f0',
+                                            width: '50px', height: '50px', // Smaller
+                                            borderRadius: '6px', overflow: 'hidden',
+                                            cursor: 'pointer', border: '1px solid #e2e8f0', // Thinner border
                                             flexShrink: 0,
-                                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                                             transition: 'transform 0.2s',
                                             background: '#fff'
                                         }}
@@ -206,7 +206,13 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                         onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                                         title="Vezi mod de ambalare"
                                     >
-                                        <img src={productionImages[0]} alt="Ref" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img
+                                            src={productionImages[0]}
+                                            alt="Ref"
+                                            loading="lazy"
+                                            decoding="async"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
                                     </div>
                                 )}
 

@@ -24,6 +24,7 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
             borderRadius: '16px',
             height: 'calc(100vh - 220px)', // Fixed height to force internal scroll
             minHeight: '500px',
+            minWidth: '350px', // Prevent cramping
             border: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: 'column',
