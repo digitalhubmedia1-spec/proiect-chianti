@@ -72,6 +72,9 @@ const Products = () => {
         const currentStr = formatDate(selectedDate);
         const urlStr = searchParams.get('date');
 
+        // Persist to localStorage for "Continue Shopping" logic
+        localStorage.setItem('chianti_last_date', currentStr);
+
         if (currentStr !== urlStr) {
             setSearchParams(prev => {
                 prev.set('date', currentStr);

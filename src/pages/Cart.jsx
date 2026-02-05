@@ -23,7 +23,19 @@ const Cart = () => {
             <div className="cart-page container empty-cart">
                 <h2>Coșul tău este gol</h2>
                 <p>Nu ai adăugat încă niciun produs.</p>
-                <Link to="/produse" className="btn btn-primary">Vezi Meniul</Link>
+                <button
+                    onClick={() => {
+                        const lastDate = localStorage.getItem('chianti_last_date');
+                        if (lastDate) {
+                            navigate(`/produse?view=catalog&date=${lastDate}`);
+                        } else {
+                            navigate('/produse');
+                        }
+                    }}
+                    className="btn btn-primary"
+                >
+                    Vezi Meniul
+                </button>
             </div>
         );
     }
@@ -101,7 +113,20 @@ const Cart = () => {
                     <button onClick={() => navigate('/checkout')} className="btn btn-primary btn-block btn-checkout">
                         Spre Checkout <ArrowRight size={18} />
                     </button>
-                    <Link to="/produse" className="continue-shopping">Continua cumpărăturile</Link>
+                    <button
+                        onClick={() => {
+                            const lastDate = localStorage.getItem('chianti_last_date');
+                            if (lastDate) {
+                                navigate(`/produse?view=catalog&date=${lastDate}`);
+                            } else {
+                                navigate('/produse?view=catalog');
+                            }
+                        }}
+                        className="continue-shopping"
+                        style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                        Continua cumpărăturile
+                    </button>
                 </div>
             </div>
         </div>
