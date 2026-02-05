@@ -5,24 +5,33 @@ export const useConsumption = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const calculateNeeds = useCallback(async ({ startDate, endDate, categoryFilter = null }) => {
+    const calculateNeeds = useCallback(async ({ startDate, endDate, categoryFilter = null, customItems = null }) => {
         setLoading(true);
         setError(null);
         try {
-            // 1. Fetch Daily Menu Items for the range
-            let menuQuery = supabase
-                .from('daily_menu_items')
-                .select('product_id, stock, date');
+            // 1. Fetch Daily Menu Items OR Use Custom Items
+            let menuItems = [];
 
-            if (startDate && endDate) {
-                menuQuery = menuQuery.gte('date', startDate).lte('date', endDate);
-            } else if (startDate) {
-                menuQuery = menuQuery.eq('date', startDate);
+            if (customItems) {
+                // Use provided preview data
+                menuItems = customItems;
+            } else {
+                // Fetch from DB
+                let menuQuery = supabase
+                    .from('daily_menu_items')
+                    .select('product_id, stock, date');
+
+                if (startDate && endDate) {
+                    menuQuery = menuQuery.gte('date', startDate).lte('date', endDate);
+                } else if (startDate) {
+                    menuQuery = menuQuery.eq('date', startDate);
+                }
+
+                const { data, error: menuError } = await menuQuery;
+                if (menuError) throw menuError;
+                menuItems = data || [];
             }
 
-            const { data: menuItems, error: menuError } = await menuQuery;
-
-            if (menuError) throw menuError;
             if (!menuItems || menuItems.length === 0) {
                 return [];
             }

@@ -6,22 +6,23 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { logAction } from '../../../utils/adminLogger';
 
-const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) => {
+const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, previewData = null }) => {
     const { calculateNeeds, loading, error } = useConsumption();
     const [needs, setNeeds] = useState([]);
     const [approving, setApproving] = useState(false);
 
     useEffect(() => {
-        if (isOpen && dateRange.start) {
+        if (isOpen) {
             runCalculation();
         }
-    }, [isOpen, dateRange, categoryFilter]);
+    }, [isOpen, dateRange, categoryFilter, previewData]);
 
     const runCalculation = async () => {
         const results = await calculateNeeds({
-            startDate: dateRange.start,
-            endDate: dateRange.end,
-            categoryFilter: categoryFilter
+            startDate: dateRange?.start,
+            endDate: dateRange?.end,
+            categoryFilter: categoryFilter,
+            customItems: previewData // Pass preview data if available
         });
         setNeeds(results || []);
     };
@@ -39,14 +40,40 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
             .replace(/ț/g, 't').replace(/Ț/g, 'T');
     };
 
+    const exportCSV = () => {
+        const headers = ["Produs", "Necesar", "Stoc Curent", "De Cumparat", "Unitate", "Cost Estimat"];
+        const rows = needs.map(item => [
+            `"${item.name}"`, // Quote name to handle commas
+            item.required.toFixed(2),
+            item.stock.toFixed(2),
+            item.to_buy.toFixed(2),
+            item.unit,
+            item.estimated_cost.toFixed(2)
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `necesar_${dateRange?.start || 'preview'}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const exportPDF = () => {
         const doc = new jsPDF();
         doc.setFont("helvetica");
         doc.setFontSize(18);
-        doc.text("Raport Necesar Consum", 14, 20);
+        doc.text(previewData ? "Raport Necesar (PREVIZUALIZARE)" : "Raport Necesar Consum", 14, 20);
 
         doc.setFontSize(10);
-        doc.text(`Perioada: ${dateRange.start} - ${dateRange.end}`, 14, 30);
+        doc.text(`Perioada: ${dateRange?.start || '-'} - ${dateRange?.end || '-'}`, 14, 30);
         doc.text(`Categorie: ${categoryFilter}`, 14, 35);
         doc.text(`Generat la: ${new Date().toLocaleString('ro-RO')}`, 14, 40);
 
@@ -67,7 +94,7 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
             headStyles: { fillColor: [22, 163, 74] }
         });
 
-        doc.save(`necesar_${dateRange.start}.pdf`);
+        doc.save(`necesar_${dateRange?.start || 'preview'}.pdf`);
     };
 
     const approveAndSend = async () => {
@@ -135,7 +162,10 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
         <div className="modal-overlay">
             <div className="modal-content" style={{ width: '900px', maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                 <div className="modal-header">
-                    <h2><FileText size={24} /> Raport Necesar Consum</h2>
+                    <h2>
+                        <FileText size={24} />
+                        {previewData ? " Previzualizare Necesar (Nesalvat)" : " Raport Necesar Consum"}
+                    </h2>
                     <button onClick={onClose} className="close-btn"><X /></button>
                 </div>
 
@@ -218,6 +248,17 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter }) 
                         Închide
                     </button>
                     <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button
+                            onClick={exportCSV}
+                            disabled={loading || needs.length === 0}
+                            style={{
+                                background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: '8px',
+                                padding: '10px 20px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                                display: 'flex', alignItems: 'center', gap: '8px', opacity: (loading || needs.length === 0) ? 0.5 : 1
+                            }}
+                        >
+                            <FileText size={18} /> CSV
+                        </button>
                         <button
                             onClick={exportPDF}
                             disabled={loading || needs.length === 0}

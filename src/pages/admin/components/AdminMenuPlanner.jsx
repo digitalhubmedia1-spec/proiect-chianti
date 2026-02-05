@@ -9,6 +9,7 @@ const AdminMenuPlanner = () => {
     const { products, categories, loading: menuLoading } = useMenu();
     const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly'
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const [previewData, setPreviewData] = useState(null);
 
     // --- SHARED UTILS ---
     const formatDate = (date) => {
@@ -318,6 +319,35 @@ const AdminMenuPlanner = () => {
         setLoading(false);
     };
 
+    // --- NEW: GENERATE REPORT (PREVIEW) ---
+    const handleGenerateReport = () => {
+        if (viewMode === 'daily') {
+            const items = [];
+            activeItems.forEach(id => {
+                const stock = stockValues[id];
+                if (stock) { // Allow string so long as it parses later
+                    const qty = parseInt(stock);
+                    if (qty > 0) {
+                        items.push({
+                            product_id: parseInt(id),
+                            stock: qty,
+                            date: formatDate(selectedDate)
+                        });
+                    }
+                }
+            });
+
+            if (items.length === 0) {
+                alert("Nu aveți produse selectate pentru previzualizare!");
+                return;
+            }
+            setPreviewData(items);
+        } else {
+            setPreviewData(null);
+        }
+        setIsReportOpen(true);
+    };
+
     // --- WEEKLY HANDLERS ---
     const changeWeek = (days) => {
         const next = new Date(weekStart);
@@ -344,17 +374,6 @@ const AdminMenuPlanner = () => {
         endDate.setDate(endDate.getDate() + 6);
         const endStr = formatDate(endDate);
 
-        // We delete by date range, but ideally we should only touch the products that we are editing?
-        // To be safe and avoid partial overwrites of unrelated things if any, we can do upsert?
-        // But the requirement implies full control. Let's delete for the range ONLY for the active category?
-        // No, 'Save Weekly' implies saving the view. 
-        // Simplest: Delete all for the range and re-insert ALL from memory? 
-        // Warning: If `weeklyData` only has fetched data, it's incomplete if we didn't fetch everything.
-        // We fetched everything for the range in `fetchWeekly`.
-
-        // Actually, let's use Upsert logic per day to be safer, or delete by day.
-        // Since we have specific inputs, let's iterate days.
-
         const allInserts = [];
         const weekDates = [];
         for (let i = 0; i < 7; i++) {
@@ -369,11 +388,7 @@ const AdminMenuPlanner = () => {
         weekDates.forEach(date => {
             const dayData = weeklyData[date] || {};
             Object.entries(dayData).forEach(([prodId, stock]) => {
-                if (stock !== null && stock !== undefined && !isNaN(stock)) { // Only save if stock is set (or specifically 0). 
-                    // Actually, if it was in the grid but empty, should we save it?
-                    // In Daily view, we select items. 
-                    // In Weekly view, if I put a number, it's active. If I leave empty, it's NOT active?
-                    // Let's assume: If stock > 0 => Active. 
+                if (stock !== null && stock !== undefined && !isNaN(stock)) {
                     if (stock > 0) {
                         allInserts.push({
                             date: date,
@@ -401,7 +416,6 @@ const AdminMenuPlanner = () => {
     // --- SHARED RENDER VARS ---
     const standardProducts = products.filter(p => {
         const cat = categories.find(c => c.name === p.category);
-        // Show if category not defined (fallback) OR if defined and NOT catering
         return !cat || cat.type !== 'catering';
     });
     const displayProducts = filterCategory === "Toate" ? standardProducts : standardProducts.filter(p => p.category === filterCategory);
@@ -524,7 +538,7 @@ const AdminMenuPlanner = () => {
 
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <button
-                            onClick={() => setIsReportOpen(true)}
+                            onClick={handleGenerateReport}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '8px',
                                 background: '#FFF7ED', color: '#C2410C',
@@ -633,7 +647,7 @@ const AdminMenuPlanner = () => {
             {/* Modal */}
             <ConsumptionReportModal
                 isOpen={isReportOpen}
-                onClose={() => setIsReportOpen(false)}
+                onClose={() => { setIsReportOpen(false); setPreviewData(null); }}
                 dateRange={viewMode === 'daily'
                     ? { start: formatDate(selectedDate), end: formatDate(selectedDate) }
                     : {
@@ -642,6 +656,7 @@ const AdminMenuPlanner = () => {
                     }
                 }
                 categoryFilter={filterCategory}
+                previewData={previewData}
             />
         </div>
     );
