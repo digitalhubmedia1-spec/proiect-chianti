@@ -3,7 +3,7 @@ import { X, FileText, ShoppingCart, Check, Download, AlertTriangle } from 'lucid
 import { useConsumption } from '../../../hooks/useConsumption';
 import { supabase } from '../../../supabaseClient';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { logAction } from '../../../utils/adminLogger';
 
 const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, previewData = null }) => {
@@ -89,16 +89,13 @@ const ConsumptionReportModal = ({ isOpen, onClose, dateRange, categoryFilter, pr
                 item.to_buy > 0 ? `${item.estimated_cost.toFixed(2)} RON` : '-'
             ]);
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: 45,
                 head: [['Produs', 'Necesar', 'Stoc', 'De Cumparat', 'Est. Cost']],
                 body: tableData,
                 theme: 'grid',
                 styles: { font: "helvetica", fontSize: 9 },
-                headStyles: { fillColor: [22, 163, 74] },
-                didDrawPage: (data) => {
-                    // Footer if needed
-                }
+                headStyles: { fillColor: [22, 163, 74] }
             });
 
             doc.save(`necesar_${dateRange?.start || 'preview'}.pdf`);
