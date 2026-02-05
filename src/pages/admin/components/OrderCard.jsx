@@ -87,7 +87,8 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                         <ChevronRight size={32} />
                     </button>
                 </div>
-{/* Instructions Modal */}
+            )}
+            {/* Instructions Modal */}
             {
                 instructionModal && (
                     <div style={{
