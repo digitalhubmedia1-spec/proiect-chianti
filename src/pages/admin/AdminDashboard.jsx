@@ -119,20 +119,14 @@ const AdminDashboard = () => {
         if (!adminRole) return false;
         if (adminRole === 'admin_app') return true; // Super admin
 
-        // Grant Procurement access to everyone EXCEPT chef and cost_productie
-        if (tab === 'procurement' && adminRole !== 'chef' && adminRole !== 'cost_productie') return true;
-
         if (adminRole === 'contabil') {
-            // Contabil needs reports, logs, inventory checks, suppliers, but maybe not products editing?
-            // Giving broad access similar to operator but can be refined.
             // Allowed: Orders, Reports, Logs, Suppliers, Inventory, Locations
             const allowed = ['orders', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
-            return allowed.includes(tab) || tab === 'inventory'; // maintains access to others if they use 'inventory'
+            return allowed.includes(tab) || tab === 'inventory';
         }
 
         if (adminRole === 'achizitor') {
             // Achizitor needs procurement flow logic
-            // Allowed: Inventory stuff + PROCUREMENT
             const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes'];
             return allowed.includes(tab) || tab === 'inventory';
         }
@@ -149,7 +143,7 @@ const AdminDashboard = () => {
             return ['orders', 'recipes'].includes(tab);
         }
         if (adminRole === 'cost_productie') {
-            if (tab === 'procurement') return false;
+            // Explicitly deny procurement if needed, though default is false
             return ['recipes'].includes(tab);
         }
         return false;
