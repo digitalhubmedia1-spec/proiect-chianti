@@ -86,10 +86,10 @@ const AdminDashboard = () => {
         { id: 'recipes', label: 'Rețete', icon: BookOpen, permission: 'recipes' },
 
         { header: 'ERP Nomenclatoare' },
-        { id: 'suppliers', label: 'Furnizori', icon: Users, permission: 'inventory' },
-        { id: 'locations', label: 'Gestiuni', icon: MapPin, permission: 'inventory' },
-        { id: 'inventory_items', label: 'Nomenclator Gestiune', icon: Box, permission: 'inventory' },
-        { id: 'inventory_objects', label: 'Obiecte de Inventar', icon: Box, permission: 'inventory' },
+        { id: 'suppliers', label: 'Furnizori', icon: Users, permission: 'suppliers' },
+        { id: 'locations', label: 'Gestiuni', icon: MapPin, permission: 'locations' },
+        { id: 'inventory_items', label: 'Nomenclator Gestiune', icon: Box, permission: 'inventory_items' },
+        { id: 'inventory_objects', label: 'Obiecte de Inventar', icon: Box, permission: 'inventory_objects' },
         { id: 'procurement', label: 'Achiziții', icon: ShoppingCart, permission: 'procurement' },
 
         { header: 'ERP Operațiuni' },
@@ -127,16 +127,19 @@ const AdminDashboard = () => {
             // Giving broad access similar to operator but can be refined.
             // Allowed: Orders, Reports, Logs, Suppliers, Inventory, Locations
             const allowed = ['orders', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
-            return allowed.includes(tab) || tab === 'inventory';
+            return allowed.includes(tab) || tab === 'inventory'; // maintains access to others if they use 'inventory'
         }
 
         if (adminRole === 'achizitor') {
             // Achizitor needs procurement flow logic
             // Allowed: Inventory stuff + PROCUREMENT
-            // Achizitor needs procurement flow logic
-            // Allowed: Inventory stuff + PROCUREMENT
             const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes'];
             return allowed.includes(tab) || tab === 'inventory';
+        }
+
+        if (adminRole === 'gestionar') {
+            const allowed = ['suppliers', 'locations', 'inventory_items', 'inventory_objects'];
+            return allowed.includes(tab);
         }
 
         if (adminRole === 'operator') {
