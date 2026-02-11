@@ -35,9 +35,7 @@ const ProductDetails = () => {
             setProduct(foundProduct);
             setActiveImage(foundProduct.image);
             setSelectedOptions({}); // Reset options
-            fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
-
-            // Fetch Stock & Daily Map
+            // Fetch Stock & Daily Map & Random Recommendations
             const targetDate = dateParam || new Date().toISOString().split('T')[0];
             fetchDailyMenu(targetDate).then(data => {
                 const map = {};
@@ -48,6 +46,19 @@ const ProductDetails = () => {
                 if (item && item.stock !== undefined) {
                     setStock(item.stock);
                 }
+
+                // Random Recommendations logic:
+                // 1. Filter products that are IN the daily menu for this date
+                const todaysProducts = products.filter(p => map[p.id] !== undefined);
+                // 2. Exclude current product
+                const otherProducts = todaysProducts.filter(p => p.id !== foundProduct.id);
+                // 3. Shuffle (Fisher-Yates)
+                for (let i = otherProducts.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [otherProducts[i], otherProducts[j]] = [otherProducts[j], otherProducts[i]];
+                }
+                // 4. Take top 4
+                setRecommendations(otherProducts.slice(0, 4));
             });
 
         } else {

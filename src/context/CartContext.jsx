@@ -60,14 +60,14 @@ export const CartProvider = ({ children }) => {
     };
 
     const removeFromCart = (cartId) => {
-        setCartItems(prevItems => prevItems.filter(item => item.cartId !== cartId));
+        setCartItems(prevItems => prevItems.filter(item => (item.cartId || item.id) !== cartId));
     };
 
     const updateQuantity = (cartId, newQuantity) => {
         if (newQuantity < 1) return;
         setCartItems(prevItems =>
             prevItems.map(item =>
-                item.cartId === cartId ? { ...item, quantity: newQuantity } : item
+                (item.cartId || item.id) === cartId ? { ...item, quantity: newQuantity } : item
             )
         );
     };
