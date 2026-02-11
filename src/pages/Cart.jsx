@@ -41,24 +41,31 @@ const Cart = () => {
     }
 
     const renderCartItem = (item) => (
-        <div key={item.id} className="cart-item">
+        <div key={item.cartId || item.id} className="cart-item">
             <div className="cart-item-image">
                 <img src={item.image} alt={item.name} />
             </div>
             <div className="cart-item-details">
                 <h3><Link to={`/produs/${item.id}`}>{item.name}</Link></h3>
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                    <div className="item-options" style={{ fontSize: '0.85rem', color: '#666', marginTop: '4px' }}>
+                        {Object.entries(item.selectedOptions).map(([groupName, choiceName]) => (
+                            <div key={groupName}>• {groupName}: <strong>{choiceName}</strong></div>
+                        ))}
+                    </div>
+                )}
                 <p className="item-price">{item.price.toFixed(2)} Lei</p>
             </div>
             <div className="cart-item-actions">
                 <div className="qty-selector-small">
-                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="qty-btn-s"><Minus size={14} /></button>
+                    <button onClick={() => updateQuantity(item.cartId || item.id, item.quantity - 1)} className="qty-btn-s"><Minus size={14} /></button>
                     <span>{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="qty-btn-s"><Plus size={14} /></button>
+                    <button onClick={() => updateQuantity(item.cartId || item.id, item.quantity + 1)} className="qty-btn-s"><Plus size={14} /></button>
                 </div>
                 <div className="item-total">
                     {(item.price * item.quantity).toFixed(2)} Lei
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className="btn-remove" title="Șterge">
+                <button onClick={() => removeFromCart(item.cartId || item.id)} className="btn-remove" title="Șterge">
                     <Trash2 size={18} />
                 </button>
             </div>

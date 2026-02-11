@@ -163,7 +163,7 @@ const AdminDashboard = () => {
     // Product State
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '' });
+    const [prodForm, setProdForm] = useState({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '', product_options: [] });
 
     const [activeProductTabType, setActiveProductTabType] = useState('catering');
     const [searchTerm, setSearchTerm] = useState('');
@@ -248,7 +248,7 @@ const AdminDashboard = () => {
         }
 
 
-        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '' });
+        setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '', product_options: [] });
         setEditingProduct(null);
         setIsProductModalOpen(false);
         setCurrentRecommendations([]);
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
             setCurrentExtras(extras);
         } else {
             setEditingProduct(null);
-            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '' });
+            setProdForm({ name: '', price: '', category: '', image: '', gallery: [], production_gallery: [], internal_instructions: '', description: '', weight: '', allergens: '', ingredients: '', product_options: [] });
             setCurrentRecommendations([]);
             setCurrentExtras([]);
         }
@@ -366,6 +366,57 @@ const AdminDashboard = () => {
             } catch (error) {
                 console.error("Error compressing image:", error);
                 alert("A apărut o eroare la procesarea imaginii.");
+            }
+        }
+    };
+
+    // --- OPTION MANAGEMENT HELPERS ---
+    const addOptionGroup = () => {
+        setProdForm(prev => ({
+            ...prev,
+            product_options: [...(prev.product_options || []), { name: '', choices: [] }]
+        }));
+    };
+
+    const removeOptionGroup = (idx) => {
+        setProdForm(prev => ({
+            ...prev,
+            product_options: prev.product_options.filter((_, i) => i !== idx)
+        }));
+    };
+
+    const updateOptionGroup = (idx, field, value) => {
+        const newOptions = [...(prodForm.product_options || [])];
+        newOptions[idx][field] = value;
+        setProdForm({ ...prodForm, product_options: newOptions });
+    };
+
+    const addChoice = (groupIdx) => {
+        const newOptions = [...(prodForm.product_options || [])];
+        newOptions[groupIdx].choices.push({ name: '', image: '' });
+        setProdForm({ ...prodForm, product_options: newOptions });
+    };
+
+    const removeChoice = (groupIdx, choiceIdx) => {
+        const newOptions = [...(prodForm.product_options || [])];
+        newOptions[groupIdx].choices = newOptions[groupIdx].choices.filter((_, i) => i !== choiceIdx);
+        setProdForm({ ...prodForm, product_options: newOptions });
+    };
+
+    const updateChoice = (groupIdx, choiceIdx, field, value) => {
+        const newOptions = [...(prodForm.product_options || [])];
+        newOptions[groupIdx].choices[choiceIdx][field] = value;
+        setProdForm({ ...prodForm, product_options: newOptions });
+    };
+
+    const handleChoiceImageUpload = async (e, groupIdx, choiceIdx) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                const compressedBase64 = await compressImage(file, 400, 0.6); // Smaller for choices
+                updateChoice(groupIdx, choiceIdx, 'image', compressedBase64);
+            } catch (error) {
+                console.error("Error choice image:", error);
             }
         }
     };
@@ -1485,7 +1536,97 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="btn btn-primary btn-block mt-2">Salvează</button>
+                                {/* OPTIONS / VARIANTS SECTION */}
+                                <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem', background: '#fffbeb', padding: '1rem', borderRadius: '8px', border: '1px solid #fef3c7' }}>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block', color: '#92400e' }}>
+                                        <Settings size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+                                        Opțiuni Obligatorii (Ex: Arome, Variante)
+                                    </label>
+                                    <p style={{ fontSize: '0.8rem', color: '#92400e', marginBottom: '10px' }}>
+                                        Adaugă grupuri de opțiuni (ex: "Alege Aromă") și variantele disponibile (ex: "Ciocolată", "Vanilie").
+                                    </p>
+
+                                    {(prodForm.product_options || []).map((group, gIdx) => (
+                                        <div key={gIdx} style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ddd' }}>
+                                            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Nume Grup Opțiuni (ex: Alege Dulceață)"
+                                                    value={group.name}
+                                                    onChange={(e) => updateOptionGroup(gIdx, 'name', e.target.value)}
+                                                    style={{ fontWeight: 'bold' }}
+                                                />
+                                                <button type="button" className="btn-icon delete" onClick={() => removeOptionGroup(gIdx)} title="Șterge Grup">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+
+                                            {/* Choices Grid */}
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                                {group.choices && group.choices.map((choice, cIdx) => (
+                                                    <div key={cIdx} style={{
+                                                        border: '1px solid #eee',
+                                                        borderRadius: '6px',
+                                                        padding: '8px',
+                                                        width: '120px',
+                                                        textAlign: 'center',
+                                                        background: '#fafafa',
+                                                        position: 'relative'
+                                                    }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeChoice(gIdx, cIdx)}
+                                                            style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        >
+                                                            &times;
+                                                        </button>
+
+                                                        <div style={{ width: '100%', aspectRatio: '1/1', marginBottom: '5px', background: '#eee', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                                                            {choice.image ? (
+                                                                <img src={choice.image} alt="choice" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc', fontSize: '0.7rem' }}>Fără Poză</div>
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleChoiceImageUpload(e, gIdx, cIdx)}
+                                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                                                                title="Schimbă Imaginea"
+                                                            />
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={choice.name}
+                                                            onChange={(e) => updateChoice(gIdx, cIdx, 'name', e.target.value)}
+                                                            placeholder="Nume"
+                                                            style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '2px 4px', fontSize: '0.85rem' }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addChoice(gIdx)}
+                                                    style={{
+                                                        width: '120px', aspectRatio: '1/1',
+                                                        border: '2px dashed #ddd', borderRadius: '6px',
+                                                        background: 'transparent', cursor: 'pointer',
+                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                        color: '#888'
+                                                    }}
+                                                >
+                                                    <Plus size={24} />
+                                                    <span style={{ fontSize: '0.8rem' }}>Adaugă Variantă</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    <button type="button" className="btn btn-outline-primary btn-sm" onClick={addOptionGroup}>
+                                        <Plus size={16} /> Adaugă Grup Nou
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>

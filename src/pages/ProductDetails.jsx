@@ -20,9 +20,12 @@ const ProductDetails = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [stock, setStock] = useState(null); // null = unlimited/unknown
-    const [dailyMenuMap, setDailyMenuMap] = useState(null); // Ensure null initially
+    const [dailyMenuMap, setDailyMenuMap] = useState(null);
 
     const [activeImage, setActiveImage] = useState('');
+
+    // Options State
+    const [selectedOptions, setSelectedOptions] = useState({}); // { "Group Name": "Choice Name" }
 
     useEffect(() => {
         if (loading) return;
@@ -31,6 +34,7 @@ const ProductDetails = () => {
         if (foundProduct) {
             setProduct(foundProduct);
             setActiveImage(foundProduct.image);
+            setSelectedOptions({}); // Reset options
             fetchRecommendations(foundProduct.id).then(recs => setRecommendations(recs));
 
             // Fetch Stock & Daily Map
@@ -53,12 +57,29 @@ const ProductDetails = () => {
 
     if (loading || !product) return <div className="loading">Se încarcă...</div>;
 
+    const handleOptionSelect = (groupName, choiceName) => {
+        setSelectedOptions(prev => ({ ...prev, [groupName]: choiceName }));
+    };
+
     const handleAddToCart = () => {
         if (stock !== null && stock === 0) {
             alert('Produsul nu mai este disponibil.');
             return;
         }
-        addToCart(product, quantity);
+
+        // Validate Mandatory Options
+        // Assuming all defined groups in product_options are mandatory if 'required' isn't explicitly false
+        // Or simply act as if all are required for now based on user request "optiuni obligatorii".
+        if (product.product_options && Array.isArray(product.product_options)) {
+            for (const group of product.product_options) {
+                if (!selectedOptions[group.name]) {
+                    alert(`Te rog selectează o opțiune pentru: ${group.name}`);
+                    return;
+                }
+            }
+        }
+
+        addToCart(product, quantity, selectedOptions);
         alert('Produs adăugat în coș!');
     };
 
@@ -127,9 +148,6 @@ const ProductDetails = () => {
                     {/* Hide badge for delivery products as requested */}
                     {(() => {
                         const cat = categories.find(c => c.name === product.category);
-                        const isDelivery = cat?.type === 'delivery' || (!cat && true); // Default to delivery if unknown? Or check context.
-                        // Actually, if distinct types exist, check explicitly.
-                        // Assuming 'catering' is the other one.
                         if (cat && cat.type === 'catering') {
                             return <span className="product-category-badge">{product.category}</span>;
                         }
@@ -150,6 +168,51 @@ const ProductDetails = () => {
                             </p>
                         )}
                     </div>
+
+                    {/* MANDATORY OPTIONS SECTION */}
+                    {product.product_options && Array.isArray(product.product_options) && product.product_options.length > 0 && (
+                        <div className="product-options-section" style={{ marginTop: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                            {product.product_options.map((group, idx) => (
+                                <div key={idx} style={{ marginBottom: '1.5rem' }}>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                                        {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
+                                    </h3>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                        {group.choices && group.choices.map((choice, cIdx) => {
+                                            const isSelected = selectedOptions[group.name] === choice.name;
+                                            return (
+                                                <div
+                                                    key={cIdx}
+                                                    onClick={() => handleOptionSelect(group.name, choice.name)}
+                                                    style={{
+                                                        cursor: 'pointer',
+                                                        border: isSelected ? '2px solid #ef4444' : '1px solid #d1d5db',
+                                                        borderRadius: '8px',
+                                                        padding: '4px',
+                                                        background: isSelected ? '#fff1f2' : 'white',
+                                                        width: '100px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                >
+                                                    <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px', background: '#f3f4f6' }}>
+                                                        {choice.image ? (
+                                                            <img src={choice.image} alt={choice.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '0.8rem' }}>No Img</div>
+                                                        )}
+                                                    </div>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: isSelected ? '700' : '500', textAlign: 'center', lineHeight: '1.2' }}>{choice.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="add-to-cart-section">
                         <div className="qty-selector" style={{ opacity: isOutOfStock ? 0.5 : 1 }}>

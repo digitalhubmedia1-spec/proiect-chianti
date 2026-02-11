@@ -1,22 +1,27 @@
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
 
-const supabaseUrl = 'https://atzmcflvnzezfumbmgiz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em1jZmx2bnplemZ1bWJtZ2l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzExMjcsImV4cCI6MjA4MzY0NzEyN30.LSiuLKxi_PEdD6eMxk691JpN6OjS4jmiNuJXkD4MYtk';
-const supabase = createClient(supabaseUrl, supabaseKey);
+function loadEnv() {
+    try {
+        const envPath = path.resolve(__dirname, '.env');
+        if (!fs.existsSync(envPath)) return {};
+        const content = fs.readFileSync(envPath, 'utf8');
+        return content.split('\n').reduce((acc, line) => {
+            const [key, val] = line.split('=');
+            if (key && val) acc[key.trim()] = val.trim();
+            return acc;
+        }, {});
+    } catch (e) { return {}; }
+}
+const env = loadEnv();
+const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_KEY);
 
 async function checkSchema() {
-    console.log("Checking products table schema...");
-
-    const { data, error } = await supabase
-        .from('products')
-        .select('production_gallery')
-        .limit(1);
-
-    if (error) {
-        console.error("Column check failed:", error.message);
-    } else {
-        console.log("Column 'production_gallery' exists.");
-    }
+    const { data, error } = await supabase.from('products').select('*').limit(1);
+    if (error) console.error(error);
+    else if (data.length > 0) console.log("Cols:", Object.keys(data[0]));
+    else console.log("Empty table, can't check cols easily.");
 }
 
 checkSchema();

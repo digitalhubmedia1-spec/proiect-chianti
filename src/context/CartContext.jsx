@@ -21,7 +21,7 @@ export const CartProvider = ({ children }) => {
         return cat ? (cat.type || 'delivery') : 'delivery';
     };
 
-    const addToCart = (product, quantity = 1) => {
+    const addToCart = (product, quantity = 1, selectedOptions = {}) => {
         // Prevent mixing types
         if (cartItems.length > 0) {
             const currentType = getItemType(cartItems[0].category);
@@ -35,34 +35,39 @@ export const CartProvider = ({ children }) => {
                 );
 
                 if (confirmClear) {
-                    setCartItems([{ ...product, quantity }]);
+                    setCartItems([{ ...product, quantity, selectedOptions, cartId: Date.now() + Math.random() }]);
                 }
                 return;
             }
         }
 
         setCartItems(prevItems => {
-            const existingItem = prevItems.find(item => item.id === product.id);
-            if (existingItem) {
-                return prevItems.map(item =>
-                    item.id === product.id
-                        ? { ...item, quantity: item.quantity + quantity }
-                        : item
-                );
+            // Check for existing item with SAME ID and SAME OPTIONS
+            const existingItemIndex = prevItems.findIndex(item =>
+                item.id === product.id &&
+                JSON.stringify(item.selectedOptions || {}) === JSON.stringify(selectedOptions || {})
+            );
+
+            if (existingItemIndex > -1) {
+                // Update quantity of existing line
+                const newItems = [...prevItems];
+                newItems[existingItemIndex].quantity += quantity;
+                return newItems;
             }
-            return [...prevItems, { ...product, quantity }];
+            // Add new line
+            return [...prevItems, { ...product, quantity, selectedOptions, cartId: Date.now() + Math.random() }];
         });
     };
 
-    const removeFromCart = (id) => {
-        setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+    const removeFromCart = (cartId) => {
+        setCartItems(prevItems => prevItems.filter(item => item.cartId !== cartId));
     };
 
-    const updateQuantity = (id, newQuantity) => {
+    const updateQuantity = (cartId, newQuantity) => {
         if (newQuantity < 1) return;
         setCartItems(prevItems =>
             prevItems.map(item =>
-                item.id === id ? { ...item, quantity: newQuantity } : item
+                item.cartId === cartId ? { ...item, quantity: newQuantity } : item
             )
         );
     };

@@ -221,6 +221,13 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                         <span style={{ fontWeight: '800', marginRight: '6px', color: '#0f172a' }}>{item.quantity}x</span>
                                         {item.name}
                                     </span>
+                                    {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                                        <div style={{ fontSize: '0.85rem', color: '#cf3a3a', marginTop: '2px', marginLeft: '4px', fontWeight: '600' }}>
+                                            {Object.entries(item.selectedOptions).map(([group, choice]) => (
+                                                <div key={group}>• {group}: {choice}</div>
+                                            ))}
+                                        </div>
+                                    )}
                                     {product?.internal_instructions && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setInstructionModal({ title: `Instrucțiuni: ${item.name}`, text: product.internal_instructions }); }}

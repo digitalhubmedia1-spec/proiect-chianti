@@ -78,6 +78,7 @@ export const MenuProvider = ({ children }) => {
                 description: prodData.description || '',
                 weight: prodData.weight || '',
                 ingredients: prodData.ingredients || '',
+                product_options: prodData.product_options || [],
                 is_active: true,
                 is_available: true
             };
