@@ -1627,6 +1627,15 @@ const AdminDashboard = () => {
                                         <Plus size={16} /> Adaugă Grup Nou
                                     </button>
                                 </div>
+
+                                <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setIsProductModalOpen(false)} style={{ background: '#64748b', border: 'none' }}>
+                                        Anulează
+                                    </button>
+                                    <button type="submit" className="btn btn-primary" style={{ flex: 1, background: '#16a34a', border: 'none', fontWeight: 'bold', fontSize: '1.1rem', padding: '12px' }}>
+                                        {editingProduct ? 'Salvează Modificările' : 'Adaugă Produs'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
