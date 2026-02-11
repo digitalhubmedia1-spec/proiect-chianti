@@ -1385,86 +1385,7 @@ const AdminDashboard = () => {
                                 </div>
 
 
-                                {/* RECOMMENDATIONS SECTION (Available for New and Edit) */}
-                                <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                                    <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Produse Recomandate (Extra)</label>
-                                    <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="Caută produs pentru recomandare..."
-                                            value={recSearchTerm}
-                                            onChange={(e) => setRecSearchTerm(e.target.value)}
-                                            style={{ width: '100%' }}
-                                        />
-                                        {recSearchTerm.length > 0 && (
-                                            <div className="rec-search-results" style={{
-                                                position: 'absolute',
-                                                top: '100%',
-                                                left: 0,
-                                                right: 0,
-                                                background: 'white',
-                                                border: '1px solid #ddd',
-                                                borderRadius: '4px',
-                                                maxHeight: '200px',
-                                                overflowY: 'auto',
-                                                zIndex: 100,
-                                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                                            }}>
-                                                {products
-                                                    .filter(p => !editingProduct || p.id !== editingProduct.id) // Exclude self
-                                                    .filter(p => !currentRecommendations.some(r => r.id === p.id)) // Exclude already added
-                                                    .filter(p => p.name.toLowerCase().includes(recSearchTerm.toLowerCase()))
-                                                    .map(p => (
-                                                        <div
-                                                            key={p.id}
-                                                            onClick={() => handleSelectRec(p)}
-                                                            style={{
-                                                                padding: '8px 12px',
-                                                                cursor: 'pointer',
-                                                                borderBottom: '1px solid #eee',
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between'
-                                                            }}
-                                                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                                                            onMouseLeave={(e) => e.target.style.background = 'white'}
-                                                        >
-                                                            <span>{p.name}</span>
-                                                            <span style={{ color: '#888', fontSize: '0.9em' }}>{p.price} Lei</span>
-                                                        </div>
-                                                    ))}
-                                                {products.filter(p => p.name.toLowerCase().includes(recSearchTerm.toLowerCase())).length === 0 && (
-                                                    <div style={{ padding: '8px 12px', color: '#888' }}>Nu am găsit produse.</div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
 
-                                    {/* List of current recommendations */}
-                                    <div className="recommendations-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        {currentRecommendations.map(rec => (
-                                            <div key={rec.id} style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                background: '#f8f9fa',
-                                                padding: '5px 10px',
-                                                borderRadius: '20px',
-                                                fontSize: '0.9rem',
-                                                border: '1px solid #dee2e6'
-                                            }}>
-                                                <span>{rec.name}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveRec(rec.id)}
-                                                    style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', marginLeft: '8px', display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {currentRecommendations.length === 0 && <small className="text-muted">Niciun produs recomandat.</small>}
-                                    </div>
-                                </div>
 
                                 {/* EXTRAS SECTION (Cross-sell) */}
                                 <div className="form-group" style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem', background: '#f0fdf4', padding: '1rem', borderRadius: '8px' }}>
@@ -1566,58 +1487,51 @@ const AdminDashboard = () => {
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                                 {group.choices && group.choices.map((choice, cIdx) => (
                                                     <div key={cIdx} style={{
-                                                        border: '1px solid #eee',
-                                                        borderRadius: '6px',
-                                                        padding: '8px',
-                                                        width: '120px',
-                                                        textAlign: 'center',
-                                                        background: '#fafafa',
-                                                        position: 'relative'
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: '20px',
+                                                        padding: '6px 12px',
+                                                        background: '#f8f9fa',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
                                                     }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeChoice(gIdx, cIdx)}
-                                                            style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        >
-                                                            &times;
-                                                        </button>
-
-                                                        <div style={{ width: '100%', aspectRatio: '1/1', marginBottom: '5px', background: '#eee', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                                                            {choice.image ? (
-                                                                <img src={choice.image} alt="choice" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            ) : (
-                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc', fontSize: '0.7rem' }}>Fără Poză</div>
-                                                            )}
-                                                            <input
-                                                                type="file"
-                                                                accept="image/*"
-                                                                onChange={(e) => handleChoiceImageUpload(e, gIdx, cIdx)}
-                                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                                                                title="Schimbă Imaginea"
-                                                            />
-                                                        </div>
                                                         <input
                                                             type="text"
                                                             value={choice.name}
                                                             onChange={(e) => updateChoice(gIdx, cIdx, 'name', e.target.value)}
-                                                            placeholder="Nume"
-                                                            style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '2px 4px', fontSize: '0.85rem' }}
+                                                            placeholder="Nume variantă"
+                                                            style={{ border: 'none', background: 'transparent', outline: 'none', minWidth: '80px', fontWeight: '500', fontSize: '0.9rem' }}
                                                         />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeChoice(gIdx, cIdx)}
+                                                            style={{
+                                                                background: '#fee2e2', color: '#ef4444',
+                                                                border: 'none', borderRadius: '50%',
+                                                                width: '20px', height: '20px',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                cursor: 'pointer', fontSize: '14px', lineHeight: 1
+                                                            }}
+                                                            title="Șterge"
+                                                        >
+                                                            &times;
+                                                        </button>
                                                     </div>
                                                 ))}
                                                 <button
                                                     type="button"
                                                     onClick={() => addChoice(gIdx)}
                                                     style={{
-                                                        width: '120px', aspectRatio: '1/1',
-                                                        border: '2px dashed #ddd', borderRadius: '6px',
-                                                        background: 'transparent', cursor: 'pointer',
-                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#888'
+                                                        border: '1px dashed #aaa',
+                                                        borderRadius: '20px',
+                                                        padding: '6px 12px',
+                                                        background: 'transparent',
+                                                        cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', gap: '5px',
+                                                        color: '#666', fontSize: '0.9rem'
                                                     }}
                                                 >
-                                                    <Plus size={24} />
-                                                    <span style={{ fontSize: '0.8rem' }}>Adaugă Variantă</span>
+                                                    <Plus size={16} /> Adaugă Variantă
                                                 </button>
                                             </div>
                                         </div>

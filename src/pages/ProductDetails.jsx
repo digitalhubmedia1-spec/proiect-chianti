@@ -182,13 +182,13 @@ const ProductDetails = () => {
 
                     {/* MANDATORY OPTIONS SECTION */}
                     {product.product_options && Array.isArray(product.product_options) && product.product_options.length > 0 && (
-                        <div className="product-options-section" style={{ marginTop: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                        <div className="product-options-section" style={{ marginTop: '1.5rem', marginBottom: '3rem', padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
                             {product.product_options.map((group, idx) => (
                                 <div key={idx} style={{ marginBottom: '1.5rem' }}>
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
                                         {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
                                     </h3>
-                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                                         {group.choices && group.choices.map((choice, cIdx) => {
                                             const isSelected = selectedOptions[group.name] === choice.name;
                                             return (
@@ -198,24 +198,17 @@ const ProductDetails = () => {
                                                     style={{
                                                         cursor: 'pointer',
                                                         border: isSelected ? '2px solid #ef4444' : '1px solid #d1d5db',
-                                                        borderRadius: '8px',
-                                                        padding: '4px',
+                                                        borderRadius: '30px',
+                                                        padding: '8px 16px',
                                                         background: isSelected ? '#fff1f2' : 'white',
-                                                        width: '100px',
                                                         display: 'flex',
-                                                        flexDirection: 'column',
                                                         alignItems: 'center',
-                                                        transition: 'all 0.2s ease'
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s ease',
+                                                        minWidth: '80px'
                                                     }}
                                                 >
-                                                    <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px', background: '#f3f4f6' }}>
-                                                        {choice.image ? (
-                                                            <img src={choice.image} alt={choice.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        ) : (
-                                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '0.8rem' }}>No Img</div>
-                                                        )}
-                                                    </div>
-                                                    <span style={{ fontSize: '0.85rem', fontWeight: isSelected ? '700' : '500', textAlign: 'center', lineHeight: '1.2' }}>{choice.name}</span>
+                                                    <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? '700' : '500', textAlign: 'center' }}>{choice.name}</span>
                                                 </div>
                                             );
                                         })}
