@@ -579,6 +579,11 @@ const Checkout = () => {
                         >
                             {(!isOpen && !hasCateringItems) ? "Restaurant Închis" : "Plasează Comanda"}
                         </button>
+                        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: '700', color: '#333' }}>
+                            <a href="tel:+40374968884" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                +40 (374) 968 884
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
