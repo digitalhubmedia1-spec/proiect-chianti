@@ -659,7 +659,8 @@ export const MenuProvider = ({ children }) => {
                     .eq('parent_product_id', productId);
 
                 if (error) throw error;
-                return data.map(item => item.products);
+                // Safely map even if products is null (though unlikely with inner join)
+                return data.map(item => item.products).filter(Boolean);
             } catch (error) {
                 console.error("Error fetching extras:", error);
                 return [];

@@ -1,0 +1,59 @@
+GHID INSTALARE SERVER PRINTARE (METODA NOUĂ - DATABASE QUEUE)
+-------------------------------------------------------------
+
+Această metodă este mult mai stabilă și nu necesită configurări de rețea.
+Tableta trimite comanda în Cloud (Supabase), iar calculatorul o preia automat.
+
+PASUL 1: Instalare Node.js (Windows 7)
+--------------------------------------
+Dacă l-ai instalat deja din ghidul vechi, treci la PASUL 2.
+Dacă nu:
+1. Descarcă Node.js v13.14.0 (ultima compatibilă cu Win 7 32-bit):
+   Link: https://nodejs.org/dist/v13.14.0/node-v13.14.0-x86.msi
+2. Instalează-l (Next -> Next -> Finish).
+
+PASUL 2: Pregătire Folder
+-------------------------
+1. Creează un folder nou, de exemplu: C:\FiscalBridge
+2. Copiază în acest folder fișierul `server.js` (din `scripts/fiscal-bridge/server.js`).
+
+PASUL 3: Configurare Proiect și Dependențe
+------------------------------------------
+1. Deschide un CMD (Command Prompt) în acel folder:
+   - Intră în folderul C:\FiscalBridge
+   - Ține apăsat SHIFT și dă Click Dreapta în folder -> alege "Open command window here" (Deschide fereastra de comandă aici).
+
+2. Rulează următoarele comenzi (pe rând):
+   
+   npm init -y
+   
+   npm install @supabase/supabase-js
+
+   (Așteaptă să se termine instalarea).
+
+PASUL 4: Configurare Credențiale (.env)
+---------------------------------------
+1. În folderul C:\FiscalBridge, creează un fișier nou text numit `.env` (atenție, să nu fie .env.txt ci doar .env).
+   *Dacă Windows ascunde extensiile, numește-l `.env` și asigură-te cu Notepad.*
+
+2. Deschide `.env` cu Notepad și lipește următoarele linii (înlocuind cu datele tale din proiect):
+
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+
+(Datele le găsești în proiectul tău în fișierul `.env` principal).
+
+PASUL 5: Pornire Server
+-----------------------
+1. În aceeași fereastră de comandă, scrie:
+
+   node server.js
+
+Dacă totul e verde, va apărea: 
+"[START] Fiscal Bridge Running..."
+"[INFO] Watching 'orders' table for 'fiscal_print_status = pending'"
+
+Acum, când un ospătar apasă "Închide Masă" și "Plătește", bonul va apărea automat în C:\FiscalNet\Bonuri.
+
+NOTĂ: Acest script trebuie să rămână deschis mereu pe laptop.
+Poți face un shortcut în "Startup" ca să pornească singur când deschizi laptopul.

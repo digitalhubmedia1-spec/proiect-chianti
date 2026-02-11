@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AdminPOS from './components/AdminPOS';
 import { useMenu } from '../../context/MenuContext';
 import { useNavigate } from 'react-router-dom';
 import OrderList from './components/OrderList';
@@ -78,6 +79,7 @@ const AdminDashboard = () => {
 
     // Navigation Config
     const NAV_ITEMS = [
+        { id: 'pos', label: 'POS / Ospătar', icon: ShoppingCart, permission: 'orders' },
         { id: 'orders', label: 'Comenzi', icon: ClipboardList, permission: 'orders' },
         { id: 'products', label: 'Produse', icon: Box, permission: 'products' },
         { id: 'categories', label: 'Categorii', icon: ClipboardList, permission: 'categories' },
@@ -608,6 +610,12 @@ const AdminDashboard = () => {
                     {activeTab === 'requests' && (
                         <div className="tab-content">
                             <AdminRequests />
+                        </div>
+                    )}
+                    {/* POS TAB */}
+                    {activeTab === 'pos' && (
+                        <div className="tab-content" style={{ padding: 0, maxWidth: 'none' }}>
+                            <AdminPOS />
                         </div>
                     )}
                     {/* ORDERS TAB */}

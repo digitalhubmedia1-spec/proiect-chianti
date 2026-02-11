@@ -300,6 +300,60 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                 )}
             </div>
 
+            {/* Print Button - Always Visible or Conditional */}
+            <button
+                onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm("Trimite bon fiscal către casa de marcat?")) return;
+
+                    let url = fiscalPrinterUrl || 'http://localhost:3000';
+                    if (url.endsWith('/')) url = url.slice(0, -1);
+
+                    try {
+                        const res = await fetch(`${url}/print-receipt`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                items: order.items,
+                                total: order.finalTotal || order.total,
+                                paymentMethod: 'card'
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert(`Bon emis cu succes!`);
+                        } else {
+                            alert(`Eroare la emitere: ${data.error}`);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        let msg = `Nu s-a putut conecta la Casa de Marcat via ${url}.\nAsigură-te că scriptul 'bridge' rulează.`;
+                        if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+                            msg += `\n\nATENȚIE: Browserul a blocat probabil cererea (Mixed Content: HTTPS -> HTTP).\nSoluție: Folosește Ngrok sau permite 'Insecure Content'.`;
+                        }
+                        alert(msg);
+                    }
+                }}
+                style={{
+                    width: '100%',
+                    background: '#334155',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    marginTop: '1rem',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '1rem'
+                }}
+            >
+                🖨️ Bon Fiscal
+            </button>
+
             {
                 showActions && (
                     <button
@@ -316,7 +370,7 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '0.5rem',
-                            marginTop: '1rem',
+                            marginTop: '0.5rem',
                             cursor: 'pointer',
                             fontWeight: '600',
                             fontSize: '1rem',
