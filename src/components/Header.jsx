@@ -42,14 +42,19 @@ const Header = () => {
     const cateringItems = cartItems.filter(item => getItemType(item) === 'catering');
 
     const renderMinicartItem = (item) => (
-        <div key={item.id} className="minicart-item">
+        <div key={item.cartId || item.id} className="minicart-item">
             <img src={item.image} alt={item.name} />
             <div className="minicart-item-info">
                 <p className="name">{item.name}</p>
                 <p className="price">{item.quantity} x {item.price.toFixed(2)} Lei</p>
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                    <p className="options" style={{ fontSize: '0.75rem', color: '#666', margin: 0 }}>
+                        {Object.values(item.selectedOptions).join(', ')}
+                    </p>
+                )}
             </div>
             <button
-                onClick={(e) => { e.preventDefault(); removeFromCart(item.id); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFromCart(item.cartId || item.id); }}
                 className="minicart-delete"
                 title="Șterge din coș"
             >
