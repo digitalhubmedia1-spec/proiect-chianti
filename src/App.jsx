@@ -23,6 +23,8 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminEventDetail from './pages/admin/AdminEventDetail';
 import Terms from './pages/legal/Terms';
 import DataSecurity from './pages/legal/DataSecurity';
 import ConfidentialityPage from './pages/legal/ConfidentialityPage';
@@ -32,6 +34,7 @@ import CommercePolicy from './pages/legal/CommercePolicy';
 import DriverApplication from './pages/careers/DriverApplication';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
+import GuestPortal from './pages/GuestPortal';
 import ScrollToTop from './components/ScrollToTop';
 import PageTitleUpdater from './components/PageTitleUpdater';
 import './index.css';
@@ -76,6 +79,9 @@ function App() {
                   <Route path="/comercializare" element={<Layout><CommercePolicy /></Layout>} />
                   <Route path="/devino-livrator" element={<Layout><DriverApplication /></Layout>} />
 
+                  {/* Guest Portal (Public, No Layout) */}
+                  <Route path="/portal/:token" element={<GuestPortal />} />
+
                   {/* Admin Routes (No Standard Layout or Custom Layout) */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route
@@ -83,6 +89,22 @@ function App() {
                     element={
                       <ProtectedAdminRoute>
                         <AdminDashboard />
+                      </ProtectedAdminRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/events"
+                    element={
+                      <ProtectedAdminRoute>
+                        <AdminEvents />
+                      </ProtectedAdminRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/events/:id"
+                    element={
+                      <ProtectedAdminRoute>
+                        <AdminEventDetail />
                       </ProtectedAdminRoute>
                     }
                   />

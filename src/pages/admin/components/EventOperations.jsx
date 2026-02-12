@@ -1,0 +1,273 @@
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../supabaseClient';
+import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, DollarSign } from 'lucide-react';
+
+const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
+    const [activeSection, setActiveSection] = useState('timeline'); // timeline, staff, closing
+    const [timeline, setTimeline] = useState([]);
+    const [staff, setStaff] = useState([]);
+    const [closingData, setClosingData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // Forms
+    const [newItem, setNewItem] = useState({ time_start: '', activity: '', notes: '' });
+    const [newStaff, setNewStaff] = useState({ staff_name: '', role: 'ospatar' });
+    const [pvData, setPvData] = useState({
+        total_sales: 0,
+        tips_amount: 0,
+        broken_items_cost: 0,
+        notes: '',
+        manager_signed_by: ''
+    });
+
+    useEffect(() => {
+        loadData();
+    }, [eventId]);
+
+    const loadData = async () => {
+        setLoading(true);
+        // Timeline
+        const { data: t } = await supabase.from('event_timeline_items').select('*').eq('event_id', eventId).order('time_start');
+        setTimeline(t || []);
+
+        // Staff
+        const { data: s } = await supabase.from('event_staff_assignments').select('*').eq('event_id', eventId);
+        setStaff(s || []);
+
+        // Closing Report
+        const { data: c } = await supabase.from('event_closing_reports').select('*').eq('event_id', eventId).single();
+        if (c) {
+            setClosingData(c);
+            setPvData(c);
+        }
+
+        setLoading(false);
+    };
+
+    // --- TIMELINE ACTIONS ---
+    const handleAddItem = async () => {
+        if (!newItem.time_start || !newItem.activity) return;
+        const { data, error } = await supabase.from('event_timeline_items').insert([{ ...newItem, event_id: eventId }]).select().single();
+        if (data) {
+            setTimeline([...timeline, data].sort((a, b) => a.time_start.localeCompare(b.time_start)));
+            setNewItem({ time_start: '', activity: '', notes: '' });
+        }
+    };
+
+    const handleDeleteItem = async (id) => {
+        await supabase.from('event_timeline_items').delete().eq('id', id);
+        setTimeline(timeline.filter(i => i.id !== id));
+    };
+
+    const toggleItemStatus = async (item) => {
+        const newStatus = item.status === 'done' ? 'pending' : 'done';
+        await supabase.from('event_timeline_items').update({ status: newStatus }).eq('id', item.id);
+        setTimeline(timeline.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
+    };
+
+    // --- STAFF ACTIONS ---
+    const handleAddStaff = async () => {
+        if (!newStaff.staff_name) return;
+        const { data } = await supabase.from('event_staff_assignments').insert([{ ...newStaff, event_id: eventId }]).select().single();
+        if (data) {
+            setStaff([...staff, data]);
+            setNewStaff({ staff_name: '', role: 'ospatar' });
+        }
+    };
+
+    const handleDeleteStaff = async (id) => {
+        await supabase.from('event_staff_assignments').delete().eq('id', id);
+        setStaff(staff.filter(s => s.id !== id));
+    };
+
+    // --- CLOSING ACTIONS ---
+    const handleSavePV = async () => {
+        if (!window.confirm("Salvați Procesul Verbal? Aceasta acțiune este finală.")) return;
+
+        // Upsert logic
+        const payload = { ...pvData, event_id: eventId };
+        const { data, error } = await supabase.from('event_closing_reports').upsert(payload).select().single();
+
+        if (!error) {
+            setClosingData(data);
+            alert("Proces Verbal Salvat!");
+
+            // Optionally close event
+            if (eventStatus !== 'completed') {
+                if (window.confirm("Doriți să marcați evenimentul ca FINALIZAT?")) {
+                    await supabase.from('events').update({ status: 'completed' }).eq('id', eventId);
+                    if (onUpdateStatus) onUpdateStatus('completed');
+                }
+            }
+        }
+    };
+
+    if (loading) return <div>Incarcare date operationale...</div>;
+
+    return (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', minHeight: '500px' }}>
+            {/* Sub-Navigation */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                <button
+                    onClick={() => setActiveSection('timeline')}
+                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'timeline' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'timeline' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
+                >
+                    <Clock size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Desfășurător
+                </button>
+                <button
+                    onClick={() => setActiveSection('staff')}
+                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'staff' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'staff' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
+                >
+                    <Users size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Echipă & Staff
+                </button>
+                <button
+                    onClick={() => setActiveSection('closing')}
+                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'closing' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'closing' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
+                >
+                    <FileText size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Proces Verbal Închidere
+                </button>
+            </div>
+
+            {/* TIMELINE SECTION */}
+            {activeSection === 'timeline' && (
+                <div>
+                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
+                        <div>
+                            <label style={{ fontSize: '0.8rem' }}>Ora</label>
+                            <input type="time" value={newItem.time_start} onChange={e => setNewItem({ ...newItem, time_start: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Activitate</label>
+                            <input placeholder="ex: Sosire Invitați" value={newItem.activity} onChange={e => setNewItem({ ...newItem, activity: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                        </div>
+                        <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {timeline.map(item => (
+                            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.status === 'done' ? '#f0fdf4' : 'white', opacity: item.status === 'done' ? 0.7 : 1 }}>
+                                <button onClick={() => toggleItemStatus(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: item.status === 'done' ? '#16a34a' : '#d1d5db' }}>
+                                    <CheckCircle size={24} fill={item.status === 'done' ? '#16a34a' : 'white'} />
+                                </button>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', width: '80px' }}>{item.time_start.slice(0, 5)}</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '500', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.activity}</div>
+                                    {item.notes && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{item.notes}</div>}
+                                </div>
+                                <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                            </div>
+                        ))}
+                        {timeline.length === 0 && <div style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>Nu există activități în desfășurător.</div>}
+                    </div>
+                </div>
+            )}
+
+            {/* STAFF SECTION */}
+            {activeSection === 'staff' && (
+                <div>
+                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Nume Membru Staff</label>
+                            <input placeholder="ex: Popescu Ion" value={newStaff.staff_name} onChange={e => setNewStaff({ ...newStaff, staff_name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem' }}>Rol</label>
+                            <select value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}>
+                                <option value="manager">Manager Eveniment</option>
+                                <option value="bucatar_sef">Bucătar Șef</option>
+                                <option value="ospatar">Ospătar</option>
+                                <option value="barman">Barman</option>
+                                <option value="hostess">Hostess</option>
+                            </select>
+                        </div>
+                        <button onClick={handleAddStaff} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+                        {staff.map(s => (
+                            <div key={s.id} style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                <div style={{ fontWeight: 'bold' }}>{s.staff_name}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#6b7280', textTransform: 'uppercase' }}>{s.role.replace('_', ' ')}</div>
+                                <button onClick={() => handleDeleteStaff(s.id)} style={{ alignSelf: 'end', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', marginTop: '10px' }}><Trash2 size={16} /></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* CLOSING SECTION (PV) */}
+            {activeSection === 'closing' && (
+                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <h3>Proces Verbal de Închidere</h3>
+                        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Completați datele financiare și operaționale la finalul evenimentului.</p>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: '15px' }}>
+                        <div>
+                            <label>Total Încasări (RON)</label>
+                            <input
+                                type="number"
+                                value={pvData.total_sales}
+                                onChange={e => setPvData({ ...pvData, total_sales: e.target.value })}
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                            />
+                        </div>
+                        <div>
+                            <label>Tips / Șpagă (RON)</label>
+                            <input
+                                type="number"
+                                value={pvData.tips_amount}
+                                onChange={e => setPvData({ ...pvData, tips_amount: e.target.value })}
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                            />
+                        </div>
+                        <div>
+                            <label>Pagube / Obiecte Sparte (RON)</label>
+                            <input
+                                type="number"
+                                value={pvData.broken_items_cost}
+                                onChange={e => setPvData({ ...pvData, broken_items_cost: e.target.value })}
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', borderColor: pvData.broken_items_cost > 0 ? '#ef4444' : '#ddd' }}
+                            />
+                        </div>
+                        <div>
+                            <label>Observații / Notițe</label>
+                            <textarea
+                                rows="4"
+                                value={pvData.notes || ''}
+                                onChange={e => setPvData({ ...pvData, notes: e.target.value })}
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                            />
+                        </div>
+                        <div>
+                            <label>Semnătură Manager (Nume)</label>
+                            <input
+                                type="text"
+                                value={pvData.manager_signed_by || ''}
+                                onChange={e => setPvData({ ...pvData, manager_signed_by: e.target.value })}
+                                placeholder="Numele dumneavoastră"
+                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', background: '#fefce8' }}
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleSavePV}
+                            style={{
+                                marginTop: '1rem',
+                                background: '#111827', color: 'white', border: 'none',
+                                padding: '15px', borderRadius: '8px', cursor: 'pointer',
+                                fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px'
+                            }}
+                        >
+                            <Save size={20} /> Salvează & Închide Eveniment
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default EventOperations;

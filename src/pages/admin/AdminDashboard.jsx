@@ -108,6 +108,7 @@ const AdminDashboard = () => {
         { id: 'requests', label: 'Cereri', icon: FileText, permission: 'requests' },
 
         { header: 'Administrare' },
+        { id: 'events', label: 'Evenimente', icon: CalendarIcon, permission: 'orders' },
         { id: 'planner', label: 'Planificator Meniu', icon: CalendarIcon, permission: 'products' },
         { id: 'delivery_zones', label: 'Livrare', icon: Truck, permission: 'promo' },
         { id: 'drivers_apps', label: 'Aplicații Livratori', icon: Truck, permission: 'drivers' },
@@ -499,7 +500,14 @@ const AdminDashboard = () => {
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => { setActiveTab(item.id); if (isMobile) setIsSidebarOpen(false); }}
+                                    onClick={() => {
+                                        if (item.id === 'events') { navigate('/admin/events'); }
+                                        else if (item.id === 'planner') { navigate('/admin/menu-planner'); } // Verify if planner has a route or is a tab?
+                                        else if (item.id === 'pos') { window.open('/admin/pos', '_blank'); } // Assuming POS opens in new window or route
+                                        else { setActiveTab(item.id); }
+
+                                        if (isMobile) setIsSidebarOpen(false);
+                                    }}
                                     style={navItemStyle(activeTab === item.id)}
                                 >
                                     {Icon && <Icon size={18} />} {item.label}
