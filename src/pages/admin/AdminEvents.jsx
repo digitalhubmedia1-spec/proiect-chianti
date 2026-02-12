@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Plus, Calendar, MapPin, Users, Edit2, Trash2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Trash2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminEvents = () => {
@@ -65,7 +65,7 @@ const AdminEvents = () => {
     return (
         <div className="admin-events-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
             <button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/admin/dashboard')}
                 style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: 'none', border: 'none', color: '#6b7280',
@@ -189,12 +189,6 @@ const AdminEvents = () => {
                                         {event.type === 'client' ? 'Eveniment Client' : 'Eveniment Restaurant'}
                                     </span>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); navigate(`/admin/events/${event.id}/edit`); }}
-                                            style={{ padding: '6px', borderRadius: '6px', border: 'none', background: '#f3f4f6', color: '#4b5563', cursor: 'pointer' }}
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDelete(event.id); }}
                                             style={{ padding: '6px', borderRadius: '6px', border: 'none', background: '#fee2e2', color: '#ef4444', cursor: 'pointer' }}
