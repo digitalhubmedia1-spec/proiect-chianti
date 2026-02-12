@@ -39,8 +39,12 @@ const EventMenuPlanner = ({ eventId }) => {
             supabase.from('event_menu_items')
                 .select('*, products(id, name, price, category, weight)')
                 .eq('event_id', eventId),
-            supabase.from('products').select('id, name, price, category, weight')
+            supabase.from('products')
+                .select('id, name, price, category, weight')
+                .eq('is_active', true)
+                .range(0, 9999)
         ]);
+        console.log('Produse încărcate:', productsRes.data?.length, 'Eroare:', productsRes.error);
         setItems(itemsRes.data || []);
         setProducts(productsRes.data || []);
         setLoading(false);
