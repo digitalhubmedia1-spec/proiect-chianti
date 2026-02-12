@@ -177,7 +177,7 @@ const AdminEventDetail = () => {
                         )}
 
                         {/* Financials */}
-                        <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ marginTop: '1.5rem' }}>
                             <div className="form-group">
                                 <label>Avans (RON)</label>
                                 <input
@@ -185,15 +185,6 @@ const AdminEventDetail = () => {
                                     value={event.deposit_amount || 0}
                                     onChange={e => setEvent({ ...event, deposit_amount: parseFloat(e.target.value) })}
                                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Cost Estimat (Automat)</label>
-                                <input
-                                    type="number"
-                                    value={event.total_cost_estimated || 0}
-                                    readOnly
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: '#f3f4f6' }}
                                 />
                             </div>
                         </div>

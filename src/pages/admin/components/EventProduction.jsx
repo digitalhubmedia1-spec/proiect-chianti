@@ -175,38 +175,74 @@ const EventProduction = ({ eventId }) => {
         return { status: 'missing', label: 'Lipsă', color: '#ef4444' };
     };
 
+    // Sanitize Romanian characters for PDF
+    const sanitize = (str) => {
+        if (!str) return '-';
+        return str.toString()
+            .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+            .replace(/â/g, 'a').replace(/Â/g, 'A')
+            .replace(/î/g, 'i').replace(/Î/g, 'I')
+            .replace(/ș/g, 's').replace(/Ș/g, 'S')
+            .replace(/ț/g, 't').replace(/Ț/g, 'T')
+            .replace(/ş/g, 's').replace(/Ş/g, 'S')
+            .replace(/ţ/g, 't').replace(/Ţ/g, 'T');
+    };
+
     // Export PDF
     const exportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Raport Productie Eveniment", 10, 10);
-        doc.setFontSize(10);
-        doc.text(`Invitati: ${guestCount} | Mod cost: ${costMode === 'ref' ? 'Preturi Referinta' : 'Cost Receptii'}`, 10, 18);
+        try {
+            const doc = new jsPDF();
+            doc.setFont('helvetica');
 
-        const ingredients = getAggregatedIngredients(activeMenuType);
-        const data = ingredients.map(ing => {
-            const price = costMode === 'ref' ? ing.refPrice : ing.batchPrice;
-            const stock = Math.max(ing.stock, ing.batchStock);
-            return [
-                ing.name,
-                ing.totalQty.toFixed(2) + ' ' + ing.unit,
-                stock.toFixed(2) + ' ' + ing.unit,
-                stock >= ing.totalQty ? 'DA' : 'NU',
-                (price * ing.totalQty).toFixed(2) + ' RON'
-            ];
-        });
+            // Header
+            doc.setFontSize(16);
+            doc.text(sanitize('Raport Productie Eveniment'), 14, 18);
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            const menuLabel = activeMenuType === 'invitati' ? 'Meniu Invitati' : 'Personal Chianti';
+            doc.text(`${sanitize(menuLabel)} | Portii: ${portions} | Mod cost: ${costMode === 'ref' ? 'Preturi Referinta' : 'Cost Receptii'}`, 14, 26);
+            doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 14, 32);
+            doc.setTextColor(0, 0, 0);
 
-        doc.autoTable({
-            head: [['Ingredient', 'Necesar', 'Stoc', 'Ok?', 'Cost']],
-            body: data,
-            startY: 24
-        });
+            const ingredients = getAggregatedIngredients(activeMenuType);
+            const tableData = ingredients.map(ing => {
+                const price = costMode === 'ref' ? ing.refPrice : ing.batchPrice;
+                const stock = Math.max(ing.stock, ing.batchStock);
+                return [
+                    sanitize(ing.name),
+                    `${ing.totalQty.toFixed(2)} ${sanitize(ing.unit)}`,
+                    `${stock.toFixed(2)} ${sanitize(ing.unit)}`,
+                    stock >= ing.totalQty ? 'DA' : 'NU',
+                    price > 0 ? `${price.toFixed(2)} RON/${sanitize(ing.unit)}` : '-',
+                    price > 0 ? `${(price * ing.totalQty).toFixed(2)} RON` : '-'
+                ];
+            });
 
-        const finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(12);
-        doc.text(`Cost Total: ${calculateTotalCost(activeMenuType).toFixed(2)} RON`, 10, finalY);
-        doc.text(`Cost / Persoana: ${getCostPerPerson(activeMenuType).toFixed(2)} RON`, 10, finalY + 8);
+            doc.autoTable({
+                head: [['Ingredient', 'Necesar', 'Stoc', 'Ok?', sanitize('Pret/U'), 'Cost Total']],
+                body: tableData,
+                startY: 38,
+                styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
+                headStyles: { fillColor: [153, 0, 0] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: {
+                    3: { halign: 'center' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right', fontStyle: 'bold' }
+                }
+            });
 
-        doc.save(`productie_eveniment_${eventId}.pdf`);
+            const finalY = (doc.previousAutoTable?.finalY || 50) + 12;
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Cost Total: ${calculateTotalCost(activeMenuType).toFixed(2)} RON`, 14, finalY);
+            doc.text(`Cost / Persoana: ${getCostPerPerson(activeMenuType).toFixed(2)} RON`, 14, finalY + 8);
+
+            doc.save(`productie_eveniment_${eventId}.pdf`);
+        } catch (err) {
+            console.error('PDF export error:', err);
+            alert('Eroare la generarea PDF: ' + err.message);
+        }
     };
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se calculează...</div>;

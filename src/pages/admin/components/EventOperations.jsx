@@ -1,16 +1,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, DollarSign } from 'lucide-react';
+import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, DollarSign, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+const roleLabels = {
+    manager: 'Manager Eveniment',
+    bucatar_sef: 'Bucatar Sef',
+    ospatar: 'Ospatar',
+    barman: 'Barman',
+    hostess: 'Hostess'
+};
+
+const sanitize = (str) => {
+    if (!str) return '-';
+    return str.toString()
+        .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+        .replace(/â/g, 'a').replace(/Â/g, 'A')
+        .replace(/î/g, 'i').replace(/Î/g, 'I')
+        .replace(/ș/g, 's').replace(/Ș/g, 'S')
+        .replace(/ț/g, 't').replace(/Ț/g, 'T')
+        .replace(/ş/g, 's').replace(/Ş/g, 'S')
+        .replace(/ţ/g, 't').replace(/Ţ/g, 'T');
+};
 
 const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
-    const [activeSection, setActiveSection] = useState('timeline'); // timeline, staff, closing
+    const [activeSection, setActiveSection] = useState('timeline');
     const [timeline, setTimeline] = useState([]);
     const [staff, setStaff] = useState([]);
     const [closingData, setClosingData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Forms
     const [newItem, setNewItem] = useState({ time_start: '', activity: '', notes: '' });
     const [newStaff, setNewStaff] = useState({ staff_name: '', role: 'ospatar' });
     const [pvData, setPvData] = useState({
@@ -21,34 +42,23 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         manager_signed_by: ''
     });
 
-    useEffect(() => {
-        loadData();
-    }, [eventId]);
+    useEffect(() => { loadData(); }, [eventId]);
 
     const loadData = async () => {
         setLoading(true);
-        // Timeline
         const { data: t } = await supabase.from('event_timeline_items').select('*').eq('event_id', eventId).order('time_start');
         setTimeline(t || []);
-
-        // Staff
         const { data: s } = await supabase.from('event_staff_assignments').select('*').eq('event_id', eventId);
         setStaff(s || []);
-
-        // Closing Report
         const { data: c } = await supabase.from('event_closing_reports').select('*').eq('event_id', eventId).single();
-        if (c) {
-            setClosingData(c);
-            setPvData(c);
-        }
-
+        if (c) { setClosingData(c); setPvData(c); }
         setLoading(false);
     };
 
     // --- TIMELINE ACTIONS ---
     const handleAddItem = async () => {
         if (!newItem.time_start || !newItem.activity) return;
-        const { data, error } = await supabase.from('event_timeline_items').insert([{ ...newItem, event_id: eventId }]).select().single();
+        const { data } = await supabase.from('event_timeline_items').insert([{ ...newItem, event_id: eventId }]).select().single();
         if (data) {
             setTimeline([...timeline, data].sort((a, b) => a.time_start.localeCompare(b.time_start)));
             setNewItem({ time_start: '', activity: '', notes: '' });
@@ -81,19 +91,42 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         setStaff(staff.filter(s => s.id !== id));
     };
 
+    const exportStaffPDF = () => {
+        const doc = new jsPDF();
+        doc.setFont('helvetica');
+        doc.setFontSize(16);
+        doc.text(sanitize('Echipa & Staff - Eveniment'), 14, 18);
+        doc.setFontSize(10);
+        doc.text(`Total: ${staff.length} persoane`, 14, 26);
+        doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 14, 32);
+
+        const headers = [['#', 'Nume', 'Rol']];
+        const data = staff.map((s, i) => [
+            i + 1,
+            sanitize(s.staff_name),
+            sanitize(roleLabels[s.role] || s.role)
+        ]);
+
+        doc.autoTable({
+            head: headers,
+            body: data,
+            startY: 38,
+            styles: { fontSize: 10, cellPadding: 4, font: 'helvetica' },
+            headStyles: { fillColor: [153, 0, 0] },
+            alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        doc.save(`staff_eveniment_${eventId}.pdf`);
+    };
+
     // --- CLOSING ACTIONS ---
     const handleSavePV = async () => {
         if (!window.confirm("Salvați Procesul Verbal? Aceasta acțiune este finală.")) return;
-
-        // Upsert logic
         const payload = { ...pvData, event_id: eventId };
         const { data, error } = await supabase.from('event_closing_reports').upsert(payload).select().single();
-
         if (!error) {
             setClosingData(data);
             alert("Proces Verbal Salvat!");
-
-            // Optionally close event
             if (eventStatus !== 'completed') {
                 if (window.confirm("Doriți să marcați evenimentul ca FINALIZAT?")) {
                     await supabase.from('events').update({ status: 'completed' }).eq('id', eventId);
@@ -107,29 +140,19 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
 
     return (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', minHeight: '500px' }}>
-            {/* Sub-Navigation */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                <button
-                    onClick={() => setActiveSection('timeline')}
-                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'timeline' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'timeline' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
-                >
+                <button onClick={() => setActiveSection('timeline')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'timeline' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'timeline' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
                     <Clock size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Desfășurător
                 </button>
-                <button
-                    onClick={() => setActiveSection('staff')}
-                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'staff' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'staff' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
-                >
+                <button onClick={() => setActiveSection('staff')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'staff' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'staff' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
                     <Users size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Echipă & Staff
                 </button>
-                <button
-                    onClick={() => setActiveSection('closing')}
-                    style={{ background: 'none', border: 'none', borderBottom: activeSection === 'closing' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'closing' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}
-                >
+                <button onClick={() => setActiveSection('closing')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'closing' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'closing' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
                     <FileText size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Proces Verbal Închidere
                 </button>
             </div>
 
-            {/* TIMELINE SECTION */}
+            {/* TIMELINE */}
             {activeSection === 'timeline' && (
                 <div>
                     <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
@@ -143,7 +166,6 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         </div>
                         <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                     </div>
-
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {timeline.map(item => (
                             <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.status === 'done' ? '#f0fdf4' : 'white', opacity: item.status === 'done' ? 0.7 : 1 }}>
@@ -163,10 +185,10 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                 </div>
             )}
 
-            {/* STAFF SECTION */}
+            {/* STAFF */}
             {activeSection === 'staff' && (
                 <div>
-                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
                         <div style={{ flex: 1 }}>
                             <label style={{ fontSize: '0.8rem' }}>Nume Membru Staff</label>
                             <input placeholder="ex: Popescu Ion" value={newStaff.staff_name} onChange={e => setNewStaff({ ...newStaff, staff_name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
@@ -184,83 +206,77 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         <button onClick={handleAddStaff} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
-                        {staff.map(s => (
-                            <div key={s.id} style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                <div style={{ fontWeight: 'bold' }}>{s.staff_name}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#6b7280', textTransform: 'uppercase' }}>{s.role.replace('_', ' ')}</div>
-                                <button onClick={() => handleDeleteStaff(s.id)} style={{ alignSelf: 'end', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', marginTop: '10px' }}><Trash2 size={16} /></button>
-                            </div>
-                        ))}
-                    </div>
+                    {staff.length > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>Total: <strong>{staff.length}</strong> persoane</span>
+                            <button onClick={exportStaffPDF} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#990000', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
+                                <Download size={16} /> Export PDF
+                            </button>
+                        </div>
+                    )}
+
+                    {staff.length > 0 ? (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                            <thead>
+                                <tr style={{ background: '#f9fafb', textAlign: 'left' }}>
+                                    <th style={{ padding: '10px 14px', fontWeight: '600', color: '#374151', width: '40px' }}>#</th>
+                                    <th style={{ padding: '10px 14px', fontWeight: '600', color: '#374151' }}>Nume</th>
+                                    <th style={{ padding: '10px 14px', fontWeight: '600', color: '#374151' }}>Rol</th>
+                                    <th style={{ padding: '10px 14px', fontWeight: '600', color: '#374151', width: '50px' }}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {staff.map((s, idx) => (
+                                    <tr key={s.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                        <td style={{ padding: '10px 14px', color: '#9ca3af' }}>{idx + 1}</td>
+                                        <td style={{ padding: '10px 14px', fontWeight: '500' }}>{s.staff_name}</td>
+                                        <td style={{ padding: '10px 14px' }}>
+                                            <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '600', background: '#f3f4f6', color: '#374151' }}>
+                                                {roleLabels[s.role] || s.role}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '10px 14px' }}>
+                                            <button onClick={() => handleDeleteStaff(s.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>Nu există personal adăugat.</div>
+                    )}
                 </div>
             )}
 
-            {/* CLOSING SECTION (PV) */}
+            {/* CLOSING PV */}
             {activeSection === 'closing' && (
                 <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                         <h3>Proces Verbal de Închidere</h3>
                         <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Completați datele financiare și operaționale la finalul evenimentului.</p>
                     </div>
-
                     <div style={{ display: 'grid', gap: '15px' }}>
                         <div>
                             <label>Total Încasări (RON)</label>
-                            <input
-                                type="number"
-                                value={pvData.total_sales}
-                                onChange={e => setPvData({ ...pvData, total_sales: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                            />
+                            <input type="number" value={pvData.total_sales} onChange={e => setPvData({ ...pvData, total_sales: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
                         </div>
                         <div>
                             <label>Tips / Șpagă (RON)</label>
-                            <input
-                                type="number"
-                                value={pvData.tips_amount}
-                                onChange={e => setPvData({ ...pvData, tips_amount: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                            />
+                            <input type="number" value={pvData.tips_amount} onChange={e => setPvData({ ...pvData, tips_amount: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
                         </div>
                         <div>
                             <label>Pagube / Obiecte Sparte (RON)</label>
-                            <input
-                                type="number"
-                                value={pvData.broken_items_cost}
-                                onChange={e => setPvData({ ...pvData, broken_items_cost: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', borderColor: pvData.broken_items_cost > 0 ? '#ef4444' : '#ddd' }}
-                            />
+                            <input type="number" value={pvData.broken_items_cost} onChange={e => setPvData({ ...pvData, broken_items_cost: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', borderColor: pvData.broken_items_cost > 0 ? '#ef4444' : '#ddd' }} />
                         </div>
                         <div>
                             <label>Observații / Notițe</label>
-                            <textarea
-                                rows="4"
-                                value={pvData.notes || ''}
-                                onChange={e => setPvData({ ...pvData, notes: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                            />
+                            <textarea rows="4" value={pvData.notes || ''} onChange={e => setPvData({ ...pvData, notes: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
                         </div>
                         <div>
                             <label>Semnătură Manager (Nume)</label>
-                            <input
-                                type="text"
-                                value={pvData.manager_signed_by || ''}
-                                onChange={e => setPvData({ ...pvData, manager_signed_by: e.target.value })}
-                                placeholder="Numele dumneavoastră"
-                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', background: '#fefce8' }}
-                            />
+                            <input type="text" value={pvData.manager_signed_by || ''} onChange={e => setPvData({ ...pvData, manager_signed_by: e.target.value })} placeholder="Numele dumneavoastră" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', background: '#fefce8' }} />
                         </div>
-
-                        <button
-                            onClick={handleSavePV}
-                            style={{
-                                marginTop: '1rem',
-                                background: '#111827', color: 'white', border: 'none',
-                                padding: '15px', borderRadius: '8px', cursor: 'pointer',
-                                fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px'
-                            }}
-                        >
+                        <button onClick={handleSavePV} style={{ marginTop: '1rem', background: '#111827', color: 'white', border: 'none', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px' }}>
                             <Save size={20} /> Salvează & Închide Eveniment
                         </button>
                     </div>
