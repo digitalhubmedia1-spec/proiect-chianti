@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Trash2, Search, ChevronDown, ChevronRight, X, UtensilsCrossed, Users } from 'lucide-react';
+import { Plus, Trash2, Search, X, UtensilsCrossed, Users } from 'lucide-react';
 
 const MENU_TYPES = [
     { key: 'invitati', label: 'Meniu Invitați', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
@@ -14,22 +14,24 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const EventMenuPlanner = ({ eventId }) => {
-    const [items, setItems] = useState([]);       // all event_menu_items for this event
+    const [items, setItems] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeType, setActiveType] = useState('invitati');
 
-    // Add category state
-    const [showAddCategory, setShowAddCategory] = useState(null); // menuType
+    // Pending categories (added but no items yet)
+    const [pendingCategories, setPendingCategories] = useState({ invitati: [], personal: [] });
+
+    // Add category UI
+    const [showAddCategory, setShowAddCategory] = useState(null);
     const [newCategoryName, setNewCategoryName] = useState('');
 
-    // Search state
-    const [searchState, setSearchState] = useState({ category: null, menuType: null, query: '', results: [] });
+    // Per-category search
+    const [activeSearch, setActiveSearch] = useState(null); // "menuType|category"
+    const [searchQuery, setSearchQuery] = useState('');
     const searchRef = useRef(null);
 
-    useEffect(() => {
-        loadData();
-    }, [eventId]);
+    useEffect(() => { loadData(); }, [eventId]);
 
     const loadData = async () => {
         setLoading(true);
@@ -44,29 +46,56 @@ const EventMenuPlanner = ({ eventId }) => {
         setLoading(false);
     };
 
-    // Get unique categories for a menu type
-    const getCategories = (menuType) => {
-        const cats = items
+    // All categories for a menu type (from items + pending)
+    const getAllCategories = (menuType) => {
+        const fromItems = items
             .filter(i => i.menu_type === menuType)
             .map(i => i.category)
             .filter(Boolean);
-        return [...new Set(cats)];
+        const pending = pendingCategories[menuType] || [];
+        return [...new Set([...fromItems, ...pending])];
     };
 
-    const getItemsForCategory = (menuType, category) => {
-        return items.filter(i => i.menu_type === menuType && i.category === category);
-    };
+    const getItemsForCategory = (menuType, category) =>
+        items.filter(i => i.menu_type === menuType && i.category === category);
 
-    // Add a new category (just opens the search for it)
+    // Add category
     const handleAddCategory = (menuType) => {
-        if (!newCategoryName.trim()) return;
-        // Just open search for this new category - items will create the category implicitly
-        setSearchState({ category: newCategoryName.trim(), menuType, query: '', results: [] });
+        const name = newCategoryName.trim();
+        if (!name) return;
+        const existing = getAllCategories(menuType);
+        if (existing.includes(name)) {
+            setNewCategoryName('');
+            setShowAddCategory(null);
+            return;
+        }
+        setPendingCategories(prev => ({
+            ...prev,
+            [menuType]: [...(prev[menuType] || []), name]
+        }));
         setNewCategoryName('');
         setShowAddCategory(null);
+        // Auto-open search for the new category
+        setActiveSearch(`${menuType}|${name}`);
+        setSearchQuery('');
     };
 
-    // Add product to a category
+    // Delete category
+    const handleDeleteCategory = async (menuType, category) => {
+        if (!window.confirm(`Ștergi categoria "${category}" și toate produsele din ea?`)) return;
+        const toDelete = items.filter(i => i.menu_type === menuType && i.category === category);
+        for (const item of toDelete) {
+            await supabase.from('event_menu_items').delete().eq('id', item.id);
+        }
+        setItems(prev => prev.filter(i => !(i.menu_type === menuType && i.category === category)));
+        // Also remove from pending
+        setPendingCategories(prev => ({
+            ...prev,
+            [menuType]: (prev[menuType] || []).filter(c => c !== category)
+        }));
+    };
+
+    // Add product
     const handleAddProduct = async (product, menuType, category) => {
         const { data, error } = await supabase.from('event_menu_items').insert([{
             event_id: eventId,
@@ -83,7 +112,13 @@ const EventMenuPlanner = ({ eventId }) => {
         }
         if (data) {
             setItems(prev => [...prev, data]);
-            setSearchState({ category: null, menuType: null, query: '', results: [] });
+            // Remove from pending since it now has items
+            setPendingCategories(prev => ({
+                ...prev,
+                [menuType]: (prev[menuType] || []).filter(c => c !== category)
+            }));
+            setSearchQuery('');
+            // Keep search open for adding more products
         }
     };
 
@@ -92,60 +127,42 @@ const EventMenuPlanner = ({ eventId }) => {
         setItems(prev => prev.filter(i => i.id !== itemId));
     };
 
-    const handleDeleteCategory = async (menuType, category) => {
-        if (!window.confirm(`Ștergi categoria "${category}" și toate produsele din ea?`)) return;
-        const toDelete = items.filter(i => i.menu_type === menuType && i.category === category);
-        for (const item of toDelete) {
-            await supabase.from('event_menu_items').delete().eq('id', item.id);
-        }
-        setItems(prev => prev.filter(i => !(i.menu_type === menuType && i.category === category)));
-    };
-
-    // Search filtering
-    const handleSearchChange = (query, menuType, category) => {
-        const trimmed = query.trim().toLowerCase();
-        let results = [];
-        if (trimmed.length >= 1) {
-            const existingProductIds = items
-                .filter(i => i.menu_type === menuType && i.category === category)
-                .map(i => i.product_id);
-            results = products
-                .filter(p => p.name.toLowerCase().includes(trimmed) && !existingProductIds.includes(p.id))
-                .slice(0, 8);
-        }
-        setSearchState({ category, menuType, query, results });
+    // Filtered products for search
+    const getFilteredProducts = (menuType, category) => {
+        if (searchQuery.length < 1) return [];
+        const existingIds = getItemsForCategory(menuType, category).map(i => i.product_id);
+        return products
+            .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) && !existingIds.includes(p.id))
+            .slice(0, 10);
     };
 
     // Close search on outside click
     useEffect(() => {
-        const handleClick = (e) => {
+        const handle = (e) => {
             if (searchRef.current && !searchRef.current.contains(e.target)) {
-                setSearchState(s => ({ ...s, results: [], query: '' }));
+                setActiveSearch(null);
+                setSearchQuery('');
             }
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('mousedown', handle);
+        return () => document.removeEventListener('mousedown', handle);
     }, []);
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se încarcă...</div>;
 
-    // ---------- RENDER ----------
+    // ============ RENDER ============
 
     const renderProductRow = (item) => (
         <div key={item.id} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 14px', borderBottom: '1px solid #f3f4f6',
-            transition: 'background 0.15s'
-        }}
-            onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-        >
+            padding: '10px 14px', borderBottom: '1px solid #f3f4f6'
+        }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                <span style={{ fontWeight: '500', color: '#111827' }}>{item.products?.name || 'Produs necunoscut'}</span>
+                <span style={{ fontWeight: '500', color: '#111827' }}>{item.products?.name || '—'}</span>
                 {item.products?.weight && (
                     <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{item.products.weight}g</span>
                 )}
-                {item.products?.price && (
+                {item.products?.price != null && (
                     <span style={{
                         padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem',
                         background: '#f0fdf4', color: '#166534', fontWeight: '600'
@@ -162,75 +179,12 @@ const EventMenuPlanner = ({ eventId }) => {
         </div>
     );
 
-    const renderSearchInput = (menuType, category) => {
-        const isActive = searchState.menuType === menuType && searchState.category === category;
-        return (
-            <div ref={isActive ? searchRef : null} style={{ position: 'relative', padding: '8px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Search size={16} color="#9ca3af" />
-                    <input
-                        placeholder="Caută produs..."
-                        value={isActive ? searchState.query : ''}
-                        onChange={e => handleSearchChange(e.target.value, menuType, category)}
-                        onFocus={() => { if (!isActive) setSearchState({ category, menuType, query: '', results: [] }); }}
-                        style={{
-                            flex: 1, padding: '8px', border: '1px solid #e5e7eb',
-                            borderRadius: '6px', fontSize: '0.85rem', outline: 'none'
-                        }}
-                    />
-                </div>
-                {isActive && searchState.results.length > 0 && (
-                    <div style={{
-                        position: 'absolute', top: '100%', left: '14px', right: '14px',
-                        background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 20, maxHeight: '240px', overflowY: 'auto'
-                    }}>
-                        {searchState.results.map(p => (
-                            <div
-                                key={p.id}
-                                onClick={() => handleAddProduct(p, menuType, category)}
-                                style={{
-                                    padding: '10px 14px', cursor: 'pointer',
-                                    borderBottom: '1px solid #f3f4f6',
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                            >
-                                <div>
-                                    <span style={{ fontWeight: '500' }}>{p.name}</span>
-                                    {p.category && (
-                                        <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '8px' }}>
-                                            ({p.category})
-                                        </span>
-                                    )}
-                                </div>
-                                <span style={{
-                                    padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem',
-                                    background: '#dbeafe', color: '#1e40af', fontWeight: '600'
-                                }}>
-                                    + Adaugă
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {isActive && searchState.query.length >= 1 && searchState.results.length === 0 && (
-                    <div style={{
-                        position: 'absolute', top: '100%', left: '14px', right: '14px',
-                        background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 20, padding: '12px',
-                        textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem'
-                    }}>
-                        Niciun produs găsit
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     const renderCategorySection = (menuType, category) => {
         const categoryItems = getItemsForCategory(menuType, category);
+        const searchKey = `${menuType}|${category}`;
+        const isSearchActive = activeSearch === searchKey;
+        const filteredProducts = isSearchActive ? getFilteredProducts(menuType, category) : [];
+
         return (
             <div key={category} style={{
                 border: '1px solid #e5e7eb', borderRadius: '8px',
@@ -247,7 +201,7 @@ const EventMenuPlanner = ({ eventId }) => {
                             padding: '1px 8px', borderRadius: '10px', fontSize: '0.7rem',
                             background: '#f3f4f6', color: '#6b7280', fontWeight: '600'
                         }}>
-                            {categoryItems.length}
+                            {categoryItems.length} produse
                         </span>
                     </div>
                     <button onClick={() => handleDeleteCategory(menuType, category)} style={{
@@ -258,24 +212,92 @@ const EventMenuPlanner = ({ eventId }) => {
                     </button>
                 </div>
 
-                {/* Items */}
+                {/* Existing Items */}
                 {categoryItems.map(renderProductRow)}
 
-                {/* Search */}
-                {renderSearchInput(menuType, category)}
+                {/* Search Input */}
+                <div ref={isSearchActive ? searchRef : null} style={{ position: 'relative', padding: '8px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Search size={16} color="#9ca3af" />
+                        <input
+                            placeholder="Caută produs pentru a adăuga..."
+                            value={isSearchActive ? searchQuery : ''}
+                            onChange={e => {
+                                setActiveSearch(searchKey);
+                                setSearchQuery(e.target.value);
+                            }}
+                            onFocus={() => {
+                                setActiveSearch(searchKey);
+                                setSearchQuery('');
+                            }}
+                            style={{
+                                flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb',
+                                borderRadius: '6px', fontSize: '0.85rem', outline: 'none'
+                            }}
+                        />
+                    </div>
+
+                    {/* Dropdown Results */}
+                    {isSearchActive && searchQuery.length >= 1 && (
+                        <div style={{
+                            position: 'absolute', top: '100%', left: '14px', right: '14px',
+                            background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 30, maxHeight: '240px', overflowY: 'auto'
+                        }}>
+                            {filteredProducts.length > 0 ? (
+                                filteredProducts.map(p => (
+                                    <div
+                                        key={p.id}
+                                        onClick={() => handleAddProduct(p, menuType, category)}
+                                        style={{
+                                            padding: '10px 14px', cursor: 'pointer',
+                                            borderBottom: '1px solid #f3f4f6',
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                    >
+                                        <div>
+                                            <span style={{ fontWeight: '500' }}>{p.name}</span>
+                                            {p.category && (
+                                                <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '8px' }}>
+                                                    ({p.category})
+                                                </span>
+                                            )}
+                                            {p.weight && (
+                                                <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '4px' }}>
+                                                    {p.weight}g
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span style={{
+                                            padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem',
+                                            background: '#111827', color: 'white', fontWeight: '600'
+                                        }}>
+                                            + Adaugă
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ padding: '14px', textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem' }}>
+                                    Niciun produs găsit pentru „{searchQuery}"
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     };
 
     const renderMenuSection = (menuType) => {
         const typeConfig = MENU_TYPES.find(t => t.key === menuType);
-        const categories = getCategories(menuType);
+        const categories = getAllCategories(menuType);
         const totalItems = items.filter(i => i.menu_type === menuType).length;
 
         return (
             <div style={{
-                background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb',
-                overflow: 'hidden'
+                background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden'
             }}>
                 {/* Header */}
                 <div style={{
@@ -296,41 +318,43 @@ const EventMenuPlanner = ({ eventId }) => {
                 </div>
 
                 <div style={{ padding: '16px 20px' }}>
-                    {/* Categories */}
+                    {/* Existing + Pending Categories */}
                     {categories.map(cat => renderCategorySection(menuType, cat))}
 
                     {categories.length === 0 && (
                         <div style={{ padding: '1.5rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.9rem' }}>
-                            Nicio categorie adăugată încă. Adăugați prima categorie mai jos.
+                            Nicio categorie adăugată. Adăugați prima categorie mai jos.
                         </div>
                     )}
 
-                    {/* Add Category */}
+                    {/* Add Category Form */}
                     {showAddCategory === menuType ? (
                         <div style={{
-                            display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'center'
+                            display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'center', flexWrap: 'wrap'
                         }}>
                             <select
-                                value={newCategoryName}
+                                value={DEFAULT_CATEGORIES.includes(newCategoryName) ? newCategoryName : ''}
                                 onChange={e => setNewCategoryName(e.target.value)}
                                 style={{
-                                    flex: 1, padding: '8px 10px', borderRadius: '6px',
+                                    minWidth: '200px', padding: '9px 10px', borderRadius: '6px',
                                     border: '1px solid #e5e7eb', fontSize: '0.85rem'
                                 }}
                             >
-                                <option value="">— Selectați sau scrieți —</option>
+                                <option value="">— Alegeți categorie —</option>
                                 {DEFAULT_CATEGORIES
                                     .filter(c => !categories.includes(c))
                                     .map(c => <option key={c} value={c}>{c}</option>)
                                 }
                             </select>
+                            <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>sau</span>
                             <input
                                 type="text"
-                                placeholder="Sau scrieți altă categorie..."
+                                placeholder="Scrieți altă categorie..."
                                 value={DEFAULT_CATEGORIES.includes(newCategoryName) ? '' : newCategoryName}
                                 onChange={e => setNewCategoryName(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(menuType); }}
                                 style={{
-                                    flex: 1, padding: '8px 10px', borderRadius: '6px',
+                                    flex: 1, minWidth: '180px', padding: '9px 10px', borderRadius: '6px',
                                     border: '1px solid #e5e7eb', fontSize: '0.85rem'
                                 }}
                             />
@@ -338,7 +362,7 @@ const EventMenuPlanner = ({ eventId }) => {
                                 onClick={() => handleAddCategory(menuType)}
                                 disabled={!newCategoryName.trim()}
                                 style={{
-                                    padding: '8px 16px', borderRadius: '6px', border: 'none',
+                                    padding: '9px 18px', borderRadius: '6px', border: 'none',
                                     background: newCategoryName.trim() ? '#111827' : '#d1d5db',
                                     color: 'white', cursor: newCategoryName.trim() ? 'pointer' : 'not-allowed',
                                     fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap'
@@ -356,8 +380,8 @@ const EventMenuPlanner = ({ eventId }) => {
                         <button
                             onClick={() => { setShowAddCategory(menuType); setNewCategoryName(''); }}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px',
-                                padding: '10px 16px', borderRadius: '8px',
+                                display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px',
+                                padding: '12px 16px', borderRadius: '8px',
                                 border: '1px dashed #d1d5db', background: 'transparent',
                                 cursor: 'pointer', color: '#6b7280', fontSize: '0.85rem', fontWeight: '500',
                                 width: '100%', justifyContent: 'center'
@@ -373,7 +397,7 @@ const EventMenuPlanner = ({ eventId }) => {
 
     return (
         <div>
-            {/* Tabs */}
+            {/* Menu Type Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                 {MENU_TYPES.map(t => (
                     <button
