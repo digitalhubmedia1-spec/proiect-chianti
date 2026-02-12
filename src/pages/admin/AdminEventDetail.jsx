@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat } from 'lucide-react';
 import VisualHallEditor from './components/VisualHallEditor';
 import EventMenuPlanner from './components/EventMenuPlanner';
 import EventProduction from './components/EventProduction';
 import EventOperations from './components/EventOperations';
+import EventGuestsManager from './components/EventGuestsManager';
 
 const AdminEventDetail = () => {
     const { id } = useParams();
@@ -50,50 +51,7 @@ const AdminEventDetail = () => {
         }
     };
 
-    // --- GUESTS LOGIC ---
-    const [guests, setGuests] = useState([]);
-    const [guestsLoading, setGuestsLoading] = useState(false);
 
-    useEffect(() => {
-        if (activeTab === 'guests' && id !== 'new') {
-            fetchGuests();
-        }
-    }, [activeTab, id]);
-
-    const fetchGuests = async () => {
-        setGuestsLoading(true);
-        const { data, error } = await supabase
-            .from('event_guests')
-            .select('*')
-            .eq('event_id', id);
-        if (!error) setGuests(data || []);
-        setGuestsLoading(false);
-    };
-
-    const handleAddGuest = async () => {
-        const fullName = prompt("Nume Invitat:");
-        if (!fullName) return;
-
-        const type = window.confirm("Este Adult? OK=Da, Cancel=Nu (Copil)") ? 'adult' : 'minor';
-
-        const { data, error } = await supabase.from('event_guests').insert([{
-            event_id: id,
-            full_name: fullName,
-            type
-        }]).select().single();
-
-        if (error) {
-            alert("Eroare: " + error.message);
-        } else {
-            setGuests([...guests, data]);
-        }
-    };
-
-    const handleDeleteGuest = async (guestId) => {
-        if (!window.confirm("Stergi acest invitat?")) return;
-        await supabase.from('event_guests').delete().eq('id', guestId);
-        setGuests(guests.filter(g => g.id !== guestId));
-    };
 
     const handleSave = async () => {
         try {
@@ -265,72 +223,7 @@ const AdminEventDetail = () => {
                     )
                 );
             case 'guests':
-                return (
-                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3>Lista Invitați</h3>
-                            <button
-                                onClick={handleAddGuest}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    background: '#111827', color: 'white', border: 'none',
-                                    padding: '8px 16px', borderRadius: '6px', cursor: 'pointer'
-                                }}
-                            >
-                                <Plus size={16} /> Adaugă Invitat
-                            </button>
-                        </div>
-
-                        {guestsLoading ? (
-                            <div>Se încarcă lista...</div>
-                        ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ background: '#f9fafb', textAlign: 'left' }}>
-                                        <th style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>Nume</th>
-                                        <th style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>Tip</th>
-                                        <th style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>Meniu</th>
-                                        <th style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>Masa</th>
-                                        <th style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>Acțiuni</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {guests.map(guest => (
-                                        <tr key={guest.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                            <td style={{ padding: '12px' }}>{guest.full_name || guest.name}</td>
-                                            <td style={{ padding: '12px' }}>
-                                                <span style={{
-                                                    padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem',
-                                                    background: guest.type === 'adult' ? '#dbeafe' : '#fce7f3',
-                                                    color: guest.type === 'adult' ? '#1e40af' : '#be185d'
-                                                }}>
-                                                    {guest.type === 'adult' ? 'Adult' : 'Copil'}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '12px' }}>{guest.menu_preference || 'Standard'}</td>
-                                            <td style={{ padding: '12px' }}>-</td>
-                                            <td style={{ padding: '12px' }}>
-                                                <button
-                                                    onClick={() => handleDeleteGuest(guest.id)}
-                                                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {guests.length === 0 && (
-                                        <tr>
-                                            <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-                                                Nu există invitați adăugați.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                );
+                return <EventGuestsManager eventId={id} allowMinors={event.allow_minors || false} />;
             case 'menu':
                 return <EventMenuPlanner eventId={id} />;
             case 'production':
