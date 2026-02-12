@@ -4,7 +4,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat, Plus, Trash2 } from 'lucide-react';
 import VisualHallEditor from './components/VisualHallEditor';
+import EventMenuPlanner from './components/EventMenuPlanner';
 import EventProduction from './components/EventProduction';
+import EventOperations from './components/EventOperations';
 
 const AdminEventDetail = () => {
     const { id } = useParams();
@@ -352,10 +354,16 @@ const AdminEventDetail = () => {
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{event.name || 'Eveniment Nou'}</h1>
                     <span style={{
                         padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold',
-                        background: event.status === 'confirmed' ? '#dbeafe' : '#fef3c7',
-                        color: event.status === 'confirmed' ? '#1e40af' : '#92400e'
+                        background: event.status === 'confirmed' ? '#dbeafe' : event.status === 'completed' ? '#d1fae5' : '#fef3c7',
+                        color: event.status === 'confirmed' ? '#1e40af' : event.status === 'completed' ? '#065f46' : '#92400e'
                     }}>
-                        {event.status.toUpperCase()}
+                        {{
+                            draft: 'CIORNĂ',
+                            confirmed: 'CONFIRMAT',
+                            in_progress: 'ÎN DESFĂȘURARE',
+                            completed: 'FINALIZAT',
+                            cancelled: 'ANULAT'
+                        }[event.status] || event.status.toUpperCase()}
                     </span>
                 </div>
                 <button
@@ -384,6 +392,7 @@ const AdminEventDetail = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         disabled={id === 'new' && tab.id !== 'general'}
+                        title={id === 'new' && tab.id !== 'general' ? 'Salvați evenimentul mai întâi' : ''}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
                             background: activeTab === tab.id ? 'white' : 'transparent',

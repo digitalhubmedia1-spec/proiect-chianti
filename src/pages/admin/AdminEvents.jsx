@@ -90,10 +90,17 @@ const AdminEvents = () => {
                             border: `1px solid ${filterStatus === status ? '#111827' : '#e5e7eb'}`,
                             backgroundColor: filterStatus === status ? '#111827' : 'white',
                             color: filterStatus === status ? 'white' : '#374151',
-                            cursor: 'pointer', fontWeight: '500', textTransform: 'capitalize'
+                            cursor: 'pointer', fontWeight: '500'
                         }}
                     >
-                        {status === 'all' ? 'Toate' : status.replace('_', ' ')}
+                        {{
+                            all: 'Toate',
+                            draft: 'Ciornă',
+                            confirmed: 'Confirmat',
+                            in_progress: 'În Desfășurare',
+                            completed: 'Finalizat',
+                            cancelled: 'Anulat'
+                        }[status]}
                     </button>
                 ))}
             </div>
@@ -134,7 +141,13 @@ const AdminEvents = () => {
                                         color: getStatusColor(event.status),
                                         textTransform: 'uppercase'
                                     }}>
-                                        {event.status.replace('_', ' ')}
+                                        {{
+                                            draft: 'Ciornă',
+                                            confirmed: 'Confirmat',
+                                            in_progress: 'În Desfășurare',
+                                            completed: 'Finalizat',
+                                            cancelled: 'Anulat'
+                                        }[event.status] || event.status}
                                     </span>
                                 </div>
 
