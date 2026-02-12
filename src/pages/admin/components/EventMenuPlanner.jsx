@@ -192,7 +192,7 @@ const EventMenuPlanner = ({ eventId }) => {
         return (
             <div key={category} style={{
                 border: '1px solid #e5e7eb', borderRadius: '8px',
-                marginBottom: '10px', overflow: 'hidden'
+                marginBottom: '10px', position: 'relative'
             }}>
                 {/* Category Header */}
                 <div style={{
