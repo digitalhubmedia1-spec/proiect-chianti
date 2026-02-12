@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { User, Users, MapPin, Calendar, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 
 const GuestPortal = () => {

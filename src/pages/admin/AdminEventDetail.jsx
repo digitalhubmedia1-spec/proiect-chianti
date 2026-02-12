@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat, Plus, Trash2 } from 'lucide-react';
 import VisualHallEditor from './components/VisualHallEditor';
 import EventProduction from './components/EventProduction';
