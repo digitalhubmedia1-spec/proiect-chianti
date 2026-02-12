@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, DollarSign, Download } from 'lucide-react';
+import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, Upload, Download, Eye, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -41,6 +41,8 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         notes: '',
         manager_signed_by: ''
     });
+    const [pvFileUrl, setPvFileUrl] = useState(null);
+    const [pvUploading, setPvUploading] = useState(false);
 
     useEffect(() => { loadData(); }, [eventId]);
 
@@ -51,7 +53,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         const { data: s } = await supabase.from('event_staff_assignments').select('*').eq('event_id', eventId);
         setStaff(s || []);
         const { data: c } = await supabase.from('event_closing_reports').select('*').eq('event_id', eventId).single();
-        if (c) { setClosingData(c); setPvData(c); }
+        if (c) { setClosingData(c); setPvData(c); if (c.pv_document_url) setPvFileUrl(c.pv_document_url); }
         setLoading(false);
     };
 
@@ -147,20 +149,48 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     };
 
     // --- CLOSING ACTIONS ---
-    const handleSavePV = async () => {
-        if (!window.confirm("Salvați Procesul Verbal? Aceasta acțiune este finală.")) return;
-        const payload = { ...pvData, event_id: eventId };
-        const { data, error } = await supabase.from('event_closing_reports').upsert(payload).select().single();
-        if (!error) {
-            setClosingData(data);
-            alert("Proces Verbal Salvat!");
-            if (eventStatus !== 'completed') {
-                if (window.confirm("Doriți să marcați evenimentul ca FINALIZAT?")) {
-                    await supabase.from('events').update({ status: 'completed' }).eq('id', eventId);
-                    if (onUpdateStatus) onUpdateStatus('completed');
-                }
-            }
+    const handleUploadPV = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setPvUploading(true);
+        try {
+            const ext = file.name.split('.').pop();
+            const path = `proces_verbal/${eventId}/pv_${Date.now()}.${ext}`;
+            const { error: uploadErr } = await supabase.storage.from('event-documents').upload(path, file, { upsert: true });
+            if (uploadErr) throw uploadErr;
+            const { data: urlData } = supabase.storage.from('event-documents').getPublicUrl(path);
+            const publicUrl = urlData.publicUrl;
+            setPvFileUrl(publicUrl);
+            // Save reference in closing reports
+            await supabase.from('event_closing_reports').upsert({
+                event_id: eventId,
+                pv_document_url: publicUrl
+            }).select().single();
+        } catch (err) {
+            console.error('Upload error:', err);
+            alert('Eroare la încărcare: ' + err.message);
         }
+        setPvUploading(false);
+    };
+
+    const handleDeletePV = async () => {
+        if (!window.confirm('Sigur doriți să ștergeți documentul încărcat?')) return;
+        setPvFileUrl(null);
+        await supabase.from('event_closing_reports').upsert({
+            event_id: eventId,
+            pv_document_url: null
+        });
+    };
+
+    const handleFinalize = async () => {
+        if (!pvFileUrl) {
+            alert('Trebuie să încărcați procesul verbal scanat înainte de a finaliza.');
+            return;
+        }
+        if (!window.confirm('Sigur doriți să marcați evenimentul ca FINALIZAT?')) return;
+        await supabase.from('events').update({ status: 'completed' }).eq('id', eventId);
+        if (onUpdateStatus) onUpdateStatus('completed');
+        alert('Evenimentul a fost marcat ca finalizat!');
     };
 
     if (loading) return <div>Incarcare date operationale...</div>;
@@ -289,33 +319,106 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                 <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                         <h3>Proces Verbal de Închidere</h3>
-                        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Completați datele financiare și operaționale la finalul evenimentului.</p>
+                        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Încărcați documentul scanat al procesului verbal pentru a putea finaliza evenimentul.</p>
                     </div>
-                    <div style={{ display: 'grid', gap: '15px' }}>
-                        <div>
-                            <label>Total Încasări (RON)</label>
-                            <input type="number" value={pvData.total_sales} onChange={e => setPvData({ ...pvData, total_sales: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
+
+                    {/* Upload Area */}
+                    {!pvFileUrl ? (
+                        <label style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            padding: '3rem 2rem', border: '2px dashed #d1d5db', borderRadius: '12px',
+                            background: '#f9fafb', cursor: pvUploading ? 'wait' : 'pointer',
+                            transition: 'all 0.2s', marginBottom: '1.5rem'
+                        }}>
+                            <Upload size={40} color="#9ca3af" style={{ marginBottom: '12px' }} />
+                            <span style={{ fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                                {pvUploading ? 'Se încarcă...' : 'Click pentru a încărca documentul'}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>PDF, JPG, PNG (max 10MB)</span>
+                            <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={handleUploadPV}
+                                disabled={pvUploading}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
+                    ) : (
+                        <div style={{
+                            padding: '1.5rem', border: '1px solid #d1fae5', borderRadius: '12px',
+                            background: '#f0fdf4', marginBottom: '1.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <CheckCircle size={22} color="#16a34a" />
+                                    <span style={{ fontWeight: '600', color: '#166534' }}>Document încărcat cu succes</span>
+                                </div>
+                                <button onClick={handleDeletePV} title="Șterge document" style={{
+                                    background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px'
+                                }}>
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <a href={pvFileUrl} target="_blank" rel="noopener noreferrer" style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db',
+                                    background: 'white', color: '#374151', textDecoration: 'none',
+                                    fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer'
+                                }}>
+                                    <Eye size={16} /> Vizualizare
+                                </a>
+                                <label style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db',
+                                    background: 'white', color: '#374151',
+                                    fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer'
+                                }}>
+                                    <Upload size={16} /> Reîncarcă
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                        onChange={handleUploadPV}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                            </div>
+                            {pvFileUrl.match(/\.(jpg|jpeg|png|webp)$/i) && (
+                                <img src={pvFileUrl} alt="Proces Verbal" style={{
+                                    marginTop: '12px', maxWidth: '100%', borderRadius: '8px',
+                                    border: '1px solid #e5e7eb'
+                                }} />
+                            )}
                         </div>
-                        <div>
-                            <label>Tips / Șpagă (RON)</label>
-                            <input type="number" value={pvData.tips_amount} onChange={e => setPvData({ ...pvData, tips_amount: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                        </div>
-                        <div>
-                            <label>Pagube / Obiecte Sparte (RON)</label>
-                            <input type="number" value={pvData.broken_items_cost} onChange={e => setPvData({ ...pvData, broken_items_cost: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', borderColor: pvData.broken_items_cost > 0 ? '#ef4444' : '#ddd' }} />
-                        </div>
-                        <div>
-                            <label>Observații / Notițe</label>
-                            <textarea rows="4" value={pvData.notes || ''} onChange={e => setPvData({ ...pvData, notes: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                        </div>
-                        <div>
-                            <label>Semnătură Manager (Nume)</label>
-                            <input type="text" value={pvData.manager_signed_by || ''} onChange={e => setPvData({ ...pvData, manager_signed_by: e.target.value })} placeholder="Numele dumneavoastră" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', background: '#fefce8' }} />
-                        </div>
-                        <button onClick={handleSavePV} style={{ marginTop: '1rem', background: '#111827', color: 'white', border: 'none', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                            <Save size={20} /> Salvează & Închide Eveniment
+                    )}
+
+                    {/* Finalize Button */}
+                    {eventStatus !== 'completed' && (
+                        <button
+                            onClick={handleFinalize}
+                            disabled={!pvFileUrl}
+                            style={{
+                                width: '100%', marginTop: '0.5rem',
+                                background: pvFileUrl ? '#111827' : '#d1d5db',
+                                color: 'white', border: 'none', padding: '15px',
+                                borderRadius: '8px', cursor: pvFileUrl ? 'pointer' : 'not-allowed',
+                                fontSize: '1rem', fontWeight: 'bold',
+                                display: 'flex', justifyContent: 'center', gap: '10px'
+                            }}
+                        >
+                            <CheckCircle size={20} /> Finalizează Eveniment
                         </button>
-                    </div>
+                    )}
+
+                    {eventStatus === 'completed' && (
+                        <div style={{
+                            textAlign: 'center', padding: '1rem', background: '#f0fdf4',
+                            borderRadius: '8px', border: '1px solid #bbf7d0'
+                        }}>
+                            <CheckCircle size={24} color="#16a34a" style={{ marginBottom: '6px' }} />
+                            <p style={{ fontWeight: '600', color: '#166534', margin: 0 }}>Eveniment Finalizat</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
