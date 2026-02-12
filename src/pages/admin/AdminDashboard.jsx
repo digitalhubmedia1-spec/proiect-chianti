@@ -26,7 +26,7 @@ import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
-import { Plus, Edit2, Trash2, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -281,6 +281,19 @@ const AdminDashboard = () => {
             setCurrentExtras([]);
         }
         setIsProductModalOpen(true);
+    };
+
+    const duplicateProduct = async (product) => {
+        const { id, created_at, ...prodData } = product;
+        const duplicated = {
+            ...prodData,
+            name: product.name + ' (copie)',
+            is_available: true
+        };
+        const newProd = await addProduct(duplicated);
+        if (newProd) {
+            openProductModal(newProd);
+        }
     };
 
     const handleSelectRec = async (product) => {
@@ -796,6 +809,7 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td>
                                                         <div className="admin-actions">
+                                                            <button className="btn-icon" onClick={() => duplicateProduct(product)} title="Duplică" style={{ color: '#2563eb' }}><Copy size={18} /></button>
                                                             <button className="btn-icon edit" onClick={() => openProductModal(product)}><Edit2 size={18} /></button>
                                                             <button className="btn-icon delete" onClick={() => deleteProduct(product.id)}><Trash2 size={18} /></button>
                                                         </div>

@@ -3,7 +3,7 @@ import { supabase } from '../../../supabaseClient';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
-import { Plus, Trash2, Edit2, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check, FileDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Copy, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check, FileDown } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -268,6 +268,23 @@ const AdminRecipes = () => {
             setProductSearchTerm('');
         }
         setIsModalOpen(true);
+    };
+
+    const duplicateRecipe = async (recipe) => {
+        const data = {
+            name: recipe.name + ' (copie)',
+            category: recipe.category || null,
+            linked_product_id: null,
+            preparation_method: recipe.preparation_method || '',
+            ingredients: recipe.ingredients.map(ing => ({
+                ingredient_id: ing.ingredient_id,
+                qty: ing.qty
+            }))
+        };
+        const result = await addRecipe(data);
+        if (result && result.success) {
+            alert('Rețeta a fost duplicată cu succes! O puteți edita din listă.');
+        }
     };
 
     const handleIngredientChange = (index, field, value) => {
@@ -592,6 +609,7 @@ const AdminRecipes = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                             <h3 style={{ margin: 0 }}>{recipe.name}</h3>
                                             <div>
+                                                <button className="btn-icon" onClick={() => duplicateRecipe(recipe)} title="Duplică" style={{ marginRight: '0.5rem', color: '#2563eb' }}><Copy size={16} /></button>
                                                 <button className="btn-icon" onClick={() => openModal(recipe)} style={{ marginRight: '0.5rem' }}><Edit2 size={16} /></button>
                                                 <button className="btn-icon btn-delete" onClick={() => deleteRecipe(recipe.id)}><Trash2 size={16} /></button>
                                             </div>
