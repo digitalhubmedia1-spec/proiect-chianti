@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { User, Users, MapPin, Calendar, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
+import VisualHallEditor from './admin/components/VisualHallEditor';
 
 const GuestPortal = () => {
     const { token } = useParams();
@@ -241,6 +242,16 @@ const GuestPortal = () => {
                     </table>
                 )}
             </div>
+
+            {/* Plan Sala */}
+            {event.hall_id && (
+                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
+                    <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                        Plan Sală
+                    </h2>
+                    <VisualHallEditor eventId={event.id} hallId={event.hall_id} readOnly={true} />
+                </div>
+            )}
 
             <div style={{ marginTop: '2rem', textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
                 <p>Chianti Event Management System</p>

@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Save, Plus, RotateCw, ZoomIn, ZoomOut, Move, Trash2, DoorOpen } from 'lucide-react';
+import { Save, Plus, RotateCw, ZoomIn, ZoomOut, Move, Trash2, DoorOpen, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     // Canvas & State
@@ -234,6 +236,33 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
         if (!error) alert("Layout salvat!");
     };
 
+    const exportFloorPlanPDF = async () => {
+        if (!canvasRef.current) return;
+        try {
+            const canvas = await html2canvas(canvasRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const doc = new jsPDF('landscape', 'mm', 'a4');
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const imgW = pageW - 20;
+            const imgH = (canvas.height / canvas.width) * imgW;
+            doc.setFont('helvetica');
+            doc.setFontSize(14);
+            doc.text('Plan Sala - Eveniment', 10, 12);
+            doc.setFontSize(9);
+            doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 10, 18);
+            doc.addImage(imgData, 'PNG', 10, 22, imgW, Math.min(imgH, pageH - 30));
+            doc.save('plan_sala.pdf');
+        } catch (err) {
+            console.error('Floor plan PDF error:', err);
+            alert('Eroare la export PDF: ' + err.message);
+        }
+    };
+
     // --- RENDERING ---
     if (loading || !hall) return <div>Încărcare plan...</div>;
 
@@ -371,6 +400,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                             <button onClick={deleteObject} style={{ ...iconBtnStyle, color: '#ef4444' }} title="Șterge"><Trash2 size={20} /></button>
                         </>
                     )}
+                    <button onClick={exportFloorPlanPDF} style={{ ...iconBtnStyle, color: '#990000' }} title="Export PDF Plan"><Download size={20} /></button>
                 </div>
             </div>
 

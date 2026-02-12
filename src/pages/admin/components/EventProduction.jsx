@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Package, ChefHat, AlertTriangle, CheckCircle, XCircle, Download, Users, UtensilsCrossed, ToggleLeft, ToggleRight } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const EventProduction = ({ eventId }) => {
     const [menuItems, setMenuItems] = useState([]);
@@ -218,7 +218,7 @@ const EventProduction = ({ eventId }) => {
                 ];
             });
 
-            doc.autoTable({
+            autoTable(doc, {
                 head: [['Ingredient', 'Necesar', 'Stoc', 'Ok?', sanitize('Pret/U'), 'Cost Total']],
                 body: tableData,
                 startY: 38,

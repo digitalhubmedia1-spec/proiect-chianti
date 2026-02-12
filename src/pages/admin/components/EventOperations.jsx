@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, DollarSign, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const roleLabels = {
     manager: 'Manager Eveniment',
@@ -107,7 +107,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
             sanitize(roleLabels[s.role] || s.role)
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
             head: headers,
             body: data,
             startY: 38,
@@ -117,6 +117,34 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         });
 
         doc.save(`staff_eveniment_${eventId}.pdf`);
+    };
+
+    const exportTimelinePDF = () => {
+        const doc = new jsPDF();
+        doc.setFont('helvetica');
+        doc.setFontSize(16);
+        doc.text(sanitize('Desfasurator Eveniment'), 14, 18);
+        doc.setFontSize(10);
+        doc.text(`Total: ${timeline.length} activitati`, 14, 26);
+        doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 14, 32);
+
+        const headers = [['Ora', 'Activitate', 'Status']];
+        const data = timeline.map(item => [
+            item.time_start ? item.time_start.slice(0, 5) : '-',
+            sanitize(item.activity || '-'),
+            item.status === 'done' ? 'Finalizat' : 'In asteptare'
+        ]);
+
+        autoTable(doc, {
+            head: headers,
+            body: data,
+            startY: 38,
+            styles: { fontSize: 10, cellPadding: 4, font: 'helvetica' },
+            headStyles: { fillColor: [153, 0, 0] },
+            alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        doc.save(`desfasurator_eveniment_${eventId}.pdf`);
     };
 
     // --- CLOSING ACTIONS ---
@@ -166,6 +194,15 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         </div>
                         <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                     </div>
+
+                    {timeline.length > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>Total: <strong>{timeline.length}</strong> activități</span>
+                            <button onClick={exportTimelinePDF} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#990000', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
+                                <Download size={16} /> Export PDF
+                            </button>
+                        </div>
+                    )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {timeline.map(item => (
                             <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.status === 'done' ? '#f0fdf4' : 'white', opacity: item.status === 'done' ? 0.7 : 1 }}>
