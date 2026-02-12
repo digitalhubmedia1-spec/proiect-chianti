@@ -93,7 +93,7 @@ export const useConsumption = () => {
             const totals = {}; // ingredient_id -> needed_qty
 
             relevantMenuItems.forEach(menuItem => {
-                const portions = menuItem.stock || 20; // Default fallback if null, should be passed or configurable ideally
+                const portions = menuItem.stock ?? 0; // Default to 0 if null/undefined, do not fallback to 20 on 0
                 const productRecipes = recipes.filter(r => r.product_id === menuItem.product_id);
 
                 productRecipes.forEach(rec => {

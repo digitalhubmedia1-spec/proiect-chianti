@@ -263,9 +263,7 @@ const AdminDashboard = () => {
         setIsCategoryModalOpen(false);
     };
 
-    const [isOptionProductModalOpen, setIsOptionProductModalOpen] = useState(false);
-    const [activeOptionIndices, setActiveOptionIndices] = useState(null); // { gIdx, cIdx }
-    const [optionProductSearchTerm, setOptionProductSearchTerm] = useState('');
+    const [focusedOption, setFocusedOption] = useState(null); // { gIdx, cIdx }
 
     const openProductModal = async (product = null) => {
         if (product) {
@@ -1497,49 +1495,64 @@ const AdminDashboard = () => {
                                                         background: '#f8f9fa',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '8px'
+                                                        gap: '8px',
+                                                        position: 'relative' // For dropdown positioning
                                                     }}>
                                                         <input
                                                             type="text"
                                                             value={choice.name}
                                                             onChange={(e) => updateChoice(gIdx, cIdx, 'name', e.target.value)}
+                                                            onFocus={() => setFocusedOption({ gIdx, cIdx })}
+                                                            onBlur={() => setTimeout(() => setFocusedOption(null), 200)} // Delay to allow click
                                                             placeholder="Nume variantă"
-                                                            style={{ border: 'none', background: 'transparent', outline: 'none', minWidth: '80px', fontWeight: '500', fontSize: '0.9rem' }}
+                                                            style={{
+                                                                border: 'none',
+                                                                background: 'transparent',
+                                                                outline: 'none',
+                                                                minWidth: '80px',
+                                                                fontWeight: '500',
+                                                                fontSize: '0.9rem',
+                                                                color: (choice.name && !products.some(p => p.name.toLowerCase() === choice.name.toLowerCase())) ? '#ef4444' : 'inherit'
+                                                            }}
                                                         />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setActiveOptionIndices({ gIdx, cIdx });
-                                                                setIsOptionProductModalOpen(true);
-                                                            }}
-                                                            style={{
-                                                                background: '#e0e7ff', color: '#4f46e5',
-                                                                border: 'none', borderRadius: '50%',
-                                                                width: '20px', height: '20px',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                cursor: 'pointer', fontSize: '10px'
-                                                            }}
-                                                            title="Caută Produs"
-                                                        >
-                                                            <Search size={12} />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setActiveOptionIndices({ gIdx, cIdx });
-                                                                setIsOptionProductModalOpen(true);
-                                                            }}
-                                                            style={{
-                                                                background: '#e0e7ff', color: '#4f46e5',
-                                                                border: 'none', borderRadius: '50%',
-                                                                width: '20px', height: '20px',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                cursor: 'pointer', fontSize: '10px'
-                                                            }}
-                                                            title="Caută Produs"
-                                                        >
-                                                            <Search size={12} />
-                                                        </button>
+
+                                                        {/* Autocomplete Dropdown */}
+                                                        {focusedOption && focusedOption.gIdx === gIdx && focusedOption.cIdx === cIdx && choice.name.length > 0 && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '100%',
+                                                                left: 0,
+                                                                background: 'white',
+                                                                border: '1px solid #ddd',
+                                                                borderRadius: '4px',
+                                                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                                                                zIndex: 10,
+                                                                maxHeight: '150px',
+                                                                overflowY: 'auto',
+                                                                minWidth: '150px'
+                                                            }}>
+                                                                {products
+                                                                    .filter(p => p.name.toLowerCase().includes(choice.name.toLowerCase()))
+                                                                    .slice(0, 5) // Limit suggestions
+                                                                    .map(p => (
+                                                                        <div
+                                                                            key={p.id}
+                                                                            onClick={() => updateChoice(gIdx, cIdx, 'name', p.name)}
+                                                                            style={{
+                                                                                padding: '5px 10px',
+                                                                                fontSize: '0.85rem',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #f0f0f0'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.target.style.background = '#f0f9ff'}
+                                                                            onMouseLeave={(e) => e.target.style.background = 'white'}
+                                                                        >
+                                                                            {p.name}
+                                                                        </div>
+                                                                    ))
+                                                                }
+                                                            </div>
+                                                        )}
                                                         <button
                                                             type="button"
                                                             onClick={() => removeChoice(gIdx, cIdx)}
@@ -1622,115 +1635,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </main>
-            {/* Option Product Selector Modal */}
-            {isOptionProductModalOpen && (
-                <div className="modal-overlay" style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100
-                }}>
-                    <div className="modal-content" style={{
-                        background: 'white', padding: '2rem', borderRadius: '12px',
-                        width: '90%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0 }}>Alege Produs</h3>
-                            <button onClick={() => setIsOptionProductModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-                        </div>
-
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Caută produs..."
-                            value={optionProductSearchTerm}
-                            onChange={(e) => setOptionProductSearchTerm(e.target.value)}
-                            style={{ marginBottom: '1rem' }}
-                            autoFocus
-                        />
-
-                        <div style={{ overflowY: 'auto', flex: 1 }}>
-                            {products
-                                .filter(p => p.name.toLowerCase().includes(optionProductSearchTerm.toLowerCase()))
-                                .map(p => (
-                                    <div
-                                        key={p.id}
-                                        onClick={() => handleOptionProductSelect(p)}
-                                        style={{
-                                            padding: '10px', borderBottom: '1px solid #eee', cursor: 'pointer',
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <span style={{ fontWeight: '500' }}>{p.name}</span>
-                                        <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>{p.price} Lei</span>
-                                    </div>
-                                ))
-                            }
-                            {products.filter(p => p.name.toLowerCase().includes(optionProductSearchTerm.toLowerCase())).length === 0 && (
-                                <div style={{ padding: '10px', color: '#6b7280', textAlign: 'center' }}>Nu am găsit produse.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Option Product Selector Modal */}
-            {isOptionProductModalOpen && (
-                <div className="modal-overlay" style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100
-                }}>
-                    <div className="modal-content" style={{
-                        background: 'white', padding: '2rem', borderRadius: '12px',
-                        width: '90%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0 }}>Alege Produs</h3>
-                            <button onClick={() => setIsOptionProductModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-                        </div>
-
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Caută produs..."
-                            value={optionProductSearchTerm}
-                            onChange={(e) => setOptionProductSearchTerm(e.target.value)}
-                            style={{ marginBottom: '1rem' }}
-                            autoFocus
-                        />
-
-                        <div style={{ overflowY: 'auto', flex: 1 }}>
-                            {products
-                                .filter(p => p.name.toLowerCase().includes(optionProductSearchTerm.toLowerCase()))
-                                .map(p => (
-                                    <div
-                                        key={p.id}
-                                        onClick={() => {
-                                            if (!activeOptionIndices) return;
-                                            const { gIdx, cIdx } = activeOptionIndices;
-                                            updateChoice(gIdx, cIdx, 'name', p.name);
-                                            setIsOptionProductModalOpen(false);
-                                            setActiveOptionIndices(null);
-                                            setOptionProductSearchTerm('');
-                                        }}
-                                        style={{
-                                            padding: '10px', borderBottom: '1px solid #eee', cursor: 'pointer',
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <span style={{ fontWeight: '500' }}>{p.name}</span>
-                                        <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>{p.price} Lei</span>
-                                    </div>
-                                ))
-                            }
-                            {products.filter(p => p.name.toLowerCase().includes(optionProductSearchTerm.toLowerCase())).length === 0 && (
-                                <div style={{ padding: '10px', color: '#6b7280', textAlign: 'center' }}>Nu am găsit produse.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
