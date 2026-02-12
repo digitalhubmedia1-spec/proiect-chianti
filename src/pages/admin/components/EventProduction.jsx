@@ -12,6 +12,7 @@ const EventProduction = ({ eventId }) => {
     const [batchPrices, setBatchPrices] = useState({});   // item_id -> latest purchase_price
     const [inventoryStock, setInventoryStock] = useState({}); // item_id -> total stock
     const [guestCount, setGuestCount] = useState(0);
+    const [portions, setPortions] = useState(1);          // editable portions count
     const [loading, setLoading] = useState(true);
     const [costMode, setCostMode] = useState('ref');     // 'ref' | 'reception'
     const [activeMenuType, setActiveMenuType] = useState('invitati');
@@ -33,7 +34,9 @@ const EventProduction = ({ eventId }) => {
             .from('event_guests')
             .select('id')
             .eq('event_id', eventId);
-        setGuestCount(guests?.length || 0);
+        const gc = guests?.length || 0;
+        setGuestCount(gc);
+        setPortions(gc > 0 ? gc : 1); // Default to guest count, min 1
 
         // 3. Get unique product IDs from menu
         const productIds = [...new Set((items || []).map(i => i.product_id).filter(Boolean))];
@@ -53,6 +56,13 @@ const EventProduction = ({ eventId }) => {
                 .in('linked_product_id', productIds);
             recipesData = data || [];
         }
+        console.log('🍽️ Produse meniu:', productIds.length, 'Rețete găsite:', recipesData.length);
+        recipesData.forEach(r => {
+            console.log(`  Rețetă "${r.name}" (product ${r.linked_product_id}):`, r.recipes?.length, 'ingrediente');
+            r.recipes?.forEach(ing => {
+                console.log(`    - ${ing.inventory_items?.name}: qty=${ing.quantity_required} ${ing.inventory_items?.unit}`);
+            });
+        });
         setRecipes(recipesData);
 
         // 5. Fetch reference prices
@@ -93,13 +103,13 @@ const EventProduction = ({ eventId }) => {
             const recipe = recipes.find(r => r.linked_product_id === menuItem.product_id);
             if (!recipe || !recipe.recipes) return;
 
-            const portions = guestCount * (parseFloat(menuItem.quantity_per_guest) || 1);
+            const portionMultiplier = portions * (parseFloat(menuItem.quantity_per_guest) || 1);
 
             recipe.recipes.forEach(ing => {
                 const ingId = ing.ingredient_id;
                 if (!ingId) return;
 
-                const qtyNeeded = (parseFloat(ing.quantity_required) || 0) * portions;
+                const qtyNeeded = (parseFloat(ing.quantity_required) || 0) * portionMultiplier;
                 const invItem = ing.inventory_items;
 
                 if (!aggregated[ingId]) {
@@ -136,8 +146,8 @@ const EventProduction = ({ eventId }) => {
     };
 
     const getCostPerPerson = (menuType) => {
-        if (guestCount === 0) return 0;
-        return calculateTotalCost(menuType) / guestCount;
+        if (portions === 0) return 0;
+        return calculateTotalCost(menuType) / portions;
     };
 
     // Get products per menu type with their recipe status
@@ -240,8 +250,21 @@ const EventProduction = ({ eventId }) => {
             {/* Stats Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
                 <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '10px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600', textTransform: 'uppercase' }}>Invitați</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#1e40af' }}>{guestCount}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600', textTransform: 'uppercase' }}>Porții</div>
+                    <input
+                        type="number"
+                        min="1"
+                        value={portions}
+                        onChange={e => setPortions(Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{
+                            width: '80px', textAlign: 'center', fontSize: '1.4rem', fontWeight: '800',
+                            color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: '8px',
+                            padding: '4px', background: 'white', marginTop: '4px'
+                        }}
+                    />
+                    <div style={{ fontSize: '0.65rem', color: '#6b7280', marginTop: '4px' }}>
+                        {guestCount > 0 ? `(${guestCount} invitați)` : 'Fără invitați'}
+                    </div>
                 </div>
                 <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', textTransform: 'uppercase' }}>În Stoc</div>
@@ -314,7 +337,7 @@ const EventProduction = ({ eventId }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem' }}>📋 Produse din Meniu</h3>
                     <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                        {guestCount} porții / produs
+                        {guestCount > 0 ? `(${guestCount} invitați)` : `${portions} porții`}
                     </span>
                 </div>
 
@@ -356,7 +379,7 @@ const EventProduction = ({ eventId }) => {
                                     )}
                                 </div>
                                 <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                                    {guestCount} porții
+                                    {portions} porții
                                 </span>
                             </div>
                         ))}
