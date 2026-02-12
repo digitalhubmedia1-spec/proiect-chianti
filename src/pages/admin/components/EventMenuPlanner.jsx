@@ -1,7 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Trash2, Search, X, UtensilsCrossed, Users } from 'lucide-react';
+import { Plus, Trash2, Search, X, UtensilsCrossed, Users, FileDown } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const sanitize = (str) => str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ț/g, 't').replace(/Ț/g, 'T').replace(/ș/g, 's').replace(/Ș/g, 'S') : '';
 
 const MENU_TYPES = [
     { key: 'invitati', label: 'Meniu Invitați', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
@@ -153,6 +157,65 @@ const EventMenuPlanner = ({ eventId }) => {
     }, []);
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se încarcă...</div>;
+
+    // ============ PDF EXPORT ============
+    const exportMenuPDF = (menuType) => {
+        const typeConfig = MENU_TYPES.find(t => t.key === menuType);
+        const categories = getAllCategories(menuType);
+        if (categories.length === 0) {
+            alert('Nu există categorii de exportat.');
+            return;
+        }
+
+        const doc = new jsPDF();
+        doc.setFont('helvetica');
+        doc.setFontSize(18);
+        doc.setTextColor(153, 0, 0);
+        doc.text(sanitize(typeConfig.label), 14, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const totalItems = items.filter(i => i.menu_type === menuType).length;
+        doc.text(sanitize(`Total: ${totalItems} produse | Generat: ${new Date().toLocaleString('ro-RO')}`), 14, 28);
+
+        let startY = 36;
+
+        categories.forEach(category => {
+            const categoryItems = getItemsForCategory(menuType, category);
+            if (categoryItems.length === 0) return;
+
+            const tableData = categoryItems.map((item, idx) => [
+                idx + 1,
+                sanitize(item.products?.name || '-'),
+                item.products?.weight ? item.products.weight + 'g' : '-',
+                item.products?.price != null ? item.products.price + ' RON' : '-'
+            ]);
+
+            autoTable(doc, {
+                head: [[{ content: sanitize(category), colSpan: 4, styles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold', fontSize: 11 } }]],
+                body: tableData,
+                startY: startY,
+                styles: { fontSize: 10, cellPadding: 4, font: 'helvetica' },
+                headStyles: { fillColor: [153, 0, 0] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: {
+                    0: { cellWidth: 12, halign: 'center' },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 25, halign: 'center' },
+                    3: { cellWidth: 30, halign: 'right' }
+                }
+            });
+
+            startY = doc.lastAutoTable.finalY + 8;
+
+            if (startY > 260) {
+                doc.addPage();
+                startY = 20;
+            }
+        });
+
+        doc.save(sanitize(`meniu_${typeConfig.label.replace(/\s+/g, '_').toLowerCase()}_${eventId}.pdf`));
+    };
 
     // ============ RENDER ============
 
@@ -319,6 +382,19 @@ const EventMenuPlanner = ({ eventId }) => {
                             {totalItems} produse
                         </span>
                     </div>
+                    <button
+                        onClick={() => exportMenuPDF(menuType)}
+                        disabled={totalItems === 0}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '8px 16px', borderRadius: '8px', border: 'none',
+                            background: totalItems > 0 ? '#990000' : '#d1d5db',
+                            color: 'white', cursor: totalItems > 0 ? 'pointer' : 'not-allowed',
+                            fontWeight: '600', fontSize: '0.85rem'
+                        }}
+                    >
+                        <FileDown size={16} /> Export PDF
+                    </button>
                 </div>
 
                 <div style={{ padding: '16px 20px' }}>
