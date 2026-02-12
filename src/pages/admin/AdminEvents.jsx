@@ -92,7 +92,7 @@ const AdminEvents = () => {
 
             {/* Filters */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '5px' }}>
-                {['all', 'draft', 'confirmed', 'in_progress', 'completed', 'cancelled'].map(status => (
+                {['all', 'draft', 'completed'].map(status => (
                     <button
                         key={status}
                         onClick={() => setFilterStatus(status)}
