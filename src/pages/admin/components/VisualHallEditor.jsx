@@ -65,7 +65,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     };
 
     const getCapacityForType = (type) => {
-        if (type === 'presidium') return 2;
+        if (type === 'presidium') return 4;
         if (type === 'stage' || type === 'entrance') return 0;
         if (type.includes('12')) return 12;
         if (type.includes('8')) return 8;
@@ -221,12 +221,16 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const saveLayout = async () => {
         const updates = objects.map(o => ({
             id: o.id,
+            event_id: eventId,
+            type: o.type,
+            label: o.label,
             x: o.x,
             y: o.y,
-            rotation: o.rotation,
-            zone: o.zone
+            rotation: o.rotation || 0,
+            capacity: o.capacity || 0,
+            zone: o.zone || 'center'
         }));
-        const { error } = await supabase.from('event_layout_objects').upsert(updates);
+        const { error } = await supabase.from('event_layout_objects').upsert(updates, { onConflict: 'id' });
         if (!error) alert("Layout salvat!");
     };
 
@@ -270,7 +274,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                                     style={{ width: '100%', padding: '4px 8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.8rem' }}
                                 />
                             </div>
-                            {selectedObj.type.includes('table') && (
+                            {(selectedObj.type.includes('table') || selectedObj.type === 'presidium') && (
                                 <div>
                                     <label style={{ fontSize: '0.7rem', color: '#6b7280' }}>Capacitate</label>
                                     <input
@@ -381,10 +385,6 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f9fafb', borderRadius: '6px' }}>
                         <span style={{ color: '#6b7280' }}>Dreapta</span>
                         <strong>{objects.filter(o => o.zone === 'right' && o.type.includes('table')).length} mese</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f9fafb', borderRadius: '6px' }}>
-                        <span style={{ color: '#6b7280' }}>Față</span>
-                        <strong>{objects.filter(o => o.zone === 'front' && o.type.includes('table')).length} mese</strong>
                     </div>
                 </div>
                 <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '1rem 0' }} />

@@ -71,14 +71,14 @@ const AdminEventDetail = () => {
     };
 
     const handleAddGuest = async () => {
-        const name = prompt("Nume Invitat:"); // Simple prompt for now
-        if (!name) return;
+        const fullName = prompt("Nume Invitat:");
+        if (!fullName) return;
 
-        const type = window.confirm("Este Adult? OK=Da, Cancel=Nu (Copil)") ? 'adult' : 'child';
+        const type = window.confirm("Este Adult? OK=Da, Cancel=Nu (Copil)") ? 'adult' : 'minor';
 
         const { data, error } = await supabase.from('event_guests').insert([{
             event_id: id,
-            name,
+            full_name: fullName,
             type
         }]).select().single();
 
@@ -297,7 +297,7 @@ const AdminEventDetail = () => {
                                 <tbody>
                                     {guests.map(guest => (
                                         <tr key={guest.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                            <td style={{ padding: '12px' }}>{guest.name}</td>
+                                            <td style={{ padding: '12px' }}>{guest.full_name || guest.name}</td>
                                             <td style={{ padding: '12px' }}>
                                                 <span style={{
                                                     padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem',
@@ -307,8 +307,8 @@ const AdminEventDetail = () => {
                                                     {guest.type === 'adult' ? 'Adult' : 'Copil'}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '12px' }}>Standard</td> {/* Placeholder for Menu Selection */}
-                                            <td style={{ padding: '12px' }}>-</td> {/* Placeholder for Table Assignment */}
+                                            <td style={{ padding: '12px' }}>{guest.menu_preference || 'Standard'}</td>
+                                            <td style={{ padding: '12px' }}>-</td>
                                             <td style={{ padding: '12px' }}>
                                                 <button
                                                     onClick={() => handleDeleteGuest(guest.id)}
