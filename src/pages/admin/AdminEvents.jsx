@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Plus, Calendar, MapPin, Users, Edit2, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Edit2, Trash2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminEvents = () => {
@@ -63,7 +63,18 @@ const AdminEvents = () => {
         : events.filter(e => e.status === filterStatus);
 
     return (
-        <div className="admin-events-page">
+        <div className="admin-events-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+            <button
+                onClick={() => navigate('/admin')}
+                style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'none', border: 'none', color: '#6b7280',
+                    cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1.5rem',
+                    padding: 0
+                }}
+            >
+                <ArrowLeft size={18} /> Înapoi la Panou
+            </button>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#111827' }}>Management Evenimente</h1>
                 <button

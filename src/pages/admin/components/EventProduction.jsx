@@ -218,7 +218,7 @@ const EventProduction = ({ eventId }) => {
                 ];
             });
 
-            autoTable(doc, {
+            const result = autoTable(doc, {
                 head: [['Ingredient', 'Necesar', 'Stoc', 'Ok?', sanitize('Pret/U'), 'Cost Total']],
                 body: tableData,
                 startY: 38,
@@ -232,7 +232,7 @@ const EventProduction = ({ eventId }) => {
                 }
             });
 
-            const finalY = (doc.previousAutoTable?.finalY || 50) + 12;
+            const finalY = (result?.finalY || doc.lastAutoTable?.finalY || 50) + 12;
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
             doc.text(`Cost Total: ${calculateTotalCost(activeMenuType).toFixed(2)} RON`, 14, finalY);

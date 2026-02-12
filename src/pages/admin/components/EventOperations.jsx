@@ -128,11 +128,10 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         doc.text(`Total: ${timeline.length} activitati`, 14, 26);
         doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 14, 32);
 
-        const headers = [['Ora', 'Activitate', 'Status']];
+        const headers = [['Ora', 'Activitate']];
         const data = timeline.map(item => [
             item.time_start ? item.time_start.slice(0, 5) : '-',
-            sanitize(item.activity || '-'),
-            item.status === 'done' ? 'Finalizat' : 'In asteptare'
+            sanitize(item.activity || '-')
         ]);
 
         autoTable(doc, {
