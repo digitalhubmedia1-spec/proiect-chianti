@@ -249,9 +249,9 @@ const AdminEventDetail = () => {
                                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
                             >
                                 <option value="">Selectează Salon</option>
-                                <option value="1">Salon Principal</option>
-                                <option value="2">Salon Mic</option>
-                                <option value="3">Terasă</option>
+                                <option value="1">Salon Florența</option>
+                                <option value="2">Salon Veneția</option>
+                                <option value="3">Salon Roma</option>
                             </select>
                         </div>
                     </div>
