@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, Upload, Download, Eye, X } from 'lucide-react';
+import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, Upload, Download, Eye, X, Settings, Shield } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const roleLabels = {
+// Fallback for legacy data display if needed
+const legacyRoleLabels = {
     manager: 'Manager Eveniment',
     bucatar_sef: 'Bucatar Sef',
     ospatar: 'Ospatar',
@@ -32,8 +32,14 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     const [closingData, setClosingData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const [newItem, setNewItem] = useState({ time_start: '', activity: '', notes: '' });
-    const [newStaff, setNewStaff] = useState({ staff_name: '', role: 'ospatar' });
+    // Dynamic Roles
+    const [roles, setRoles] = useState([]);
+    const [showRoleManager, setShowRoleManager] = useState(false);
+    const [newRoleName, setNewRoleName] = useState('');
+
+    const [newItem, setNewItem] = useState({ time_start: '', activity: '', notes: '', assigned_role_id: '' });
+    const [newStaff, setNewStaff] = useState({ staff_name: '', role: '' }); // role will store the role name string for compatibility
+    
     const [pvData, setPvData] = useState({
         total_sales: 0,
         tips_amount: 0,
@@ -44,26 +50,68 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     const [pvFileUrl, setPvFileUrl] = useState(null);
     const [pvUploading, setPvUploading] = useState(false);
 
-    useEffect(() => { loadData(); }, [eventId]);
+    useEffect(() => { 
+        loadData(); 
+        fetchRoles();
+    }, [eventId]);
+
+    const fetchRoles = async () => {
+        const { data } = await supabase.from('staff_roles').select('*').order('name');
+        if (data) setRoles(data);
+    };
 
     const loadData = async () => {
         setLoading(true);
-        const { data: t } = await supabase.from('event_timeline_items').select('*').eq('event_id', eventId).order('time_start');
+        // Fetch timeline with role join if possible, otherwise just raw
+        // We try to join staff_roles to get the name
+        const { data: t } = await supabase
+            .from('event_timeline_items')
+            .select('*, staff_roles(name)')
+            .eq('event_id', eventId)
+            .order('time_start');
+            
         setTimeline(t || []);
+        
         const { data: s } = await supabase.from('event_staff_assignments').select('*').eq('event_id', eventId);
         setStaff(s || []);
+        
         const { data: c } = await supabase.from('event_closing_reports').select('*').eq('event_id', eventId).single();
         if (c) { setClosingData(c); setPvData(c); if (c.pv_document_url) setPvFileUrl(c.pv_document_url); }
         setLoading(false);
     };
 
+    // --- ROLE MANAGEMENT ---
+    const handleAddRole = async () => {
+        if (!newRoleName.trim()) return;
+        const { data, error } = await supabase.from('staff_roles').insert([{ name: newRoleName.trim() }]).select().single();
+        if (data) {
+            setRoles([...roles, data]);
+            setNewRoleName('');
+        } else if (error) {
+            alert("Eroare adăugare rol: " + error.message);
+        }
+    };
+
+    const handleDeleteRole = async (id) => {
+        if (!confirm("Sigur ștergi acest rol?")) return;
+        await supabase.from('staff_roles').delete().eq('id', id);
+        setRoles(roles.filter(r => r.id !== id));
+    };
+
     // --- TIMELINE ACTIONS ---
     const handleAddItem = async () => {
         if (!newItem.time_start || !newItem.activity) return;
-        const { data } = await supabase.from('event_timeline_items').insert([{ ...newItem, event_id: eventId }]).select().single();
+        
+        const payload = {
+            ...newItem,
+            event_id: eventId,
+            assigned_role_id: newItem.assigned_role_id || null
+        };
+
+        const { data } = await supabase.from('event_timeline_items').insert([payload]).select('*, staff_roles(name)').single();
         if (data) {
             setTimeline([...timeline, data].sort((a, b) => a.time_start.localeCompare(b.time_start)));
-            setNewItem({ time_start: '', activity: '', notes: '' });
+            setNewItem({ time_start: '', activity: '', notes: '', assigned_role_id: '' });
         }
     };
 
@@ -81,10 +129,20 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     // --- STAFF ACTIONS ---
     const handleAddStaff = async () => {
         if (!newStaff.staff_name) return;
-        const { data } = await supabase.from('event_staff_assignments').insert([{ ...newStaff, event_id: eventId }]).select().single();
+        
+        // If role is selected from dynamic list, use its name. 
+        // If it's legacy or empty, handle accordingly.
+        const roleToSave = newStaff.role || (roles.length > 0 ? roles[0].name : 'Staff');
+
+        const { data } = await supabase.from('event_staff_assignments').insert([{ 
+            staff_name: newStaff.staff_name,
+            role: roleToSave,
+            event_id: eventId 
+        }]).select().single();
+
         if (data) {
             setStaff([...staff, data]);
-            setNewStaff({ staff_name: '', role: 'ospatar' });
+            setNewStaff({ staff_name: '', role: '' });
         }
     };
 
@@ -106,7 +164,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         const data = staff.map((s, i) => [
             i + 1,
             sanitize(s.staff_name),
-            sanitize(roleLabels[s.role] || s.role)
+            sanitize(legacyRoleLabels[s.role] || s.role)
         ]);
 
         autoTable(doc, {
@@ -130,10 +188,11 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
         doc.text(`Total: ${timeline.length} activitati`, 14, 26);
         doc.text(`Generat: ${new Date().toLocaleString('ro-RO')}`, 14, 32);
 
-        const headers = [['Ora', 'Activitate']];
+        const headers = [['Ora', 'Activitate', 'Responsabil']];
         const data = timeline.map(item => [
             item.time_start ? item.time_start.slice(0, 5) : '-',
-            sanitize(item.activity || '-')
+            sanitize(item.activity || '-'),
+            sanitize(item.staff_roles?.name || '-')
         ]);
 
         autoTable(doc, {
@@ -161,7 +220,6 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
             const { data: urlData } = supabase.storage.from('event-documents').getPublicUrl(path);
             const publicUrl = urlData.publicUrl;
             setPvFileUrl(publicUrl);
-            // Save reference in closing reports
             await supabase.from('event_closing_reports').upsert({
                 event_id: eventId,
                 pv_document_url: publicUrl
@@ -212,14 +270,27 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
             {/* TIMELINE */}
             {activeSection === 'timeline' && (
                 <div>
-                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px', flexWrap: 'wrap' }}>
                         <div>
                             <label style={{ fontSize: '0.8rem' }}>Ora</label>
                             <input type="time" value={newItem.time_start} onChange={e => setNewItem({ ...newItem, time_start: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
                         </div>
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
                             <label style={{ fontSize: '0.8rem' }}>Activitate</label>
                             <input placeholder="ex: Sosire Invitați" value={newItem.activity} onChange={e => setNewItem({ ...newItem, activity: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                        </div>
+                        <div style={{ minWidth: '150px' }}>
+                            <label style={{ fontSize: '0.8rem' }}>Responsabil (Rol)</label>
+                            <select 
+                                value={newItem.assigned_role_id} 
+                                onChange={e => setNewItem({ ...newItem, assigned_role_id: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}
+                            >
+                                <option value="">-- Alege Rol --</option>
+                                {roles.map(r => (
+                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                     </div>
@@ -241,6 +312,11 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                 <div style={{ fontSize: '1.1rem', fontWeight: 'bold', width: '80px' }}>{item.time_start.slice(0, 5)}</div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: '500', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.activity}</div>
+                                    {item.staff_roles && (
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', marginTop: '4px' }}>
+                                            <Shield size={12} /> {item.staff_roles.name}
+                                        </div>
+                                    )}
                                     {item.notes && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{item.notes}</div>}
                                 </div>
                                 <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
@@ -259,18 +335,46 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                             <label style={{ fontSize: '0.8rem' }}>Nume Membru Staff</label>
                             <input placeholder="ex: Popescu Ion" value={newStaff.staff_name} onChange={e => setNewStaff({ ...newStaff, staff_name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
                         </div>
-                        <div>
-                            <label style={{ fontSize: '0.8rem' }}>Rol</label>
-                            <select value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}>
-                                <option value="manager">Manager Eveniment</option>
-                                <option value="bucatar_sef">Bucătar Șef</option>
-                                <option value="ospatar">Ospătar</option>
-                                <option value="barman">Barman</option>
-                                <option value="hostess">Hostess</option>
+                        <div style={{ minWidth: '200px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                <label style={{ fontSize: '0.8rem' }}>Rol</label>
+                                <button onClick={() => setShowRoleManager(!showRoleManager)} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                    <Settings size={12} /> Gestionează Roluri
+                                </button>
+                            </div>
+                            <select value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}>
+                                <option value="">-- Alege Rol --</option>
+                                {roles.map(r => (
+                                    <option key={r.id} value={r.name}>{r.name}</option>
+                                ))}
                             </select>
                         </div>
                         <button onClick={handleAddStaff} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                     </div>
+
+                    {/* ROLE MANAGER UI */}
+                    {showRoleManager && (
+                        <div style={{ marginBottom: '1.5rem', padding: '15px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#1e40af' }}>Gestionare Roluri</h4>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <input 
+                                    placeholder="Nume rol nou (ex: Fotograf)" 
+                                    value={newRoleName}
+                                    onChange={e => setNewRoleName(e.target.value)}
+                                    style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #93c5fd' }}
+                                />
+                                <button onClick={handleAddRole} style={{ padding: '6px 12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Adaugă</button>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {roles.map(r => (
+                                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', background: 'white', borderRadius: '4px', border: '1px solid #bfdbfe', fontSize: '0.8rem' }}>
+                                        <span>{r.name}</span>
+                                        <button onClick={() => handleDeleteRole(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex' }}><X size={14} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {staff.length > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -298,7 +402,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                         <td style={{ padding: '10px 14px', fontWeight: '500' }}>{s.staff_name}</td>
                                         <td style={{ padding: '10px 14px' }}>
                                             <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '600', background: '#f3f4f6', color: '#374151' }}>
-                                                {roleLabels[s.role] || s.role}
+                                                {legacyRoleLabels[s.role] || s.role}
                                             </span>
                                         </td>
                                         <td style={{ padding: '10px 14px' }}>
@@ -314,7 +418,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                 </div>
             )}
 
-            {/* CLOSING PV */}
+            {/* CLOSING PV (unchanged) */}
             {activeSection === 'closing' && (
                 <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -322,7 +426,6 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Încărcați documentul scanat al procesului verbal pentru a putea finaliza evenimentul.</p>
                     </div>
 
-                    {/* Upload Area */}
                     {!pvFileUrl ? (
                         <label style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -392,7 +495,6 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         </div>
                     )}
 
-                    {/* Finalize Button */}
                     {eventStatus !== 'completed' && (
                         <button
                             onClick={handleFinalize}
