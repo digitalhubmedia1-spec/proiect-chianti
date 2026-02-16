@@ -1,0 +1,2 @@
+-- Only if they use real auth
+-- But for now, let's assume they don't or it's broken

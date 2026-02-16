@@ -1,0 +1,1 @@
+ALTER TABLE recipe_ref_prices ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();

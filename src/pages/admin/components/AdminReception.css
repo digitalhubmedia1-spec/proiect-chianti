@@ -1,0 +1,146 @@
+/* AdminReception.css */
+
+.admin-reception-container {
+    padding: 1rem;
+}
+
+.reception-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.reception-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-text-heading, #1e293b);
+}
+
+.invoice-header-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Lines Grid */
+.lines-header {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr 2fr 2fr 1fr 50px;
+    /* Adapted columns */
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 0 1rem;
+}
+
+.line-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr 2fr 2fr 1fr 50px;
+    gap: 1rem;
+    align-items: center;
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.line-row:hover {
+    border-color: #cbd5e1;
+}
+
+.line-total {
+    text-align: right;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.reception-footer {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.total-general {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.btn-add-line {
+    background: #eff6ff;
+    color: #2563eb;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.btn-add-line:hover {
+    background: #dbeafe;
+}
+
+.btn-save-reception {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+}
+
+.btn-save-reception:hover {
+    background: #15803d;
+}
+
+.btn-remove-line {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.btn-remove-line:hover {
+    background: #fef2f2;
+}
+
+/* Utilities */
+.text-danger {
+    color: #ef4444;
+}
+
+.bg-warn {
+    background-color: #fefce8;
+}
+
+.bg-info {
+    background-color: #eff6ff;
+}

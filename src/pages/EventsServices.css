@@ -1,0 +1,254 @@
+/* Basic page reset */
+.events-page {
+    font-family: 'Outfit', sans-serif;
+    color: #333;
+    overflow-x: hidden;
+}
+
+/* Hero Section */
+.events-hero-section {
+    position: relative;
+    height: 60vh;
+    min-height: 400px;
+    background-image: url('../assets/hero_wedding.png');
+    /* Will be placed here */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    /* Parallax effect */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    /* Darken availability */
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 1rem;
+    animation: fadeInUp 1s ease-out;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    font-weight: 300;
+    opacity: 0.9;
+}
+
+.btn-hero {
+    background: #800020;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-hero:hover {
+    background: #a00028;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Content Container */
+.events-container {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+}
+
+/* Alternating Sections */
+.event-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4rem;
+    margin-bottom: 6rem;
+}
+
+.event-section.reverse {
+    flex-direction: row-reverse;
+}
+
+.event-image-wrapper {
+    flex: 1;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.event-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+    transition: transform 0.5s ease;
+}
+
+.event-image-wrapper:hover .event-img {
+    transform: scale(1.05);
+}
+
+.event-text-wrapper {
+    flex: 1;
+}
+
+.event-text-wrapper h2 {
+    font-size: 2.2rem;
+    color: #800020;
+    margin-bottom: 1.5rem;
+    position: relative;
+    padding-bottom: 1rem;
+}
+
+.event-text-wrapper h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: #800020;
+}
+
+.event-text-wrapper p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 1.5rem;
+    text-align: justify;
+}
+
+/* Final Info & Cards */
+.event-final-info {
+    text-align: center;
+}
+
+.event-final-info h3 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.event-final-info p {
+    max-width: 700px;
+    margin: 0 auto 3rem auto;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.cta-section-cards {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.cta-card {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    /* Slightly stronger shadow */
+    flex: 1;
+    min-width: 300px;
+    max-width: 450px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #f0f0f0;
+
+    /* Flex column for consistent height and spacing */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center content horizontally */
+    text-align: center;
+    height: 100%;
+    /* Ensure they stretch */
+}
+
+.cta-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(128, 0, 32, 0.15);
+    /* Red tinted shadow on hover */
+    border-color: #ffe6e6;
+}
+
+.cta-card h3 {
+    color: #800020;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.cta-card p {
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+    color: #666;
+    line-height: 1.6;
+    flex-grow: 1;
+    /* Pushes button to bottom */
+}
+
+.cta-action-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+
+    .event-section,
+    .event-section.reverse {
+        flex-direction: column;
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .event-text-wrapper h2 {
+        font-size: 1.8rem;
+    }
+}

@@ -1,0 +1,730 @@
+.venues-page {
+    background-color: #fff;
+}
+
+.venues-header-hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1519167758481-83f550bb49b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    padding: 8rem 0 6rem;
+    text-align: center;
+    color: white;
+    margin-bottom: 4rem;
+}
+
+.venues-header-hero .page-title {
+    color: white;
+}
+
+.page-title {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-heading);
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+    .venues-header-hero {
+        padding: 6rem 0 3rem;
+        /* Increase top padding for fixed header */
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+}
+
+.venues-intro {
+    max-width: 800px;
+    margin: 0 auto 5rem;
+    text-align: center;
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: #555;
+    font-style: italic;
+}
+
+/* Venue Section Styles */
+.venue-section {
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.venue-content-wrapper {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 4rem;
+    align-items: start;
+}
+
+.venue-title {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-primary);
+    font-family: var(--font-heading);
+    position: relative;
+    padding-bottom: 1rem;
+}
+
+.venue-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background-color: var(--color-accent);
+}
+
+.venue-desc {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #444;
+    margin-bottom: 2rem;
+}
+
+.venue-details-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: #fdfdfd;
+    padding: 1.5rem;
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 8px 8px 0;
+}
+
+.detail-item strong {
+    display: block;
+    color: #222;
+    margin-bottom: 0.3rem;
+}
+
+.detail-item span {
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.venue-specs {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.venue-specs li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #333;
+    background: #f5f5f5;
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+}
+
+.venue-specs li svg {
+    color: var(--color-primary);
+}
+
+/* Media Side */
+.venue-media-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Video Wrapper to match Slider size */
+.venue-video-wrapper {
+    width: 100%;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background-color: #000;
+}
+
+.venue-video-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.venue-video-placeholder::before {
+    content: '▶';
+    font-size: 2rem;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    transition: transform 0.3s;
+}
+
+.venue-video-placeholder:hover::before {
+    background: var(--color-primary);
+    transform: scale(1.1);
+}
+
+.venue-main-img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Separator */
+.separator {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #ddd, transparent);
+    margin: 5rem 0;
+}
+
+/* Reversed Layout for alternating look */
+.venue-section.reversed .venue-content-wrapper {
+    grid-template-columns: 0.9fr 1.1fr;
+    direction: rtl;
+    /* This flips the grid order visually */
+}
+
+.venue-section.reversed .venue-content-wrapper>* {
+    direction: ltr;
+    /* Reset text direction */
+}
+
+.venue-section.reversed .venue-title::after {
+    left: auto;
+    right: 0;
+}
+
+.cta-section {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 4rem;
+    background-color: #f9f9f9;
+    border-radius: 20px;
+}
+
+.cta-section h3 {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    color: var(--color-primary);
+}
+
+@media (max-width: 1024px) {
+
+    .venue-content-wrapper,
+    .venue-section.reversed .venue-content-wrapper {
+        grid-template-columns: 1fr;
+        direction: ltr;
+        gap: 2rem;
+    }
+
+    .venue-media-side {
+        /* order: -1; removed to keep text first */
+    }
+
+    .venue-specs {
+        justify-content: flex-start;
+    }
+}
+
+/* Carousel Styles */
+.venue-carousel {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background-color: #eee;
+}
+
+.carousel-slide {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: background-image 0.5s ease;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(2px);
+    z-index: 10;
+}
+
+.carousel-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-btn.prev {
+    left: 10px;
+}
+
+.carousel-btn.next {
+    right: 10px;
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.dot.active {
+    background: white;
+    transform: scale(1.2);
+}
+
+/* Availability Section - Stacked View */
+.availability-section {
+    margin-top: 5rem;
+    padding: 4rem 0;
+    background-color: #fafafa;
+    border-top: 1px solid #eaeaea;
+}
+
+.availability-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.availability-header h3 {
+    font-size: 2rem;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+}
+
+.availability-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Calendar centered */
+.availability-left {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 600px;
+    /* Limit calendar width */
+}
+
+.venue-selector-compact {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.venue-selector-compact label {
+    display: block;
+    font-size: 0.9rem;
+    color: #000;
+    /* Changed to black as requested */
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+}
+
+.venue-selector-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.venue-btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    color: #444;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.venue-btn-sm:hover,
+.venue-btn-sm.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.terms-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: text-decoration 0.2s;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
+
+/* Calendar Wrapper */
+
+.react-calendar {
+    width: 100%;
+    border: none;
+    font-family: inherit;
+    background: white;
+}
+
+.react-calendar__tile {
+    height: 40px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    font-size: 0.9rem;
+}
+
+.unavailable-date {
+    background: #ffebeb !important;
+    color: #d32f2f !important;
+    position: relative;
+}
+
+.unavailable-date abbr {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.react-calendar__tile--now {
+    background: #f0f0f0;
+    color: black;
+}
+
+.react-calendar__tile--active {
+    background: var(--color-accent) !important;
+    color: white !important;
+}
+
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: #555;
+    padding-top: 0.8rem;
+    border-top: 1px solid #eee;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+}
+
+.legend-item .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.legend-item .dot.available {
+    background: white;
+    border: 1px solid #ccc;
+}
+
+.legend-item .dot.unavailable {
+    background: #ffebeb;
+    border: 1px solid #d32f2f;
+}
+
+
+/* Right Column: Reservation Form */
+.availability-right {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+    color: var(--color-primary);
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    font-family: var(--font-heading);
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.reservation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.form-row.three-cols {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.2rem;
+}
+
+.required {
+    color: red;
+}
+
+.form-control {
+    padding: 0.8rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.1);
+}
+
+.form-checkbox-group {
+    margin-top: 0.5rem;
+}
+
+.checkbox-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-top: 0.3rem;
+    accent-color: var(--color-primary);
+}
+
+.checkbox-item label {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #555;
+    cursor: pointer;
+}
+
+.btn-submit-verify {
+    margin-top: 1rem;
+    padding: 1.2rem;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    letter-spacing: 0.5px;
+}
+
+.btn-submit-verify:hover {
+    background-color: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.configurator-cta {
+    margin-top: 0;
+    padding: 2rem;
+    text-align: center;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.configurator-cta p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    color: #444;
+}
+
+@media (max-width: 1024px) {
+    .availability-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row,
+    .form-row.three-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Custom override for weekend color */
+.react-calendar__month-view__days__day--weekend {
+    color: #64748b !important;
+}
+
+/* Ensure current day uses black or distinguished color if it matches weekend */
+.react-calendar__tile--now.react-calendar__month-view__days__day--weekend {
+    color: black !important;
+}
+
+@media (max-width: 768px) {
+    .availability-section {
+        padding: 2rem 0;
+    }
+
+    .availability-left,
+    .availability-right {
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Force Calendar to fit */
+    .calendar-wrapper-simple {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .react-calendar {
+        width: 100% !important;
+        max-width: 100%;
+        font-size: 0.8rem;
+        line-height: 1.1em;
+    }
+
+    /* Adjust buttons in header */
+    .react-calendar__navigation button {
+        min-width: 30px;
+        font-size: 1rem;
+        padding: 0;
+    }
+
+    /* Selector Wrapper */
+    .venue-selector-compact {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .venue-selector-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 5px;
+        justify-content: center;
+    }
+
+    .venue-btn-sm {
+        flex: 1 1 auto;
+        min-width: 70px;
+        font-size: 0.75rem;
+        padding: 6px;
+    }
+
+    /* Tiles */
+    .react-calendar__tile {
+        padding: 6px 0;
+        height: auto;
+        min-height: 36px;
+    }
+}

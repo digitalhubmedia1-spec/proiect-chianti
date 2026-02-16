@@ -1,0 +1,272 @@
+.contact-header {
+    background-color: var(--color-background-off);
+    padding: 5rem 0 3rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+
+.contact-header .page-title {
+    color: white;
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}
+
+.contact-header .page-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .contact-header {
+        padding: 6rem 0 2rem;
+    }
+
+    .contact-header .page-title {
+        font-size: 2rem;
+    }
+}
+
+.contact-content-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+    padding-bottom: 5rem;
+}
+
+/* --- Top Info Section --- */
+.info-top-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: -3rem;
+    /* Overlap effect */
+    position: relative;
+    z-index: 10;
+}
+
+.info-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transition: transform 0.3s;
+    border-bottom: 3px solid var(--color-primary);
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+}
+
+.info-icon {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+}
+
+.info-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.info-card p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* --- Form Section --- */
+.form-section-container {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.form-heading {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    color: #222;
+    font-family: var(--font-heading);
+}
+
+.complex-contact-form {
+    background: #fff;
+    /* Clean background, no box shadow on the form itself to look like the screenshot */
+}
+
+/* Grid Layouts */
+.form-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.three-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+
+    .three-cols,
+    .two-cols {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+}
+
+/* Form Groups & Inputs */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.req {
+    color: red;
+}
+
+.form-group input[type="text"],
+.form-group input[type="tel"],
+.form-group input[type="email"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #e0e0e0;
+    /* Very light border */
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #555;
+    background: #fcfcfc;
+    transition: border-color 0.2s;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #aaa;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: #fff;
+}
+
+/* Checkboxes */
+.group-label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    font-size: 1rem;
+    color: #333;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 2 cols for events */
+    gap: 0.5rem;
+}
+
+.checkbox-grid.horizontal {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    /* Responsive columns */
+}
+
+.cb-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-weight: 400 !important;
+    /* Override label bold */
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.cb-item input[type="checkbox"] {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    border-color: #ccc;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.mt-2 {
+    margin-top: 1rem;
+}
+
+/* Agreement Text */
+.agreement-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #333;
+}
+
+.agreement-item {
+    gap: 1.5rem;
+    /* Increased space between checkbox and text */
+    align-items: baseline;
+    /* Align checkbox with the top of text */
+}
+
+/* Submit Button */
+.form-actions {
+    margin-top: 2rem;
+}
+
+.btn-submit-offer {
+    background-color: var(--color-primary);
+    /* Use var for consistency, which is red/darkred */
+    color: white;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    /* Round button */
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-submit-offer:hover {
+    background-color: darkred;
+    transform: translateY(-2px);
+}
+
+.terms-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
