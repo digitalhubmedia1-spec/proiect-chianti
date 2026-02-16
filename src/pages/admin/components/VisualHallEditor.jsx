@@ -46,30 +46,20 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
     // --- GEOMETRY & ZONES ---
     const calculateZone = (obj) => {
-        // 1. Încercăm să determinăm centrul bazat pe Masa Mirilor
-        const presidium = objects.find(o => o.type === 'presidium');
-        let centerX;
+        if (!hall) return 'center';
 
-        if (presidium) {
-            // Centrul vizual este mijlocul Mesei Mirilor
-            // Lățimea mesei mirilor este 120px
-            centerX = presidium.x + 60; 
-        } else if (hall) {
-            // Fallback: Centrul geometric al sălii
-            centerX = (hall.width_meters * GRID_SIZE) / 2;
-        } else {
-            return 'center';
-        }
+        // Calculăm centrul geometric al sălii (bazat pe dimensiunile definite)
+        const centerX = (hall.width_meters * GRID_SIZE) / 2;
 
-        // 2. Calculăm centrul obiectului curent
+        // Calculăm centrul obiectului curent
         let objWidth = 80; // Lățime standard mese
         if (obj.type === 'presidium' || obj.type === 'stage') objWidth = 120;
+        else if (obj.type === 'entrance') objWidth = 80;
         
         const objCenter = obj.x + (objWidth / 2);
 
-        // 3. Comparăm
-        // Folosim o mică toleranță (1px) pentru a evita problemele de precizie float
-        if (objCenter < centerX - 1) return 'left';
+        // Comparăm centrul obiectului cu centrul sălii
+        if (objCenter < centerX) return 'left';
         return 'right';
     };
 
