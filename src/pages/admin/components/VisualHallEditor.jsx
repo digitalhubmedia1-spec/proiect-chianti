@@ -125,12 +125,12 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                     color: isSelected ? '#166534' : 'white',
                     boxShadow: isSelected ? '0 0 0 3px rgba(22,163,74,0.3)' : 'none'
                 };
-            default: // Tables
+            default: // Tables (Toate patrate/dreptunghiulare acum)
                 return {
                     ...base,
-                    width: obj.type.includes('round') ? 65 : 80,
-                    height: obj.type.includes('round') ? 65 : 45,
-                    borderRadius: obj.type.includes('round') ? '50%' : '6px',
+                    width: 80, // Standardizat la 80px
+                    height: 80, // Standardizat la 80px pentru patrate
+                    borderRadius: '6px', // Fara cercuri (50%)
                     background: isSelected ? '#dbeafe' : '#f8fafc',
                     border: `2px solid ${isSelected ? '#2563eb' : '#94a3b8'}`,
                     color: '#334155',
@@ -279,10 +279,10 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                     <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Elemente</h3>
 
                     <p style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mese</p>
-                    <button onClick={() => addObject('table_round_12')} style={btnStyle}>⬤ Masă Rotundă 12</button>
-                    <button onClick={() => addObject('table_round_8')} style={btnStyle}>⬤ Masă Rotundă 8</button>
-                    <button onClick={() => addObject('table_rect_6')} style={btnStyle}>▬ Masă Drept. 6</button>
-                    <button onClick={() => addObject('table_rect_4')} style={btnStyle}>▪ Masă Pătr. 4</button>
+                    <button onClick={() => addObject('table_round_12')} style={btnStyle}>▪ Masa patr. 12 P</button>
+                    <button onClick={() => addObject('table_round_8')} style={btnStyle}>▪ Masa patr. 8 P</button>
+                    <button onClick={() => addObject('table_rect_6')} style={btnStyle}>▬ Masa drept. 6 P</button>
+                    <button onClick={() => addObject('table_rect_4')} style={btnStyle}>▪ Masa patr. 4 P</button>
 
                     <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0.5rem 0' }} />
                     <p style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Speciale</p>
@@ -380,7 +380,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                                     color: '#475569', border: '1px solid #e2e8f0',
                                     whiteSpace: 'nowrap'
                                 }}>
-                                    {obj.capacity} loc.
+                                    {obj.capacity} P
                                 </div>
                             )}
                         </div>
