@@ -309,7 +309,7 @@ const EventMenuPlanner = ({ eventId }) => {
                         <div style={{
                             position: 'absolute', top: '100%', left: '14px', right: '14px',
                             background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 30, maxHeight: '240px', overflowY: 'auto'
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto'
                         }}>
                             {filteredProducts.length > 0 ? (
                                 filteredProducts.map(p => (
@@ -364,7 +364,7 @@ const EventMenuPlanner = ({ eventId }) => {
 
         return (
             <div style={{
-                background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden'
+                background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb'
             }}>
                 {/* Header */}
                 <div style={{
