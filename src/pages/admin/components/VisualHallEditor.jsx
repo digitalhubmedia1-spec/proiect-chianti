@@ -46,10 +46,22 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
     // --- GEOMETRY & ZONES ---
     const calculateZone = (obj) => {
-        if (!hall) return 'center';
-
-        // Calculăm centrul geometric al sălii (bazat pe dimensiunile definite)
-        const centerX = (hall.width_meters * GRID_SIZE) / 2;
+        // Calculăm centrul dinamic bazat pe aranjamentul existent (bounding box)
+        // Luăm în considerare doar mesele și prezidiul pentru a determina centrul "util"
+        const relevantObjects = objects.filter(o => o.type.includes('table') || o.type === 'presidium');
+        
+        let centerX;
+        if (relevantObjects.length > 0) {
+            const minX = Math.min(...relevantObjects.map(o => o.x));
+            // Estimăm lățimea maximă (presidium e 120, mesele 80)
+            const maxX = Math.max(...relevantObjects.map(o => o.x + (o.type === 'presidium' ? 120 : 80)));
+            centerX = (minX + maxX) / 2;
+        } else if (hall) {
+            // Fallback dacă nu sunt mese
+            centerX = (hall.width_meters * GRID_SIZE) / 2;
+        } else {
+            return 'center';
+        }
 
         // Calculăm centrul obiectului curent
         let objWidth = 80; // Lățime standard mese
@@ -58,7 +70,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
         
         const objCenter = obj.x + (objWidth / 2);
 
-        // Comparăm centrul obiectului cu centrul sălii
+        // Comparăm
         if (objCenter < centerX) return 'left';
         return 'right';
     };
