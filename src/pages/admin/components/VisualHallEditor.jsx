@@ -48,9 +48,9 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const calculateZone = (obj) => {
         if (!hall) return 'center';
         const centerX = (hall.width_meters * GRID_SIZE) / 2;
-        if (obj.x < centerX - 50) return 'left';
-        if (obj.x > centerX + 50) return 'right';
-        return 'front';
+        // Împărțire strictă stânga/dreapta bazată pe centrul sălii
+        if (obj.x < centerX) return 'left';
+        return 'right';
     };
 
     // --- GET LABEL FOR OBJECT TYPE ---
@@ -410,11 +410,11 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f9fafb', borderRadius: '6px' }}>
                         <span style={{ color: '#6b7280' }}>Stânga</span>
-                        <strong>{objects.filter(o => o.zone === 'left' && o.type.includes('table')).length} mese</strong>
+                        <strong>{objects.filter(o => o.zone === 'left' && (o.type.includes('table') || o.type === 'presidium')).length} mese</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f9fafb', borderRadius: '6px' }}>
                         <span style={{ color: '#6b7280' }}>Dreapta</span>
-                        <strong>{objects.filter(o => o.zone === 'right' && o.type.includes('table')).length} mese</strong>
+                        <strong>{objects.filter(o => o.zone === 'right' && (o.type.includes('table') || o.type === 'presidium')).length} mese</strong>
                     </div>
                 </div>
                 <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '1rem 0' }} />
