@@ -20,6 +20,13 @@ const ReservationPage = () => {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '' });
     const [lockExpiry, setLockExpiry] = useState(null);
     const [success, setSuccess] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 900);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         loadEventData();
@@ -96,6 +103,8 @@ const ReservationPage = () => {
         setLocks(lockData || []);
     };
 
+    const formRef = React.useRef(null);
+
     const handleTableSelect = async (table) => {
         if (selectedTable) return; // Already selected one
 
@@ -119,6 +128,10 @@ const ReservationPage = () => {
             setSelectedTable(table);
             setLockExpiry(lockTime);
             fetchAvailability();
+            // Scroll to form on mobile
+            if (isMobile && formRef.current) {
+                setTimeout(() => formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            }
         }
     };
 
@@ -191,10 +204,13 @@ const ReservationPage = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
+                <div style={{ display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
                     {/* Visual Layout */}
                     <div>
                         <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>Alege Masa</h3>
+                        <p style={{ fontSize: '0.9rem', color: '#6b7280', marginBottom: '1rem', display: isMobile ? 'block' : 'none' }}>
+                            💡 Folosește două degete pentru zoom și mișcare. Apasă pe o masă verde pentru a selecta.
+                        </p>
                         <VisualHallViewer 
                             hall={hall} 
                             objects={objects} 
@@ -206,8 +222,8 @@ const ReservationPage = () => {
                     </div>
 
                     {/* Sidebar Form */}
-                    <div>
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: 'sticky', top: '2rem' }}>
+                    <div ref={formRef}>
+                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: isMobile ? 'relative' : 'sticky', top: '2rem' }}>
                             {!selectedTable ? (
                                 <div style={{ textAlign: 'center', padding: '2rem 0', color: '#6b7280' }}>
                                     <Users size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
