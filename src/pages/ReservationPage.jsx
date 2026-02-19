@@ -225,6 +225,10 @@ const ReservationPage = () => {
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={18} /> {new Date(event.start_date).toLocaleDateString('ro-RO')}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={18} /> {new Date(event.start_date).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
                         {event.event_halls && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={18} /> Salon {event.event_halls?.name}</span>}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Users size={18} />
+                            {event.allow_minors ? 'Minori permiși' : 'Doar adulți (18+)'}
+                        </span>
                     </div>
                 </div>
             </div>
