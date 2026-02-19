@@ -50,18 +50,7 @@ const ReservationPage = () => {
         };
     }, [event]);
 
-    // Timer for lock expiry
-    useEffect(() => {
-        if (!lockExpiry) return;
-        const interval = setInterval(() => {
-            if (new Date() > lockExpiry) {
-                alert("Timpul de rezervare a expirat. Locul a fost deblocat.");
-                setSelectedTable(null);
-                setLockExpiry(null);
-            }
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [lockExpiry]);
+    // Timer for lock expiry - REMOVED
 
     const loadEventData = async () => {
         try {
@@ -98,67 +87,43 @@ const ReservationPage = () => {
 
         const { data: resData } = await supabase.from('event_reservations').select('*').eq('event_id', eid);
         setReservations(resData || []);
-
-        const { data: lockData } = await supabase.from('event_reservation_locks').select('*').eq('event_id', eid).gt('locked_until', new Date().toISOString());
-        setLocks(lockData || []);
+        
+        // Locks not needed anymore
+        setLocks([]);
     };
 
     const formRef = React.useRef(null);
 
     const getRemainingSeats = (tableId) => {
+        // Force string comparison just in case
+        const tid = tableId.toString();
         const reserved = reservations
-            .filter(r => r.table_id === tableId && r.status === 'confirmed')
+            .filter(r => r.table_id.toString() === tid && r.status === 'confirmed')
             .reduce((sum, r) => sum + r.seat_count, 0);
-        const obj = objects.find(o => o.id === tableId);
+        
+        const obj = objects.find(o => o.id.toString() === tid);
         const capacity = obj?.capacity || 10;
         return Math.max(0, capacity - reserved);
     };
 
-    const handleTableSelect = async (table) => {
-        if (selectedTable) return; // Already selected one
-
+    const handleTableSelect = (table) => {
         const remaining = getRemainingSeats(table.id);
         if (remaining <= 0) {
             alert("Această masă este complet ocupată.");
             return;
         }
 
-        setSeatCount(1); // Reset seat count to valid start
+        setSelectedTable(table);
+        setSeatCount(1);
 
-        // Try to lock
-        const sessionId = localStorage.getItem('session_id') || Math.random().toString(36).substring(7);
-        localStorage.setItem('session_id', sessionId);
-
-        const lockTime = new Date(Date.now() + 5 * 60000); // 5 mins
-
-        const { error: lockError } = await supabase.from('event_reservation_locks').insert([{
-            event_id: event.id,
-            table_id: table.id,
-            locked_until: lockTime.toISOString(),
-            session_id: sessionId
-        }]);
-
-        if (lockError) {
-            alert("Masa tocmai a fost selectată de altcineva. Te rugăm să alegi alta.");
-            fetchAvailability();
-        } else {
-            setSelectedTable(table);
-            setLockExpiry(lockTime);
-            fetchAvailability();
-            // Scroll to form on mobile
-            if (isMobile && formRef.current) {
-                setTimeout(() => formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-            }
+        // Scroll to form on mobile
+        if (isMobile && formRef.current) {
+            setTimeout(() => formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
         }
     };
 
-    const handleCancelSelection = async () => {
-        if (!selectedTable) return;
-        const sessionId = localStorage.getItem('session_id');
-        await supabase.from('event_reservation_locks').delete().eq('table_id', selectedTable.id).eq('session_id', sessionId);
+    const handleCancelSelection = () => {
         setSelectedTable(null);
-        setLockExpiry(null);
-        fetchAvailability();
     };
 
     const handleSubmit = async (e) => {
@@ -169,6 +134,13 @@ const ReservationPage = () => {
         }
         if (!/^07\d{8}$/.test(formData.phone)) {
             alert("Numărul de telefon trebuie să fie un număr valid de România (07xxxxxxxx).");
+            return;
+        }
+
+        // Double check availability before submit
+        const remaining = getRemainingSeats(selectedTable.id);
+        if (seatCount > remaining) {
+            alert(`Din păcate au mai rămas doar ${remaining} locuri disponibile la această masă.`);
             return;
         }
 
@@ -187,9 +159,6 @@ const ReservationPage = () => {
             alert("Eroare la rezervare: " + insertError.message);
         } else {
             setSuccess(true);
-            // Cleanup lock
-            const sessionId = localStorage.getItem('session_id');
-            await supabase.from('event_reservation_locks').delete().eq('table_id', selectedTable.id).eq('session_id', sessionId);
         }
     };
 
