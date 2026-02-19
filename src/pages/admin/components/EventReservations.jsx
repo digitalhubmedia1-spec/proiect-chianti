@@ -54,13 +54,23 @@ const EventReservations = ({ eventId }) => {
         return matchesSearch && matchesStatus;
     });
 
+    const formatDietary = (type) => {
+        switch(type) {
+            case 'post': return 'Post';
+            case 'frupt': return 'Frupt';
+            case 'both': return 'Post & Frupt';
+            default: return '-';
+        }
+    };
+
     const exportExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredReservations.map(r => ({
             Data: new Date(r.created_at).toLocaleString('ro-RO'),
             Nume: r.guest_name,
             Telefon: r.guest_phone,
-            Masa: r.table_id,
+            Masa: r.table_id || 'Nespecificată',
             Locuri: r.seat_count,
+            Preferințe: formatDietary(r.dietary_preference),
             Status: r.status
         })));
         const wb = XLSX.utils.book_new();
@@ -115,6 +125,7 @@ const EventReservations = ({ eventId }) => {
                         <th style={{ padding: '12px' }}>Telefon</th>
                         <th style={{ padding: '12px' }}>Masa</th>
                         <th style={{ padding: '12px' }}>Locuri</th>
+                        <th style={{ padding: '12px' }}>Preferințe</th>
                         <th style={{ padding: '12px' }}>Status</th>
                         <th style={{ padding: '12px' }}>Acțiuni</th>
                     </tr>
@@ -125,8 +136,14 @@ const EventReservations = ({ eventId }) => {
                             <td style={{ padding: '12px' }}>{new Date(r.created_at).toLocaleString('ro-RO')}</td>
                             <td style={{ padding: '12px', fontWeight: '500' }}>{r.guest_name}</td>
                             <td style={{ padding: '12px' }}>{r.guest_phone}</td>
-                            <td style={{ padding: '12px' }}>{r.table_id}</td>
+                            <td style={{ padding: '12px' }}>{r.table_id || 'N/A'}</td>
                             <td style={{ padding: '12px' }}>{r.seat_count}</td>
+                            <td style={{ padding: '12px' }}>
+                                {r.dietary_preference === 'post' && <span style={{ background: '#ecfccb', color: '#3f6212', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Post</span>}
+                                {r.dietary_preference === 'frupt' && <span style={{ background: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Frupt</span>}
+                                {r.dietary_preference === 'both' && <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Post & Frupt</span>}
+                                {!r.dietary_preference || r.dietary_preference === 'none' ? '-' : ''}
+                            </td>
                             <td style={{ padding: '12px' }}>
                                 <span style={{ 
                                     padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold',
@@ -150,7 +167,7 @@ const EventReservations = ({ eventId }) => {
                     ))}
                     {filteredReservations.length === 0 && (
                         <tr>
-                            <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Nu există rezervări găsite.</td>
+                            <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Nu există rezervări găsite.</td>
                         </tr>
                     )}
                 </tbody>

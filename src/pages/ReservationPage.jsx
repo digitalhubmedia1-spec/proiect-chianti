@@ -11,12 +11,14 @@ const ReservationPage = () => {
     const [objects, setObjects] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [locks, setLocks] = useState([]); // Kept empty for compatibility
+    const [gallery, setGallery] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Selection State
     const [selectedTable, setSelectedTable] = useState(null);
     const [seatCount, setSeatCount] = useState(1);
+    const [dietary, setDietary] = useState({ post: false, frupt: false });
     const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '' });
     const [success, setSuccess] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
@@ -64,6 +66,14 @@ const ReservationPage = () => {
                 .select('*')
                 .eq('event_id', eventData.id);
             setObjects(objData || []);
+
+            // Fetch Gallery
+            const { data: galleryData } = await supabase
+                .from('event_gallery')
+                .select('*')
+                .eq('event_id', eventData.id)
+                .order('created_at', { ascending: false });
+            setGallery(galleryData || []);
 
             await fetchAvailability(eventData.id);
         } catch (err) {
@@ -125,21 +135,31 @@ const ReservationPage = () => {
             return;
         }
 
-        // Double check availability before submit
-        const remaining = getRemainingSeats(selectedTable.id);
-        if (seatCount > remaining) {
-            alert(`Din păcate au mai rămas doar ${remaining} locuri disponibile la această masă.`);
-            return;
+        // Double check availability before submit (only if hall plan is active)
+        if (event.show_hall_plan !== false && selectedTable) {
+            const remaining = getRemainingSeats(selectedTable.id);
+            if (seatCount > remaining) {
+                alert(`Din păcate au mai rămas doar ${remaining} locuri disponibile la această masă.`);
+                return;
+            }
         }
 
         const fullName = `${formData.firstName} ${formData.lastName}`;
+        
+        // Construct dietary string
+        let dietaryString = '';
+        if (dietary.post && dietary.frupt) dietaryString = 'both';
+        else if (dietary.post) dietaryString = 'post';
+        else if (dietary.frupt) dietaryString = 'frupt';
+        else dietaryString = 'none';
 
         const { error: insertError } = await supabase.from('event_reservations').insert([{
             event_id: event.id,
-            table_id: selectedTable.id,
+            table_id: selectedTable ? selectedTable.id : null,
             guest_name: fullName,
             guest_phone: formData.phone,
             seat_count: seatCount,
+            dietary_preference: dietaryString,
             status: 'confirmed'
         }]);
 
@@ -166,10 +186,12 @@ const ReservationPage = () => {
                         <span style={{ color: '#6b7280' }}>Nume:</span>
                         <span style={{ fontWeight: '600', color: '#111827' }}>{formData.firstName} {formData.lastName}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <span style={{ color: '#6b7280' }}>Masa:</span>
-                        <span style={{ fontWeight: '600', color: '#111827' }}>{selectedTable?.label}</span>
-                    </div>
+                    {selectedTable && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ color: '#6b7280' }}>Masa:</span>
+                            <span style={{ fontWeight: '600', color: '#111827' }}>{selectedTable?.label}</span>
+                        </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#6b7280' }}>Locuri:</span>
                         <span style={{ fontWeight: '600', color: '#111827' }}>{seatCount} persoane</span>
@@ -182,6 +204,8 @@ const ReservationPage = () => {
             </div>
         </div>
     );
+
+    const showHallPlan = event.show_hall_plan !== false;
 
     return (
         <div style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
@@ -198,35 +222,44 @@ const ReservationPage = () => {
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: isMobile ? '0.9rem' : '1.1rem', opacity: 0.9, flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={18} /> {new Date(event.start_date).toLocaleDateString('ro-RO')}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={18} /> {new Date(event.start_date).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={18} /> Salon {event.event_halls?.name}</span>
+                        {event.event_halls && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={18} /> Salon {event.event_halls?.name}</span>}
                     </div>
                 </div>
             </div>
 
             <div style={{ maxWidth: '1200px', margin: '-4rem auto 2rem', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
-                <div style={{ display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: '1fr 380px', gap: '2rem' }}>
+                <div style={{ 
+                    display: isMobile ? 'flex' : 'grid', 
+                    flexDirection: 'column', 
+                    gridTemplateColumns: showHallPlan ? '1fr 380px' : '1fr', 
+                    gap: '2rem',
+                    maxWidth: showHallPlan ? '100%' : '600px',
+                    margin: showHallPlan ? '0' : '0 auto'
+                }}>
                     
-                    {/* Visual Layout Card */}
-                    <div style={{ background: 'white', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <MapPin size={20} className="text-blue-600" style={{color: '#2563eb'}} /> 
-                                Alege Masa
-                            </h3>
-                            <span style={{ fontSize: '0.75rem', color: '#6b7280', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontWeight: '500' }}>
-                                {isMobile ? 'Apasă pe masă' : 'Click pe masă'}
-                            </span>
+                    {/* Visual Layout Card - Only if enabled */}
+                    {showHallPlan && (
+                        <div style={{ background: 'white', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <MapPin size={20} className="text-blue-600" style={{color: '#2563eb'}} /> 
+                                    Alege Masa
+                                </h3>
+                                <span style={{ fontSize: '0.75rem', color: '#6b7280', background: '#f3f4f6', padding: '6px 12px', borderRadius: '20px', fontWeight: '500' }}>
+                                    {isMobile ? 'Apasă pe masă' : 'Click pe masă'}
+                                </span>
+                            </div>
+                            
+                            <VisualHallViewer 
+                                hall={hall} 
+                                objects={objects} 
+                                reservations={reservations} 
+                                locks={locks}
+                                onTableSelect={handleTableSelect}
+                                selectedTableId={selectedTable?.id}
+                            />
                         </div>
-                        
-                        <VisualHallViewer 
-                            hall={hall} 
-                            objects={objects} 
-                            reservations={reservations} 
-                            locks={locks}
-                            onTableSelect={handleTableSelect}
-                            selectedTableId={selectedTable?.id}
-                        />
-                    </div>
+                    )}
 
                     {/* Sidebar Form Card */}
                     <div ref={formRef}>
@@ -239,7 +272,7 @@ const ReservationPage = () => {
                             top: '2rem',
                             border: '1px solid #f3f4f6'
                         }}>
-                            {!selectedTable ? (
+                            {showHallPlan && !selectedTable ? (
                                 <div style={{ textAlign: 'center', padding: '3rem 0', color: '#9ca3af' }}>
                                     <div style={{ width: '80px', height: '80px', background: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                                         <Users size={40} style={{ opacity: 0.5 }} />
@@ -249,13 +282,20 @@ const ReservationPage = () => {
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
-                                        <div>
-                                            <span style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>Masă Selectată</span>
-                                            <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827' }}>{selectedTable.label}</h3>
+                                    {showHallPlan ? (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
+                                            <div>
+                                                <span style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>Masă Selectată</span>
+                                                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827' }}>{selectedTable.label}</h3>
+                                            </div>
+                                            <button type="button" onClick={handleCancelSelection} style={{ fontSize: '0.85rem', color: '#ef4444', background: '#fef2f2', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Anulează</button>
                                         </div>
-                                        <button type="button" onClick={handleCancelSelection} style={{ fontSize: '0.85rem', color: '#ef4444', background: '#fef2f2', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Anulează</button>
-                                    </div>
+                                    ) : (
+                                        <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
+                                            <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '0.5rem' }}>Rezervare Locuri</h3>
+                                            <p style={{ color: '#6b7280' }}>Vă rugăm să completați detaliile pentru a rezerva locuri la acest eveniment.</p>
+                                        </div>
+                                    )}
 
                                     <div style={{ marginBottom: '1.5rem' }}>
                                         <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Număr Locuri</label>
@@ -265,17 +305,24 @@ const ReservationPage = () => {
                                                 onChange={e => setSeatCount(parseInt(e.target.value))}
                                                 style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem', background: '#fff', appearance: 'none', cursor: 'pointer' }}
                                             >
-                                                {[...Array(Math.min(10, getRemainingSeats(selectedTable.id))).keys()].map(i => (
-                                                    <option key={i+1} value={i+1}>{i+1} persoane</option>
-                                                ))}
+                                                {showHallPlan && selectedTable 
+                                                    ? [...Array(Math.min(10, getRemainingSeats(selectedTable.id))).keys()].map(i => (
+                                                        <option key={i+1} value={i+1}>{i+1} persoane</option>
+                                                      ))
+                                                    : [...Array(20).keys()].map(i => (
+                                                        <option key={i+1} value={i+1}>{i+1} persoane</option>
+                                                      ))
+                                                }
                                             </select>
                                             <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
                                             </div>
                                         </div>
-                                        <p style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '6px' }}>
-                                            Disponibil: {getRemainingSeats(selectedTable.id)} locuri
-                                        </p>
+                                        {showHallPlan && selectedTable && (
+                                            <p style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '6px' }}>
+                                                Disponibil: {getRemainingSeats(selectedTable.id)} locuri
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -301,7 +348,7 @@ const ReservationPage = () => {
                                         </div>
                                     </div>
 
-                                    <div style={{ marginBottom: '2rem' }}>
+                                    <div style={{ marginBottom: '1rem' }}>
                                         <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Telefon</label>
                                         <input 
                                             required
@@ -310,6 +357,31 @@ const ReservationPage = () => {
                                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem', boxSizing: 'border-box' }}
                                         />
+                                    </div>
+
+                                    {/* Dietary Options */}
+                                    <div style={{ marginBottom: '2rem', background: '#f9fafb', padding: '1rem', borderRadius: '8px' }}>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Preferințe Meniu</label>
+                                        <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={dietary.post} 
+                                                    onChange={e => setDietary({ ...dietary, post: e.target.checked })}
+                                                    style={{ width: '18px', height: '18px' }}
+                                                />
+                                                <span>Meniu de Post</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={dietary.frupt} 
+                                                    onChange={e => setDietary({ ...dietary, frupt: e.target.checked })}
+                                                    style={{ width: '18px', height: '18px' }}
+                                                />
+                                                <span>Meniu de Frupt</span>
+                                            </label>
+                                        </div>
                                     </div>
 
                                     <button 
@@ -331,6 +403,24 @@ const ReservationPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Gallery Section */}
+                {gallery.length > 0 && (
+                    <div style={{ marginTop: '4rem' }}>
+                        <h2 style={{ fontSize: '2rem', fontWeight: '800', textAlign: 'center', marginBottom: '2rem', color: '#111827' }}>Galerie Eveniment</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            {gallery.map((item, idx) => (
+                                <div key={idx} style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', aspectRatio: '16/9', background: 'black' }}>
+                                    {item.type === 'video' ? (
+                                        <video src={item.url} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    ) : (
+                                        <img src={item.url} alt="Event" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

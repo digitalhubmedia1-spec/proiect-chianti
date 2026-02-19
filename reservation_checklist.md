@@ -26,3 +26,10 @@
 
 * [x] Real-time updates work (another user sees changes instantly).
 
+### New Features (v2)
+* [x] Admin can toggle hall plan visibility (form simplified if hidden).
+* [x] Admin can upload images/videos for gallery.
+* [x] Public page displays gallery media.
+* [x] Reservation form includes dietary preferences (Post/Frupt).
+* [x] Admin can view dietary preferences in list and Excel.
+

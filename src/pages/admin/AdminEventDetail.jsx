@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat } from 'lucide-react';
+import { ArrowLeft, Save, Users, Map, FileText, Settings, ChefHat, Image } from 'lucide-react';
 import VisualHallEditor from './components/VisualHallEditor';
 import EventMenuPlanner from './components/EventMenuPlanner';
 import EventProduction from './components/EventProduction';
 import EventOperations from './components/EventOperations';
 import EventGuestsManager from './components/EventGuestsManager';
 import EventReservations from './components/EventReservations';
+import EventSettingsMedia from './components/EventSettingsMedia';
 
 const AdminEventDetail = () => {
     const { id } = useParams();
@@ -271,6 +272,8 @@ const AdminEventDetail = () => {
                 return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} />;
             case 'reservations':
                 return <EventReservations eventId={id} />;
+            case 'media':
+                return <EventSettingsMedia eventId={id} event={event} onUpdateEvent={setEvent} />;
             default: return null;
         }
     };
@@ -322,6 +325,7 @@ const AdminEventDetail = () => {
                     { id: 'production', label: 'Productie', icon: ChefHat },
                     { id: 'operations', label: 'Operațional', icon: Settings },
                     { id: 'reservations', label: 'Rezervări', icon: Users },
+                    { id: 'media', label: 'Media & Setări', icon: Image },
                 ].map(tab => (
                     <button
                         key={tab.id}
