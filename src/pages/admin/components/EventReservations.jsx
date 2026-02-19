@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 
 const EventReservations = ({ eventId }) => {
     const [reservations, setReservations] = useState([]);
+    const [tables, setTables] = useState({});
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -29,14 +30,35 @@ const EventReservations = ({ eventId }) => {
 
     const fetchReservations = async () => {
         setLoading(true);
-        const { data, error } = await supabase
+        
+        // Fetch reservations
+        const { data: resData, error: resError } = await supabase
             .from('event_reservations')
             .select('*')
             .eq('event_id', eventId)
             .order('created_at', { ascending: false });
         
-        if (error) console.error(error);
-        else setReservations(data || []);
+        if (resError) {
+            console.error(resError);
+            setLoading(false);
+            return;
+        }
+
+        // Fetch tables (layout objects) to get labels
+        const { data: tablesData, error: tablesError } = await supabase
+            .from('event_layout_objects')
+            .select('id, label')
+            .eq('event_id', eventId);
+
+        if (tablesData) {
+            const tablesMap = {};
+            tablesData.forEach(t => {
+                tablesMap[t.id] = t.label;
+            });
+            setTables(tablesMap);
+        }
+
+        setReservations(resData || []);
         setLoading(false);
     };
 
@@ -68,7 +90,7 @@ const EventReservations = ({ eventId }) => {
             Data: new Date(r.created_at).toLocaleString('ro-RO'),
             Nume: r.guest_name,
             Telefon: r.guest_phone,
-            Masa: r.table_id || 'Nespecificată',
+            Masa: tables[r.table_id] || r.table_id || 'Nespecificată',
             Locuri: r.seat_count,
             Preferințe: formatDietary(r.dietary_preference),
             Observații: r.observations || '-',
@@ -138,7 +160,7 @@ const EventReservations = ({ eventId }) => {
                             <td style={{ padding: '12px' }}>{new Date(r.created_at).toLocaleString('ro-RO')}</td>
                             <td style={{ padding: '12px', fontWeight: '500' }}>{r.guest_name}</td>
                             <td style={{ padding: '12px' }}>{r.guest_phone}</td>
-                            <td style={{ padding: '12px' }}>{r.table_id || 'N/A'}</td>
+                            <td style={{ padding: '12px' }}>{tables[r.table_id] || r.table_id || 'N/A'}</td>
                             <td style={{ padding: '12px' }}>{r.seat_count}</td>
                             <td style={{ padding: '12px' }}>
                                 {r.dietary_preference === 'post' && <span style={{ background: '#ecfccb', color: '#3f6212', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Post</span>}
