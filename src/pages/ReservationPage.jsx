@@ -213,7 +213,7 @@ const ReservationPage = () => {
         <div style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
             {/* Hero Header */}
             <div style={{ 
-                background: 'linear-gradient(135deg, #111827 0%, #374151 100%)', 
+                background: 'linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)', 
                 color: 'white', 
                 padding: '3rem 1rem 6rem',
                 textAlign: 'center',
@@ -389,7 +389,7 @@ const ReservationPage = () => {
                                     <div style={{ marginBottom: '2rem' }}>
                                         <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Observații (Opțional)</label>
                                         <textarea
-                                            placeholder="Ex: Alergii, scaun copil, etc."
+                                            placeholder="Ex: Alergii"
                                             value={formData.observations}
                                             onChange={e => setFormData({ ...formData, observations: e.target.value })}
                                             rows={3}
