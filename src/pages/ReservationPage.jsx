@@ -22,6 +22,7 @@ const ReservationPage = () => {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', observations: '' });
     const [success, setSuccess] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+    const [lightboxMedia, setLightboxMedia] = useState(null);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 900);
@@ -419,12 +420,38 @@ const ReservationPage = () => {
                 {/* Gallery Section */}
                 {gallery.length > 0 && (
                     <div style={{ marginTop: '4rem' }}>
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800', textAlign: 'center', marginBottom: '2rem', color: '#111827' }}>Galerie Eveniment</h2>
+                        <h2 style={{ fontSize: '2rem', fontWeight: '800', textAlign: 'center', marginBottom: '2rem', color: '#111827' }}>Informații Eveniment</h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                             {gallery.map((item, idx) => (
-                                <div key={idx} style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', aspectRatio: '16/9', background: 'black' }}>
+                                <div 
+                                    key={idx} 
+                                    style={{ 
+                                        borderRadius: '16px', 
+                                        overflow: 'hidden', 
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
+                                        aspectRatio: '16/9', 
+                                        background: 'black',
+                                        cursor: 'pointer',
+                                        position: 'relative'
+                                    }}
+                                    onClick={() => setLightboxMedia(item)}
+                                >
                                     {item.type === 'video' ? (
-                                        <video src={item.url} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <>
+                                            <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            <div style={{ 
+                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                                background: 'rgba(0,0,0,0.2)' 
+                                            }}>
+                                                <div style={{ 
+                                                    width: '50px', height: '50px', background: 'rgba(255,255,255,0.8)', 
+                                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                                                }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                                </div>
+                                            </div>
+                                        </>
                                     ) : (
                                         <img src={item.url} alt="Event" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     )}
@@ -434,6 +461,51 @@ const ReservationPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Lightbox Overlay */}
+            {lightboxMedia && (
+                <div 
+                    style={{
+                        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+                        background: 'rgba(0,0,0,0.9)', zIndex: 9999, 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '20px'
+                    }}
+                    onClick={() => setLightboxMedia(null)}
+                >
+                    <button 
+                        style={{
+                            position: 'absolute', top: '20px', right: '20px', 
+                            background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', 
+                            cursor: 'pointer', padding: '10px', borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setLightboxMedia(null);
+                        }}
+                    >
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    
+                    <div style={{ maxWidth: '100%', maxHeight: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        {lightboxMedia.type === 'video' ? (
+                            <video 
+                                src={lightboxMedia.url} 
+                                controls 
+                                autoPlay 
+                                style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }} 
+                            />
+                        ) : (
+                            <img 
+                                src={lightboxMedia.url} 
+                                alt="Full view" 
+                                style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }} 
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
