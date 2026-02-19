@@ -948,8 +948,8 @@ const AdminRecipes = () => {
                                                                                         <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(4)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(4)}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
