@@ -35,6 +35,7 @@ import DriverApplication from './pages/careers/DriverApplication';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import GuestPortal from './pages/GuestPortal';
+import ReservationPage from './pages/ReservationPage';
 import ScrollToTop from './components/ScrollToTop';
 import PageTitleUpdater from './components/PageTitleUpdater';
 import './index.css';
@@ -81,6 +82,7 @@ function App() {
 
                   {/* Guest Portal (Public, No Layout) */}
                   <Route path="/portal/:token" element={<GuestPortal />} />
+                  <Route path="/rezervare/:token" element={<ReservationPage />} />
 
                   {/* Admin Routes (No Standard Layout or Custom Layout) */}
                   <Route path="/admin/login" element={<AdminLogin />} />

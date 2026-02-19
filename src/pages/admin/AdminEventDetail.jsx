@@ -8,6 +8,7 @@ import EventMenuPlanner from './components/EventMenuPlanner';
 import EventProduction from './components/EventProduction';
 import EventOperations from './components/EventOperations';
 import EventGuestsManager from './components/EventGuestsManager';
+import EventReservations from './components/EventReservations';
 
 const AdminEventDetail = () => {
     const { id } = useParams();
@@ -82,6 +83,24 @@ const AdminEventDetail = () => {
         } catch (err) {
             alert("Eroare: " + err.message);
         }
+    };
+
+    // --- RESERVATION LINK ---
+    const generateReservationLink = async () => {
+        if (!event.id) return;
+        const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const { error } = await supabase.from('events').update({ reservation_token: token }).eq('id', event.id);
+        if (error) alert('Eroare: ' + error.message);
+        else {
+            setEvent({ ...event, reservation_token: token });
+            alert('Link generat cu succes!');
+        }
+    };
+
+    const copyReservationLink = () => {
+        const url = `${window.location.origin}/rezervare/${event.reservation_token}`;
+        navigator.clipboard.writeText(url);
+        alert('Link copiat in clipboard!');
     };
 
     // --- TABS RENDER ---
@@ -203,6 +222,35 @@ const AdminEventDetail = () => {
                                 <option value="3">Salon Roma</option>
                             </select>
                         </div>
+
+                        {/* Reservation Link */}
+                        <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '10px', color: '#166534' }}>Rezervări Online</h3>
+                            <p style={{ fontSize: '0.9rem', color: '#15803d', marginBottom: '1rem' }}>
+                                Trimiteți acest link invitaților pentru a se înscrie singuri la mese.
+                            </p>
+                            {event.reservation_token ? (
+                                <div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                                        <input 
+                                            readOnly 
+                                            value={`${window.location.origin}/rezervare/${event.reservation_token}`} 
+                                            style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #16a34a', background: 'white', color: '#166534', fontWeight: '500' }}
+                                        />
+                                        <button onClick={copyReservationLink} style={{ padding: '10px 20px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+                                            Copiază
+                                        </button>
+                                    </div>
+                                    <button onClick={generateReservationLink} style={{ fontSize: '0.85rem', color: '#166534', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                        Regenerează Link
+                                    </button>
+                                </div>
+                            ) : (
+                                <button onClick={generateReservationLink} style={{ padding: '10px 20px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                                    Generează Link Rezervare
+                                </button>
+                            )}
+                        </div>
                     </div>
                 );
             case 'layout':
@@ -221,6 +269,8 @@ const AdminEventDetail = () => {
                 return <EventProduction eventId={id} />;
             case 'operations':
                 return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} />;
+            case 'reservations':
+                return <EventReservations eventId={id} />;
             default: return null;
         }
     };
@@ -271,6 +321,7 @@ const AdminEventDetail = () => {
                     { id: 'menu', label: 'Meniu', icon: FileText },
                     { id: 'production', label: 'Productie', icon: ChefHat },
                     { id: 'operations', label: 'Operațional', icon: Settings },
+                    { id: 'reservations', label: 'Rezervări', icon: Users },
                 ].map(tab => (
                     <button
                         key={tab.id}
