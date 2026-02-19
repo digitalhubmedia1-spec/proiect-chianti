@@ -194,7 +194,7 @@ const ReservationPage = () => {
                 position: 'relative'
             }}>
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    <h1 style={{ fontSize: isMobile ? '2rem' : '2.75rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '-0.025em', lineHeight: '1.2' }}>{event.name}</h1>
+                    <h1 style={{ fontSize: isMobile ? '2rem' : '2.75rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '-0.025em', lineHeight: '1.2', color: 'white' }}>{event.name}</h1>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: isMobile ? '0.9rem' : '1.1rem', opacity: 0.9, flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={18} /> {new Date(event.start_date).toLocaleDateString('ro-RO')}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={18} /> {new Date(event.start_date).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -217,10 +217,6 @@ const ReservationPage = () => {
                                 {isMobile ? 'Apasă pe masă' : 'Click pe masă'}
                             </span>
                         </div>
-                        
-                        <p style={{ fontSize: '0.9rem', color: '#6b7280', marginBottom: '1rem', display: isMobile ? 'block' : 'none', background: '#eff6ff', padding: '10px', borderRadius: '8px', border: '1px solid #dbeafe', color: '#1e40af' }}>
-                            💡 <strong>Sfat:</strong> Folosește două degete pentru a mări sau mișca harta sălii.
-                        </p>
                         
                         <VisualHallViewer 
                             hall={hall} 
