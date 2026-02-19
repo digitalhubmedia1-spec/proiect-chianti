@@ -8,10 +8,6 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
 
     // Check availability for a table
     const getTableStatus = (tableId) => {
-        // Check if locked
-        const isLocked = locks.some(l => l.table_id === tableId.toString());
-        if (isLocked) return 'locked';
-
         // Check reservation count vs capacity
         const tableReservations = reservations.filter(r => r.table_id === tableId.toString() && r.status === 'confirmed');
         const reservedSeats = tableReservations.reduce((sum, r) => sum + r.seat_count, 0);
@@ -34,8 +30,7 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
         let color = '#334155';
 
         if (obj.type.includes('table')) {
-            if (status === 'locked') { bg = '#f3f4f6'; border = '#9ca3af'; color = '#9ca3af'; } // Greyed out
-            else if (status === 'full') { bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; } // Red
+            if (status === 'full') { bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; } // Red
             else if (status === 'partial') { bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; } // Orange
             else if (status === 'available') { bg = '#dcfce7'; border = '#22c55e'; color = '#166534'; } // Green
         }
@@ -54,7 +49,7 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
             justifyContent: 'center',
             fontSize: '0.7rem',
             fontWeight: 'bold',
-            cursor: (status === 'full' || status === 'locked') ? 'not-allowed' : 'pointer',
+            cursor: (status === 'full') ? 'not-allowed' : 'pointer',
             transform: `rotate(${obj.rotation || 0}deg)`,
             userSelect: 'none',
             transition: 'all 0.2s',
@@ -65,7 +60,7 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
             border: `2px solid ${border}`,
             color: color,
             boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-            opacity: (status === 'full' || status === 'locked') ? 0.7 : 1
+            opacity: (status === 'full') ? 0.7 : 1
         };
 
         // Custom size overrides based on type if needed (copied from Editor)
@@ -121,7 +116,7 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
                             <div
                                 key={obj.id}
                                 onClick={() => {
-                                    if (obj.type.includes('table') && status !== 'full' && status !== 'locked') {
+                                    if (obj.type.includes('table') && status !== 'full') {
                                         onTableSelect(obj);
                                     }
                                 }}
@@ -158,7 +153,6 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#dcfce7', border: '1px solid #22c55e', borderRadius: '2px' }}></div> Disponibil</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '2px' }}></div> Parțial Ocupat</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '2px' }}></div> Ocupat</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#f3f4f6', border: '1px solid #9ca3af', borderRadius: '2px' }}></div> Blocat</div>
             </div>
         </div>
     );
