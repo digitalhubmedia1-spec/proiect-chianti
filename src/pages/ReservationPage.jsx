@@ -105,8 +105,25 @@ const ReservationPage = () => {
 
     const formRef = React.useRef(null);
 
+    const getRemainingSeats = (tableId) => {
+        const reserved = reservations
+            .filter(r => r.table_id === tableId && r.status === 'confirmed')
+            .reduce((sum, r) => sum + r.seat_count, 0);
+        const obj = objects.find(o => o.id === tableId);
+        const capacity = obj?.capacity || 10;
+        return Math.max(0, capacity - reserved);
+    };
+
     const handleTableSelect = async (table) => {
         if (selectedTable) return; // Already selected one
+
+        const remaining = getRemainingSeats(table.id);
+        if (remaining <= 0) {
+            alert("Această masă este complet ocupată.");
+            return;
+        }
+
+        setSeatCount(1); // Reset seat count to valid start
 
         // Try to lock
         const sessionId = localStorage.getItem('session_id') || Math.random().toString(36).substring(7);
@@ -249,7 +266,7 @@ const ReservationPage = () => {
                                             onChange={e => setSeatCount(parseInt(e.target.value))}
                                             style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
                                         >
-                                            {[...Array(Math.min(10, selectedTable.capacity || 10)).keys()].map(i => (
+                                            {[...Array(Math.min(10, getRemainingSeats(selectedTable.id))).keys()].map(i => (
                                                 <option key={i+1} value={i+1}>{i+1} persoane</option>
                                             ))}
                                         </select>
