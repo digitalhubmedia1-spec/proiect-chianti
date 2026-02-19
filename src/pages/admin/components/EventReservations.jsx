@@ -71,6 +71,7 @@ const EventReservations = ({ eventId }) => {
             Masa: r.table_id || 'Nespecificată',
             Locuri: r.seat_count,
             Preferințe: formatDietary(r.dietary_preference),
+            Observații: r.observations || '-',
             Status: r.status
         })));
         const wb = XLSX.utils.book_new();
@@ -126,6 +127,7 @@ const EventReservations = ({ eventId }) => {
                         <th style={{ padding: '12px' }}>Masa</th>
                         <th style={{ padding: '12px' }}>Locuri</th>
                         <th style={{ padding: '12px' }}>Preferințe</th>
+                        <th style={{ padding: '12px' }}>Observații</th>
                         <th style={{ padding: '12px' }}>Status</th>
                         <th style={{ padding: '12px' }}>Acțiuni</th>
                     </tr>
@@ -143,6 +145,9 @@ const EventReservations = ({ eventId }) => {
                                 {r.dietary_preference === 'frupt' && <span style={{ background: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Frupt</span>}
                                 {r.dietary_preference === 'both' && <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>Post & Frupt</span>}
                                 {!r.dietary_preference || r.dietary_preference === 'none' ? '-' : ''}
+                            </td>
+                            <td style={{ padding: '12px', maxWidth: '200px', fontSize: '0.9rem', color: '#4b5563' }}>
+                                {r.observations || '-'}
                             </td>
                             <td style={{ padding: '12px' }}>
                                 <span style={{ 
@@ -167,7 +172,7 @@ const EventReservations = ({ eventId }) => {
                     ))}
                     {filteredReservations.length === 0 && (
                         <tr>
-                            <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Nu există rezervări găsite.</td>
+                            <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Nu există rezervări găsite.</td>
                         </tr>
                     )}
                 </tbody>

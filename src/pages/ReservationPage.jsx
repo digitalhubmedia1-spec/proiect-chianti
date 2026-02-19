@@ -19,7 +19,7 @@ const ReservationPage = () => {
     const [selectedTable, setSelectedTable] = useState(null);
     const [seatCount, setSeatCount] = useState(1);
     const [dietary, setDietary] = useState({ post: false, frupt: false });
-    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '' });
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', observations: '' });
     const [success, setSuccess] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
 
@@ -160,6 +160,7 @@ const ReservationPage = () => {
             guest_phone: formData.phone,
             seat_count: seatCount,
             dietary_preference: dietaryString,
+            observations: formData.observations,
             status: 'confirmed'
         }]);
 
@@ -360,7 +361,7 @@ const ReservationPage = () => {
                                     </div>
 
                                     {/* Dietary Options */}
-                                    <div style={{ marginBottom: '2rem', background: '#f9fafb', padding: '1rem', borderRadius: '8px' }}>
+                                    <div style={{ marginBottom: '1.5rem', background: '#f9fafb', padding: '1rem', borderRadius: '8px' }}>
                                         <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Preferințe Meniu</label>
                                         <div style={{ display: 'flex', gap: '1.5rem' }}>
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
@@ -382,6 +383,17 @@ const ReservationPage = () => {
                                                 <span>Meniu de Frupt</span>
                                             </label>
                                         </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Observații (Opțional)</label>
+                                        <textarea
+                                            placeholder="Ex: Alergii, scaun copil, etc."
+                                            value={formData.observations}
+                                            onChange={e => setFormData({ ...formData, observations: e.target.value })}
+                                            rows={3}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+                                        />
                                     </div>
 
                                     <button 
