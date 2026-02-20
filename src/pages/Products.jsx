@@ -310,9 +310,11 @@ const Products = () => {
         // So we need to move the Standard Checks INTO the "else" of "Daily Menu exists" OR run them before but allow override?
 
         // BETTER LOGIC:
-        // 1. Catering Check (Always enforce?)
+        // 3. Catering Check (Always enforce?)
         const cat = categories.find(c => c.name === product.category);
         if (cat?.type === 'catering') return false;
+        // Check visibility (Hide if category is hidden in admin)
+        if (cat?.is_visible === false) return false;
 
         // 2. Daily Menu Logic
         if (dailyMenuData !== null && dailyMenuData.length > 0) {

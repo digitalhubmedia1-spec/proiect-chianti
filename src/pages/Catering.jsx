@@ -23,7 +23,7 @@ const Catering = () => {
     const [sortOrder, setSortOrder] = useState("default");
 
     // Filter only Catering categories
-    const cateringCategories = categories.filter(cat => cat.type === 'catering');
+    const cateringCategories = categories.filter(cat => cat.type === 'catering' && cat.is_visible !== false);
 
     // Set initial active category to the first one if "Toate" isn't desired or just generic
     useEffect(() => {
