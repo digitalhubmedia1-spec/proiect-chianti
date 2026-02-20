@@ -249,11 +249,11 @@ const EventMenuPlanner = ({ eventId }) => {
                     tableData.push({
                         index: i + 1,
                         image: imgData,
-                        name: sanitize(p.name || '-'),
-                        description: sanitize(p.description || '-'),
-                        weight: weightStr,
-                        price: p.price != null ? p.price + ' RON' : '-'
-                    });
+                            name: sanitize(p.name || '-'),
+                            description: sanitize(p.description || '-'),
+                            weight: sanitize(weightStr),
+                            price: p.price != null ? p.price + ' RON' : '-'
+                        });
                 }
 
                 autoTable(doc, {
@@ -279,8 +279,8 @@ const EventMenuPlanner = ({ eventId }) => {
                         1: { cellWidth: 30, minCellHeight: 25 },
                         2: { cellWidth: 35 },
                         3: { cellWidth: 'auto' },
-                        4: { cellWidth: 35, halign: 'center' },
-                        5: { cellWidth: 25, halign: 'right' }
+                        4: { cellWidth: 35, halign: 'left' },
+                        5: { cellWidth: 20, halign: 'right' }
                     },
                     didDrawCell: (data) => {
                         if (data.section === 'body' && data.column.index === 1) {
