@@ -5,7 +5,18 @@ import { Plus, Trash2, Search, X, UtensilsCrossed, Users, FileDown } from 'lucid
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const sanitize = (str) => str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ț/g, 't').replace(/Ț/g, 'T').replace(/ș/g, 's').replace(/Ș/g, 'S') : '';
+const sanitize = (str) => {
+    if (!str) return '';
+    // Normalize unicode to separate accents
+    let s = str.toString().normalize('NFD');
+    // Remove accents
+    s = s.replace(/[\u0300-\u036f]/g, '');
+    // Replace specific Romanian chars if not handled by NFD
+    s = s.replace(/ț/g, 't').replace(/Ț/g, 'T').replace(/ș/g, 's').replace(/Ș/g, 'S');
+    // Keep only printable ASCII characters (32-126) and newlines
+    s = s.replace(/[^\x20-\x7E\n\r]/g, '');
+    return s.trim();
+};
 
 const MENU_TYPES = [
     { key: 'invitati', label: 'Meniu Invitați', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
@@ -225,8 +236,14 @@ const EventMenuPlanner = ({ eventId }) => {
 
                     let weightStr = '-';
                     if (p.weight) {
-                        const w = String(p.weight);
-                        weightStr = w.toLowerCase().endsWith('g') ? w : w + 'g';
+                        const w = String(p.weight).trim();
+                        // If it contains any non-digit/space chars (like 'g' or 'ml' or parens), assume it's formatted.
+                        // Otherwise if it's just numbers, append 'g'.
+                        if (/^[0-9\s\.]+$/.test(w)) {
+                            weightStr = w + 'g';
+                        } else {
+                            weightStr = w;
+                        }
                     }
 
                     tableData.push({
@@ -243,7 +260,7 @@ const EventMenuPlanner = ({ eventId }) => {
                     head: [[
                         { content: sanitize(category), colSpan: 6, styles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold', fontSize: 11 } }
                     ], [
-                        'Nr.', 'Imagine', 'Produs', 'Descriere', 'Gramaj', 'Preț'
+                        'Nr.', 'Imagine', 'Produs', 'Descriere', 'Gramaj', 'Pret'
                     ]],
                     body: tableData.map(row => [
                         row.index,
@@ -254,12 +271,12 @@ const EventMenuPlanner = ({ eventId }) => {
                         row.price
                     ]),
                     startY: startY,
-                    styles: { fontSize: 10, cellPadding: 4, font: 'helvetica', valign: 'middle', overflow: 'linebreak' },
+                    styles: { fontSize: 10, cellPadding: 2, font: 'helvetica', valign: 'middle', overflow: 'linebreak' },
                     headStyles: { fillColor: [153, 0, 0] },
                     alternateRowStyles: { fillColor: [248, 250, 252] },
                     columnStyles: {
                         0: { cellWidth: 10, halign: 'center' },
-                        1: { cellWidth: 25, minCellHeight: 20 },
+                        1: { cellWidth: 30, minCellHeight: 25 },
                         2: { cellWidth: 40 },
                         3: { cellWidth: 'auto' },
                         4: { cellWidth: 20, halign: 'center' },
@@ -271,7 +288,21 @@ const EventMenuPlanner = ({ eventId }) => {
                             const imgData = tableData[rowIdx]?.image;
                             if (imgData) {
                                 try {
-                                    doc.addImage(imgData, 'JPEG', data.cell.x + 2, data.cell.y + 2, 21, 16);
+                                    // Add image with some padding
+                                    const padding = 2;
+                                    const cellWidth = data.cell.width - (padding * 2);
+                                    const cellHeight = data.cell.height - (padding * 2);
+                                    
+                                    // Keep aspect ratio roughly (assuming landscape thumb)
+                                    // Fit into box
+                                    const imgW = Math.min(cellWidth, 26);
+                                    const imgH = Math.min(cellHeight, 21);
+                                    
+                                    // Center image
+                                    const x = data.cell.x + (data.cell.width - imgW) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgH) / 2;
+                                    
+                                    doc.addImage(imgData, 'JPEG', x, y, imgW, imgH);
                                 } catch (err) {
                                     // ignore
                                 }
