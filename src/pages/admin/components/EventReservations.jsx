@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Download, Search, Filter } from 'lucide-react';
+import { Download, Search, Filter, Trash2, XCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -65,6 +65,13 @@ const EventReservations = ({ eventId }) => {
     const handleUpdateStatus = async (id, newStatus) => {
         if (!window.confirm(`Sigur doriți să schimbați statusul în ${newStatus}?`)) return;
         const { error } = await supabase.from('event_reservations').update({ status: newStatus }).eq('id', id);
+        if (error) alert('Eroare: ' + error.message);
+        else fetchReservations();
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Sigur doriți să ștergeți această rezervare? Această acțiune este ireversibilă.')) return;
+        const { error } = await supabase.from('event_reservations').delete().eq('id', id);
         if (error) alert('Eroare: ' + error.message);
         else fetchReservations();
     };
@@ -181,14 +188,24 @@ const EventReservations = ({ eventId }) => {
                                 </span>
                             </td>
                             <td style={{ padding: '12px' }}>
-                                {r.status === 'confirmed' && (
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {r.status === 'confirmed' && (
+                                        <button 
+                                            onClick={() => handleUpdateStatus(r.id, 'cancelled')}
+                                            title="Anulează Rezervarea"
+                                            style={{ color: '#f59e0b', background: 'none', border: '1px solid #f59e0b', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                            <XCircle size={14} /> Anulează
+                                        </button>
+                                    )}
                                     <button 
-                                        onClick={() => handleUpdateStatus(r.id, 'cancelled')}
-                                        style={{ color: '#ef4444', background: 'none', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                        onClick={() => handleDelete(r.id)}
+                                        title="Șterge Rezervarea"
+                                        style={{ color: '#ef4444', background: 'none', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                                     >
-                                        Anulează
+                                        <Trash2 size={14} /> Șterge
                                     </button>
-                                )}
+                                </div>
                             </td>
                         </tr>
                     ))}
