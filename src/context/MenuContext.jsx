@@ -615,13 +615,22 @@ export const MenuProvider = ({ children }) => {
 
     const fetchDailyMenu = async (dateStr) => {
         if (!supabase) return [];
-        const { data, error } = await supabase
-            .from('daily_menu_items')
-            .select('product_id, stock')
-            .eq('date', dateStr);
+        try {
+            const { data, error } = await supabase
+                .from('daily_menu_items')
+                .select('product_id, stock')
+                .eq('date', dateStr);
 
-        if (error || !data) return [];
-        return data.map(item => ({ id: item.product_id, stock: item.stock }));
+            if (error) throw error;
+            if (!data) return [];
+            return data.map(item => ({
+                id: item.product_id,
+                stock: item.stock
+            }));
+        } catch (error) {
+            console.error("Error fetching daily menu:", error);
+            return [];
+        }
     };
 
     const value = {

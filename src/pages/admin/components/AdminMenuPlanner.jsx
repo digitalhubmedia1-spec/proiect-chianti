@@ -1,15 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
-import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List, FileText } from 'lucide-react';
+import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List, FileText, Settings, X, Search, Trash2, Plus } from 'lucide-react';
 import ConsumptionReportModal from './ConsumptionReportModal';
 import { useMenu } from '../../../context/MenuContext';
 
 const AdminMenuPlanner = () => {
-    const { products, categories, loading: menuLoading } = useMenu();
+    const { products, categories, loading: menuLoading, fetchExtras, addExtra, removeExtra } = useMenu();
     const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly'
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
+
+    // --- EXTRAS STATE ---
+    const [isExtrasModalOpen, setIsExtrasModalOpen] = useState(false);
+    const [editingExtrasProduct, setEditingExtrasProduct] = useState(null);
+    const [currentExtras, setCurrentExtras] = useState([]);
+    const [extraSearchTerm, setExtraSearchTerm] = useState("");
+
+    const handleOpenExtras = async (e, product) => {
+        e.stopPropagation();
+        setEditingExtrasProduct(product);
+        const extras = await fetchExtras(product.id);
+        setCurrentExtras(extras);
+        setIsExtrasModalOpen(true);
+    };
+
+    const handleSelectExtra = async (extraProd) => {
+        if (!editingExtrasProduct) return;
+        await addExtra(editingExtrasProduct.id, extraProd.id);
+        const extras = await fetchExtras(editingExtrasProduct.id);
+        setCurrentExtras(extras);
+        setExtraSearchTerm("");
+    };
+
+    const handleRemoveExtra = async (extraId) => {
+        if (!editingExtrasProduct) return;
+        await removeExtra(editingExtrasProduct.id, extraId);
+        setCurrentExtras(prev => prev.filter(e => e.id !== extraId));
+    };
+
 
     // --- SHARED UTILS ---
     const formatDate = (date) => {
@@ -627,14 +656,28 @@ const AdminMenuPlanner = () => {
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
                                 </div>
                                 {activeItems.has(product.id) && (
-                                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px' }}>Porții</span>
+                                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Porții</span>
                                         <input
                                             type="number" placeholder="∞" min="0"
                                             style={{ width: '60px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center' }}
                                             value={stockValues[product.id] ?? ''}
                                             onChange={(e) => setStockValues({ ...stockValues, [product.id]: e.target.value })}
                                         />
+                                        <button
+                                            onClick={(e) => handleOpenExtras(e, product)}
+                                            title="Configurează Extra / Cross-sell"
+                                            style={{
+                                                width: '100%',
+                                                padding: '4px', border: '1px solid #bbf7d0',
+                                                background: '#dcfce7', borderRadius: '4px', cursor: 'pointer',
+                                                color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                marginTop: '2px'
+                                            }}
+                                        >
+                                            <Settings size={14} />
+                                            <span style={{ marginLeft: '4px', fontSize: '0.7rem', fontWeight: '600' }}>Extra</span>
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -658,6 +701,113 @@ const AdminMenuPlanner = () => {
                 categoryFilter={filterCategory}
                 previewData={previewData}
             />
+
+            {/* EXTRAS MODAL */}
+            {isExtrasModalOpen && editingExtrasProduct && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3>Produse Extra: {editingExtrasProduct.name}</h3>
+                            <button className="close-btn" onClick={() => setIsExtrasModalOpen(false)}><X size={24} /></button>
+                        </div>
+                        <div style={{ padding: '1rem' }}>
+                            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem', background: '#f0fdf4', padding: '10px', borderRadius: '6px', border: '1px solid #bbf7d0', color: '#166534' }}>
+                                <Settings size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+                                Configurează produsele complementare (ex: sosuri, pâine) pentru <strong>{editingExtrasProduct.name}</strong>.
+                                <br/>
+                                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', marginTop: '4px', display: 'block' }}>
+                                    Notă: Modificările se aplică global pentru acest produs, nu doar pentru ziua curentă.
+                                </span>
+                            </p>
+
+                            {/* Current Extras List */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '600', marginBottom: '8px', display: 'block', color: '#475569' }}>PRODUSE EXTRA ACTIVE ({currentExtras.length})</label>
+                                {currentExtras.length === 0 ? (
+                                    <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: '8px', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1' }}>
+                                        Niciun produs extra selectat.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                                        {currentExtras.map(extra => (
+                                            <div key={extra.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    {extra.image ? (
+                                                        <img src={extra.image} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Settings size={16} color="#cbd5e1" /></div>
+                                                    )}
+                                                    <div>
+                                                        <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>{extra.name}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{extra.price} Lei</div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleRemoveExtra(extra.id)} 
+                                                    style={{ color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '4px', padding: '6px', cursor: 'pointer', display: 'flex' }}
+                                                    title="Șterge"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Search & Add */}
+                            <div style={{ position: 'relative' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '600', marginBottom: '6px', display: 'block', color: '#475569' }}>ADAUGĂ PRODUS NOU</label>
+                                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 10px', background: 'white', focusWithin: { borderColor: '#2563eb', boxShadow: '0 0 0 2px rgba(37,99,235,0.1)' } }}>
+                                    <Search size={18} color="#94a3b8" />
+                                    <input
+                                        type="text"
+                                        placeholder="Caută produs (ex: Ardei, Smântână)..."
+                                        value={extraSearchTerm}
+                                        onChange={(e) => setExtraSearchTerm(e.target.value)}
+                                        style={{ border: 'none', padding: '10px', width: '100%', outline: 'none', fontSize: '0.95rem' }}
+                                    />
+                                    {extraSearchTerm && <button onClick={() => setExtraSearchTerm('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16}/></button>}
+                                </div>
+                                
+                                {/* Results Dropdown */}
+                                {extraSearchTerm.length > 0 && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                        maxHeight: '250px', overflowY: 'auto', zIndex: 100,
+                                        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                                        marginTop: '4px'
+                                    }}>
+                                        {products
+                                            .filter(p => p.id !== editingExtrasProduct.id)
+                                            .filter(p => !currentExtras.some(e => e.id === p.id))
+                                            .filter(p => p.name.toLowerCase().includes(extraSearchTerm.toLowerCase()))
+                                            .map(p => (
+                                                <div
+                                                    key={p.id}
+                                                    onClick={() => handleSelectExtra(p)}
+                                                    style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <Plus size={16} color="#16a34a" />
+                                                        <span style={{ fontWeight: '500' }}>{p.name}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: '0.85rem', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{p.price} Lei</span>
+                                                </div>
+                                            ))}
+                                        {products.filter(p => p.name.toLowerCase().includes(extraSearchTerm.toLowerCase())).length === 0 && (
+                                            <div style={{ padding: '12px', color: '#64748b', textAlign: 'center', fontSize: '0.9rem' }}>Nu am găsit produse.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
