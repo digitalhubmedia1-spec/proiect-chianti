@@ -41,10 +41,10 @@ const EventMenuPlanner = ({ eventId }) => {
         setLoading(true);
         const [itemsRes, productsRes] = await Promise.all([
             supabase.from('event_menu_items')
-                .select('*, products(id, name, price, category, weight)')
+                .select('*, products(id, name, price, category, weight, image, description)')
                 .eq('event_id', eventId),
             supabase.from('products')
-                .select('id, name, price, category, weight')
+                .select('id, name, price, category, weight, image, description')
                 .eq('is_active', true)
                 .range(0, 9999)
         ]);
@@ -159,7 +159,23 @@ const EventMenuPlanner = ({ eventId }) => {
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se încarcă...</div>;
 
     // ============ PDF EXPORT ============
-    const exportMenuPDF = (menuType) => {
+    const getBase64ImageFromUrl = async (imageUrl) => {
+        if (!imageUrl) return null;
+        try {
+            const res = await fetch(imageUrl);
+            const blob = await res.blob();
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error("Error loading image", e);
+            return null;
+        }
+    };
+
+    const exportMenuPDF = async (menuType) => {
         const typeConfig = MENU_TYPES.find(t => t.key === menuType);
         const categories = getAllCategories(menuType);
         if (categories.length === 0) {
@@ -167,54 +183,120 @@ const EventMenuPlanner = ({ eventId }) => {
             return;
         }
 
-        const doc = new jsPDF();
-        doc.setFont('helvetica');
-        doc.setFontSize(18);
-        doc.setTextColor(153, 0, 0);
-        doc.text(sanitize(typeConfig.label), 14, 20);
+        const loadingToast = document.createElement('div');
+        loadingToast.innerText = 'Se generează PDF-ul...';
+        loadingToast.style.position = 'fixed';
+        loadingToast.style.bottom = '20px';
+        loadingToast.style.right = '20px';
+        loadingToast.style.background = '#333';
+        loadingToast.style.color = '#fff';
+        loadingToast.style.padding = '12px 24px';
+        loadingToast.style.borderRadius = '8px';
+        loadingToast.style.zIndex = '9999';
+        document.body.appendChild(loadingToast);
 
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const totalItems = items.filter(i => i.menu_type === menuType).length;
-        doc.text(sanitize(`Total: ${totalItems} produse | Generat: ${new Date().toLocaleString('ro-RO')}`), 14, 28);
+        try {
+            const doc = new jsPDF();
+            doc.setFont('helvetica');
+            doc.setFontSize(18);
+            doc.setTextColor(153, 0, 0);
+            doc.text(sanitize(typeConfig.label), 14, 20);
 
-        let startY = 36;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            const totalItems = items.filter(i => i.menu_type === menuType).length;
+            doc.text(sanitize(`Total: ${totalItems} produse | Generat: ${new Date().toLocaleString('ro-RO')}`), 14, 28);
 
-        categories.forEach(category => {
-            const categoryItems = getItemsForCategory(menuType, category);
-            if (categoryItems.length === 0) return;
+            let startY = 36;
 
-            const tableData = categoryItems.map((item, idx) => [
-                idx + 1,
-                sanitize(item.products?.name || '-'),
-                item.products?.weight ? item.products.weight + 'g' : '-',
-                item.products?.price != null ? item.products.price + ' RON' : '-'
-            ]);
+            for (const category of categories) {
+                const categoryItems = getItemsForCategory(menuType, category);
+                if (categoryItems.length === 0) continue;
 
-            autoTable(doc, {
-                head: [[{ content: sanitize(category), colSpan: 4, styles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold', fontSize: 11 } }]],
-                body: tableData,
-                startY: startY,
-                styles: { fontSize: 10, cellPadding: 4, font: 'helvetica' },
-                headStyles: { fillColor: [153, 0, 0] },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
-                columnStyles: {
-                    0: { cellWidth: 12, halign: 'center' },
-                    1: { cellWidth: 'auto' },
-                    2: { cellWidth: 25, halign: 'center' },
-                    3: { cellWidth: 30, halign: 'right' }
+                const tableData = [];
+                for (let i = 0; i < categoryItems.length; i++) {
+                    const item = categoryItems[i];
+                    const p = item.products || {};
+                    
+                    let imgData = null;
+                    if (p.image) {
+                        imgData = await getBase64ImageFromUrl(p.image);
+                    }
+
+                    let weightStr = '-';
+                    if (p.weight) {
+                        const w = String(p.weight);
+                        weightStr = w.toLowerCase().endsWith('g') ? w : w + 'g';
+                    }
+
+                    tableData.push({
+                        index: i + 1,
+                        image: imgData,
+                        name: sanitize(p.name || '-'),
+                        description: sanitize(p.description || '-'),
+                        weight: weightStr,
+                        price: p.price != null ? p.price + ' RON' : '-'
+                    });
                 }
-            });
 
-            startY = doc.lastAutoTable.finalY + 8;
+                autoTable(doc, {
+                    head: [[
+                        { content: sanitize(category), colSpan: 6, styles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold', fontSize: 11 } }
+                    ], [
+                        'Nr.', 'Imagine', 'Produs', 'Descriere', 'Gramaj', 'Preț'
+                    ]],
+                    body: tableData.map(row => [
+                        row.index,
+                        '', 
+                        row.name,
+                        row.description,
+                        row.weight,
+                        row.price
+                    ]),
+                    startY: startY,
+                    styles: { fontSize: 10, cellPadding: 4, font: 'helvetica', valign: 'middle', overflow: 'linebreak' },
+                    headStyles: { fillColor: [153, 0, 0] },
+                    alternateRowStyles: { fillColor: [248, 250, 252] },
+                    columnStyles: {
+                        0: { cellWidth: 10, halign: 'center' },
+                        1: { cellWidth: 25, minCellHeight: 20 },
+                        2: { cellWidth: 40 },
+                        3: { cellWidth: 'auto' },
+                        4: { cellWidth: 20, halign: 'center' },
+                        5: { cellWidth: 25, halign: 'right' }
+                    },
+                    didDrawCell: (data) => {
+                        if (data.section === 'body' && data.column.index === 1) {
+                            const rowIdx = data.row.index;
+                            const imgData = tableData[rowIdx]?.image;
+                            if (imgData) {
+                                try {
+                                    doc.addImage(imgData, 'JPEG', data.cell.x + 2, data.cell.y + 2, 21, 16);
+                                } catch (err) {
+                                    // ignore
+                                }
+                            }
+                        }
+                    }
+                });
 
-            if (startY > 260) {
-                doc.addPage();
-                startY = 20;
+                startY = doc.lastAutoTable.finalY + 10;
+
+                if (startY > 250) {
+                    doc.addPage();
+                    startY = 20;
+                }
             }
-        });
 
-        doc.save(sanitize(`meniu_${typeConfig.label.replace(/\s+/g, '_').toLowerCase()}_${eventId}.pdf`));
+            doc.save(sanitize(`meniu_${typeConfig.label.replace(/\s+/g, '_').toLowerCase()}_${eventId}.pdf`));
+        } catch (error) {
+            console.error(error);
+            alert('Eroare la generarea PDF: ' + error.message);
+        } finally {
+            if (document.body.contains(loadingToast)) {
+                document.body.removeChild(loadingToast);
+            }
+        }
     };
 
     // ============ RENDER ============
