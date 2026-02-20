@@ -149,7 +149,10 @@ const Products = () => {
     const dailyMenuMap = {};
     if (dailyMenuData) {
         dailyMenuData.forEach(item => {
-            dailyMenuMap[item.id] = item.stock;
+            dailyMenuMap[item.id] = {
+                stock: item.stock,
+                specific_extras_ids: item.specific_extras_ids
+            };
         });
     }
 
@@ -531,7 +534,8 @@ const Products = () => {
                     <div className="products-grid">
                         {currentProducts.length > 0 ? (
                             currentProducts.map(product => {
-                                let stock = dailyMenuMap[product.id];
+                                const menuEntry = dailyMenuMap[product.id];
+                                let stock = menuEntry ? menuEntry.stock : undefined;
                                 if (stock !== null && stock !== undefined) stock = parseInt(stock);
 
                                 const isOutOfStock = stock === 0;
