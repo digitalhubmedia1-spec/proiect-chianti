@@ -25,6 +25,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminEventDetail from './pages/admin/AdminEventDetail';
+import AdminPOS from './pages/admin/components/AdminPOS';
 import Terms from './pages/legal/Terms';
 import DataSecurity from './pages/legal/DataSecurity';
 import ConfidentialityPage from './pages/legal/ConfidentialityPage';
@@ -107,6 +108,14 @@ function App() {
                     element={
                       <ProtectedAdminRoute>
                         <AdminEventDetail />
+                      </ProtectedAdminRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/pos"
+                    element={
+                      <ProtectedAdminRoute>
+                        <AdminPOS />
                       </ProtectedAdminRoute>
                     }
                   />
