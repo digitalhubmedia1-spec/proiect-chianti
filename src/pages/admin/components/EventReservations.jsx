@@ -108,6 +108,53 @@ const EventReservations = ({ eventId }) => {
         XLSX.writeFile(wb, `Rezervari_${eventId}.xlsx`);
     };
 
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        doc.text(`Rezervari Eveniment`, 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generat la: ${new Date().toLocaleString('ro-RO')}`, 14, 28);
+        doc.text(`Total locuri: ${totalSeats}`, 14, 34);
+
+        const tableColumn = ["Nr", "Data", "Nume", "Telefon", "Masa", "Loc", "Pref", "Status", "Obs"];
+        const tableRows = [];
+
+        filteredReservations.forEach((r, index) => {
+            const reservationData = [
+                index + 1,
+                new Date(r.created_at).toLocaleString('ro-RO'),
+                r.guest_name,
+                r.guest_phone,
+                tables[r.table_id] || r.table_id || '-',
+                r.seat_count,
+                formatDietary(r.dietary_preference),
+                r.status === 'confirmed' ? 'OK' : 'ANULAT',
+                r.observations || '-'
+            ];
+            tableRows.push(reservationData);
+        });
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            styles: { fontSize: 8, overflow: 'linebreak' },
+            headStyles: { fillColor: [153, 0, 0] },
+            columnStyles: {
+                0: { cellWidth: 10 },
+                1: { cellWidth: 25 }, // Data
+                2: { cellWidth: 30 }, // Nume
+                3: { cellWidth: 25 }, // Telefon
+                4: { cellWidth: 20 }, // Masa
+                5: { cellWidth: 10 }, // Locuri
+                6: { cellWidth: 20 }, // Preferinte
+                7: { cellWidth: 15 }, // Status
+                8: { cellWidth: 'auto' } // Obs
+            }
+        });
+
+        doc.save(`Rezervari_Eveniment_${eventId}.pdf`);
+    };
+
     const totalSeats = reservations.filter(r => r.status === 'confirmed').reduce((sum, r) => sum + r.seat_count, 0);
 
     if (loading) return <div>Se încarcă rezervările...</div>;
@@ -120,6 +167,9 @@ const EventReservations = ({ eventId }) => {
                     <p style={{ color: '#6b7280' }}>Total locuri rezervate: <strong>{totalSeats}</strong></p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={exportPDF} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                        <Download size={16} /> Export PDF
+                    </button>
                     <button onClick={exportExcel} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                         <Download size={16} /> Export Excel
                     </button>

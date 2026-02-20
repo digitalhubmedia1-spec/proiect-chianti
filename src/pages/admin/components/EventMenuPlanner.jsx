@@ -277,9 +277,9 @@ const EventMenuPlanner = ({ eventId }) => {
                     columnStyles: {
                         0: { cellWidth: 10, halign: 'center' },
                         1: { cellWidth: 30, minCellHeight: 25 },
-                        2: { cellWidth: 40 },
+                        2: { cellWidth: 35 },
                         3: { cellWidth: 'auto' },
-                        4: { cellWidth: 20, halign: 'center' },
+                        4: { cellWidth: 35, halign: 'center' },
                         5: { cellWidth: 25, halign: 'right' }
                     },
                     didDrawCell: (data) => {
