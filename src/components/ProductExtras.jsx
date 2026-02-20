@@ -4,7 +4,7 @@ import { Plus, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
-    const { fetchExtras } = useMenu();
+    const { fetchExtras, products } = useMenu();
     const { addToCart } = useCart();
     const [extras, setExtras] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -12,15 +12,35 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
     useEffect(() => {
         let mounted = true;
         const load = async () => {
-            const data = await fetchExtras(productId);
-            if (mounted) {
-                setExtras(data);
-                setLoading(false);
+            // Check daily override
+            let specificIds = null;
+            if (dailyMenuMap && dailyMenuMap[productId]) {
+                 const entry = dailyMenuMap[productId];
+                 // Check if entry has specific_extras_ids (new format)
+                 if (entry && typeof entry === 'object' && entry.specific_extras_ids) {
+                     specificIds = entry.specific_extras_ids;
+                 }
+            }
+
+            if (specificIds) {
+                // Use specific IDs
+                const resolved = specificIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+                if (mounted) {
+                    setExtras(resolved);
+                    setLoading(false);
+                }
+            } else {
+                // Fallback to global
+                const data = await fetchExtras(productId);
+                if (mounted) {
+                    setExtras(data);
+                    setLoading(false);
+                }
             }
         };
         load();
         return () => { mounted = false; };
-    }, [productId, fetchExtras]);
+    }, [productId, fetchExtras, dailyMenuMap, products]);
 
     // User requirement: "dacă sunt disponibile în ziua respectivă"
     // However, some extras (bread, etc.) might not be explicitly in daily menu.
@@ -29,7 +49,11 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
         // If map not loaded yet, wait or show? (Loading state handles this)
         if (!dailyMenuMap) return p.is_available !== false;
 
-        const stock = dailyMenuMap[p.id];
+        const entry = dailyMenuMap[p.id];
+        let stock = undefined;
+        if (typeof entry === 'number') stock = entry;
+        else if (entry && typeof entry === 'object') stock = entry.stock;
+
         if (stock !== undefined) {
             // In daily menu: check stock
             return stock === null || parseInt(stock) > 0;

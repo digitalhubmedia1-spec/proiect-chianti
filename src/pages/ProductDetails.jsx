@@ -39,7 +39,7 @@ const ProductDetails = () => {
             const targetDate = dateParam || new Date().toISOString().split('T')[0];
             fetchDailyMenu(targetDate).then(data => {
                 const map = {};
-                (data || []).forEach(i => map[i.id] = i.stock);
+                (data || []).forEach(i => map[i.id] = { stock: i.stock, specific_extras_ids: i.specific_extras_ids });
                 setDailyMenuMap(map);
 
                 const item = data.find(i => i.id === foundProduct.id);

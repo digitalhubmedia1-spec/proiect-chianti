@@ -20,23 +20,56 @@ const AdminMenuPlanner = () => {
     const handleOpenExtras = async (e, product) => {
         e.stopPropagation();
         setEditingExtrasProduct(product);
-        const extras = await fetchExtras(product.id);
+
+        // Check if we have specific extras configured for this day
+        const specificExtrasIds = extrasValues[product.id];
+        let extras = [];
+
+        if (specificExtrasIds !== undefined && specificExtrasIds !== null) {
+            // Use specific day config
+            // We need to fetch the actual product objects for these IDs
+            // We can find them in the global products list
+            extras = specificExtrasIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+        } else {
+            // Fallback: Fetch global defaults
+            extras = await fetchExtras(product.id);
+            // Initialize local state with global defaults so user starts from there
+            // But we don't set extrasValues yet to keep it "default" until modified?
+            // Actually, if user opens it, they probably want to see current effective extras.
+            // Let's set the initial state for editing.
+        }
+        
         setCurrentExtras(extras);
         setIsExtrasModalOpen(true);
     };
 
     const handleSelectExtra = async (extraProd) => {
         if (!editingExtrasProduct) return;
-        await addExtra(editingExtrasProduct.id, extraProd.id);
-        const extras = await fetchExtras(editingExtrasProduct.id);
-        setCurrentExtras(extras);
+        
+        // Update local state only (don't write to DB yet)
+        const newExtras = [...currentExtras, extraProd];
+        setCurrentExtras(newExtras);
         setExtraSearchTerm("");
+
+        // Mark as overridden for this day
+        setExtrasValues(prev => ({
+            ...prev,
+            [editingExtrasProduct.id]: newExtras.map(e => e.id)
+        }));
     };
 
     const handleRemoveExtra = async (extraId) => {
         if (!editingExtrasProduct) return;
-        await removeExtra(editingExtrasProduct.id, extraId);
-        setCurrentExtras(prev => prev.filter(e => e.id !== extraId));
+        
+        // Update local state only
+        const newExtras = currentExtras.filter(e => e.id !== extraId);
+        setCurrentExtras(newExtras);
+
+        // Mark as overridden for this day
+        setExtrasValues(prev => ({
+            ...prev,
+            [editingExtrasProduct.id]: newExtras.map(e => e.id)
+        }));
     };
 
 
@@ -57,6 +90,7 @@ const AdminMenuPlanner = () => {
     const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const [activeItems, setActiveItems] = useState(new Set());
     const [stockValues, setStockValues] = useState({});
+    const [extrasValues, setExtrasValues] = useState({}); // { productId: [extraId1, extraId2] }
 
     // --- WEEKLY VIEW STATE ---
     // Start of current week (Monday)
@@ -78,18 +112,26 @@ const AdminMenuPlanner = () => {
         setLoading(true);
         setActiveItems(new Set());
         setStockValues({});
+        setExtrasValues({});
+
         const dateStr = formatDate(selectedDate);
 
-        const { data, error } = await supabase.from('daily_menu_items').select('product_id, stock').eq('date', dateStr);
+        const { data, error } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids').eq('date', dateStr);
         if (data) {
             const ids = new Set();
             const stocks = {};
+            const extrasMap = {};
+
             data.forEach(i => {
                 ids.add(i.product_id);
                 stocks[i.product_id] = i.stock;
+                if (i.specific_extras_ids !== null) {
+                    extrasMap[i.product_id] = i.specific_extras_ids;
+                }
             });
             setActiveItems(ids);
             setStockValues(stocks);
+            setExtrasValues(extrasMap);
         }
         setLoading(false);
     };
@@ -313,7 +355,8 @@ const AdminMenuPlanner = () => {
             date: dateStr,
             product_id: id,
             is_available: true,
-            stock: parseInt(stockValues[id])
+            stock: parseInt(stockValues[id]),
+            specific_extras_ids: extrasValues[id] !== undefined ? extrasValues[id] : null
         }));
 
         if (itemsToInsert.length > 0) {
@@ -337,13 +380,19 @@ const AdminMenuPlanner = () => {
         do { srcDate.setDate(srcDate.getDate() - 1); } while (srcDate.getDay() === 0 || srcDate.getDay() === 6);
 
         setLoading(true);
-        const { data } = await supabase.from('daily_menu_items').select('product_id, stock').eq('date', formatDate(srcDate));
+        const { data } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids').eq('date', formatDate(srcDate));
         if (data) {
             const ids = new Set();
             const stocks = {};
-            data.forEach(i => { ids.add(i.product_id); stocks[i.product_id] = i.stock; });
+            const extrasMap = {};
+            data.forEach(i => {
+                ids.add(i.product_id);
+                stocks[i.product_id] = i.stock;
+                if (i.specific_extras_ids !== null) extrasMap[i.product_id] = i.specific_extras_ids;
+            });
             setActiveItems(ids);
             setStockValues(stocks);
+            setExtrasValues(extrasMap);
         }
         setLoading(false);
     };
@@ -711,12 +760,12 @@ const AdminMenuPlanner = () => {
                             <button className="close-btn" onClick={() => setIsExtrasModalOpen(false)}><X size={24} /></button>
                         </div>
                         <div style={{ padding: '1rem' }}>
-                            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem', background: '#f0fdf4', padding: '10px', borderRadius: '6px', border: '1px solid #bbf7d0', color: '#166534' }}>
+                            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem', background: '#eff6ff', padding: '10px', borderRadius: '6px', border: '1px solid #bfdbfe', color: '#1e40af' }}>
                                 <Settings size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
-                                Configurează produsele complementare (ex: sosuri, pâine) pentru <strong>{editingExtrasProduct.name}</strong>.
+                                Configurează produsele complementare pentru <strong>{editingExtrasProduct.name}</strong>.
                                 <br/>
-                                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', marginTop: '4px', display: 'block' }}>
-                                    Notă: Modificările se aplică global pentru acest produs, nu doar pentru ziua curentă.
+                                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', marginTop: '4px', display: 'block', fontWeight: 'bold' }}>
+                                    Notă: Modificările se aplică DOAR pentru ziua selectată ({formatDate(selectedDate)}), suprascriind setările globale.
                                 </span>
                             </p>
 
