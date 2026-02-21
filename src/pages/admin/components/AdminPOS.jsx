@@ -261,7 +261,15 @@ const AdminPOS = () => {
                 </div>
 
                 {/* Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.5rem', overflowY: 'auto', paddingRight: '2px' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+                    gridAutoRows: 'minmax(160px, auto)', // Minimum height for each card
+                    gap: '0.5rem', 
+                    overflowY: 'auto', 
+                    paddingRight: '2px',
+                    flex: 1 // Fill remaining vertical space
+                }}>
                     {filteredProducts.map(product => (
                         <div
                             key={product.id}
@@ -273,21 +281,27 @@ const AdminPOS = () => {
                                 cursor: 'pointer',
                                 transition: 'transform 0.1s',
                                 background: 'white',
-                                display: 'flex', flexDirection: 'column'
+                                display: 'flex', flexDirection: 'column',
+                                height: '100%' // Stretch to fill grid cell
                             }}
                             onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
                             onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            <div style={{ height: '70px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ 
+                                height: '90px', 
+                                background: '#f8fafc', 
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0 // Prevent image container from shrinking
+                            }}>
                                 {product.image ? (
                                     <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <span style={{ fontSize: '1.5rem' }}>🍽️</span>
+                                    <span style={{ fontSize: '2rem' }}>🍽️</span>
                                 )}
                             </div>
                             <div style={{ padding: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                <div style={{ fontWeight: '600', fontSize: '0.8rem', marginBottom: '2px', lineHeight: '1.1', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{product.name}</div>
-                                <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.85rem' }}>{product.price} Lei</div>
+                                <div style={{ fontWeight: '600', fontSize: '0.85rem', marginBottom: '2px', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{product.name}</div>
+                                <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.9rem' }}>{product.price} Lei</div>
                             </div>
                         </div>
                     ))}
