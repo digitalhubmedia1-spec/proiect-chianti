@@ -230,13 +230,13 @@
 }
 
 .modal-body-scroll {
-    padding: 2rem;
+    padding: 1.5rem;
     overflow-y: auto;
     flex: 1;
 }
 
 .section {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .section h3 {
@@ -246,7 +246,7 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: #334155;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 0.5rem;
 }
