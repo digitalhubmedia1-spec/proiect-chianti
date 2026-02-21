@@ -83,6 +83,9 @@ const AdminDashboard = () => {
         if (cleanRole === 'cost_productie') {
             setActiveTab('recipes');
         }
+        if (cleanRole === 'ospatar') {
+            setActiveTab('pos');
+        }
     }, []);
 
     // Navigation Config
@@ -165,6 +168,11 @@ const AdminDashboard = () => {
             // Explicitly deny procurement if needed, though default is false
             return ['recipes'].includes(tab);
         }
+
+        if (role === 'ospatar') {
+            return ['pos', 'orders'].includes(tab);
+        }
+
         return false;
     };
 
