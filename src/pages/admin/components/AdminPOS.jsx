@@ -34,7 +34,7 @@ const AdminPOS = () => {
                 return prod ? { ...prod, stock: di.stock } : null;
             }).filter(Boolean);
 
-            setDailyProducts(available.length > 0 ? available : products);
+            setDailyProducts(available);
         };
         if (products.length > 0) loadMenu();
     }, [products, fetchDailyMenu]);
@@ -294,6 +294,13 @@ const AdminPOS = () => {
                 </div>
 
                 {/* Grid */}
+                {dailyProducts.length === 0 ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '2rem' }}>📅</span>
+                        <p style={{ margin: 0 }}>Nu există produse planificate pentru astăzi.</p>
+                        <small>Adaugă produse în meniul zilei din secțiunea Meniu.</small>
+                    </div>
+                ) : (
                 <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
@@ -339,6 +346,7 @@ const AdminPOS = () => {
                         </div>
                     ))}
                 </div>
+                )}
             </div>
 
             {/* Right: Cart / Table Info */}
