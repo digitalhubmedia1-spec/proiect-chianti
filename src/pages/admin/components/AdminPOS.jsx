@@ -110,6 +110,45 @@ const AdminPOS = () => {
     // Calculate Total
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
+    // Generate FiscalNet INP File Content
+    const generateInpContent = (items, paymentMethod) => {
+        let content = '';
+        
+        // S,1,______,_,__;NumeProdus;Pret;Cantitate;Tva;Dept;Grupa;TipDisc;ValDisc;UM;
+        items.forEach(item => {
+            // FORCE PRICE 0 FOR TESTING AS REQUESTED
+            const price = "0.00"; 
+            const qty = item.qty.toFixed(3);
+            const name = item.name.substring(0, 22).replace(/;/g, ' '); // Limit name length and remove semicolons
+            
+            content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;BUC;\n`;
+        });
+
+        // T,1,______,_,__;TipPlata;Suma;;;;
+        // 0 = Numerar, 1 = Card (Verificați maparea exactă a casei de marcat, de obicei 0-Cash, 1-Card)
+        const payCode = paymentMethod === 'cash' ? '0' : '1';
+        
+        // Suma este goală ;; pentru a achita tot restul (sau 0 pt test cu produse de 0 lei)
+        content += `T,1,______,_,__;${payCode};;;;;\n`;
+
+        return content;
+    };
+
+    // Download INP File
+    const downloadInpFile = (content, tableName) => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // Nume unic: bon_MasaX_timestamp.inp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.inp`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+
     // Checkout
     const handleCheckout = async (paymentMethod) => {
         if (!selectedTable) return;
@@ -117,6 +156,11 @@ const AdminPOS = () => {
 
         setIsSaving(true);
         try {
+            // 1. Generate and Download INP File FIRST
+            const inpContent = generateInpContent(cart, paymentMethod);
+            downloadInpFile(inpContent, selectedTable.name);
+
+            // 2. Save to Database
             const orderPayload = {
                 user_id: user?.id,
                 status: 'delivered',
@@ -149,7 +193,7 @@ const AdminPOS = () => {
             const { error } = await supabase.from('orders').insert([orderPayload]);
             if (error) throw error;
 
-            alert("Comandă salvată și trimisă la marcat!");
+            alert("Comandă salvată și bon generat!");
             // Close table
             setTables(prev => prev.filter(t => t.id !== selectedTableId));
             setSelectedTableId(null);
