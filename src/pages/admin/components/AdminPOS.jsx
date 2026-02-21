@@ -61,6 +61,7 @@ const AdminPOS = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [isSaving, setIsSaving] = useState(false);
+    const [completedOrder, setCompletedOrder] = useState(null); // { items, tableName, paymentMethod, total }
 
     // Date State for POS
     const [posDate, setPosDate] = useState(new Date());
@@ -240,11 +241,12 @@ const AdminPOS = () => {
 
         setIsSaving(true);
         try {
-            // 1. Generate and Download INP File FIRST
-            const inpContent = generateInpContent(cart, paymentMethod);
-            downloadInpFile(inpContent, selectedTable.name);
+            // Save local variables before clearing table
+            const finalCart = [...cart];
+            const finalTableName = selectedTable.name;
+            const finalTotal = total;
 
-            // 2. Save to Database
+            // 1. Save to Database
             // Note: If 'orders' table id is not auto-increment, we might need to generate it.
             // But usually it is. The error 'null value in column "id"' implies it expects a value and didn't get one (and no default).
             // We will try to generate a timestamp-based ID if possible, but 'id' is likely bigint. 
@@ -261,13 +263,13 @@ const AdminPOS = () => {
                 id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
-                total: total,
-                final_total: total,
+                total: finalTotal,
+                final_total: finalTotal,
                 delivery_cost: 0,
                 is_pos_order: true,
-                table_number: selectedTable.name,
+                table_number: finalTableName,
                 fiscal_print_status: 'pending',
-                items: cart.map(item => {
+                items: finalCart.map(item => {
                     // Also clean name in stored items for consistency (optional but good practice)
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
@@ -281,7 +283,7 @@ const AdminPOS = () => {
                 }),
                 created_at: new Date().toISOString(),
                 customer_data: {
-                    firstName: `Masa ${selectedTable.name}`,
+                    firstName: `Masa ${finalTableName}`,
                     lastName: '',
                     phone: '',
                     address: 'Restaurant',
@@ -295,8 +297,15 @@ const AdminPOS = () => {
             const { error } = await supabase.from('orders').insert([orderPayload]);
             if (error) throw error;
 
-            alert("Comandă salvată și bon generat!");
-            // Close table
+            // Show Success Modal instead of Alert + Download
+            setCompletedOrder({
+                items: finalCart,
+                tableName: finalTableName,
+                paymentMethod: paymentMethod,
+                total: finalTotal
+            });
+
+            // Close table immediately
             setTables(prev => prev.filter(t => t.id !== selectedTableId));
             setSelectedTableId(null);
         } catch (err) {
@@ -529,6 +538,56 @@ const AdminPOS = () => {
                     </div>
                 )}
             </div>
+
+            {/* Success Modal */}
+            {completedOrder && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', textAlign: 'center', minWidth: '350px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <CheckCircle size={48} color="#16a34a" style={{ margin: '0 auto' }} />
+                        </div>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#0f172a' }}>Comandă Salvată!</h2>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: '#64748b' }}>Masa: <span style={{ fontWeight: '600', color: '#0f172a' }}>{completedOrder.tableName}</span></p>
+                        <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1.5rem' }}>Total: {completedOrder.total.toFixed(2)} Lei</p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button
+                                onClick={() => {
+                                    const content = generateInpContent(completedOrder.items, completedOrder.paymentMethod);
+                                    downloadInpFile(content, completedOrder.tableName);
+                                }}
+                                style={{
+                                    background: '#2563eb', color: 'white', border: 'none', padding: '1rem',
+                                    borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#1d4ed8'}
+                                onMouseOut={e => e.currentTarget.style.background = '#2563eb'}
+                            >
+                                <Printer size={20} /> Generează Bon (.inp)
+                            </button>
+                            
+                            <button
+                                onClick={() => setCompletedOrder(null)}
+                                style={{
+                                    background: 'white', color: '#64748b', border: '1px solid #cbd5e1', padding: '0.75rem',
+                                    borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => {e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a';}}
+                                onMouseOut={e => {e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#64748b';}}
+                            >
+                                Închide / Masă Nouă
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
