@@ -8,6 +8,7 @@ const AdminOperators = () => {
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
+    const [currentUserRole, setCurrentUserRole] = useState(null);
 
     // State to toggle password visibility per row - REMOVED for Security
     // const [visiblePasswords, setVisiblePasswords] = useState({});
@@ -17,6 +18,8 @@ const AdminOperators = () => {
     const [newOp, setNewOp] = useState({ name: '', username: '', password: '', role: 'operator' });
 
     useEffect(() => {
+        const role = localStorage.getItem('admin_role');
+        setCurrentUserRole(role);
         fetchOperators();
     }, []);
 
@@ -70,6 +73,26 @@ const AdminOperators = () => {
         }
     };
 
+    const deleteOperator = async (id, role) => {
+        if (role === 'admin_app') {
+            alert("Nu puteți șterge un administrator!");
+            return;
+        }
+        if (!window.confirm("Sigur doriți să ștergeți acest cont?")) return;
+
+        const { error } = await supabase
+            .from('admin_users')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("Eroare la ștergere: " + error.message);
+        } else {
+            setOperators(prev => prev.filter(op => op.id !== id));
+            logAction('OPERATORI', `Șters utilizator #${id}`);
+        }
+    };
+
     const createOperator = async (e) => {
         e.preventDefault();
         if (!newOp.name || !newOp.username || !newOp.password) {
@@ -111,13 +134,15 @@ const AdminOperators = () => {
         <div className="admin-operators-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 className="section-title" style={{ margin: 0 }}>Gestionare Operatori</h2>
-                <button
-                    className="btn-primary"
-                    onClick={() => setIsAddOpen(true)}
-                    style={{ background: '#22c55e', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                >
-                    <Plus size={18} /> Adaugă Operator
-                </button>
+                {currentUserRole === 'admin_app' && (
+                    <button
+                        className="btn-primary"
+                        onClick={() => setIsAddOpen(true)}
+                        style={{ background: '#22c55e', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                    >
+                        <Plus size={18} /> Adaugă Operator
+                    </button>
+                )}
             </div>
 
             {isAddOpen && (
@@ -220,7 +245,7 @@ const AdminOperators = () => {
                                     </span>
                                 </td>
                                 <td>
-                                    {op.role !== 'admin_app' && (
+                                    {op.role !== 'admin_app' && currentUserRole === 'admin_app' ? (
                                         <div className="actions-cell">
                                             {editingId === op.id ? (
                                                 <>
@@ -232,14 +257,20 @@ const AdminOperators = () => {
                                                     </button>
                                                 </>
                                             ) : (
-                                                <button className="btn-icon primary" onClick={() => startEditing(op)} title="Editează Nume">
-                                                    <Edit2 size={18} />
-                                                </button>
+                                                <>
+                                                    <button className="btn-icon primary" onClick={() => startEditing(op)} title="Editează Nume">
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button className="btn-icon danger" onClick={() => deleteOperator(op.id, op.role)} title="Șterge Cont">
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
-                                    )}
-                                    {op.role === 'admin_app' && (
-                                        <span className="text-muted" style={{ fontSize: '0.85rem' }}>Protejat</span>
+                                    ) : (
+                                        <span className="text-muted" style={{ fontSize: '0.85rem' }}>
+                                            {op.role === 'admin_app' ? 'Protejat' : 'Vizualizare'}
+                                        </span>
                                     )}
                                 </td>
                             </tr>
