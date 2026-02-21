@@ -6,6 +6,7 @@ import OrderList from './components/OrderList';
 import KanbanBoard from './components/KanbanBoard';
 import AdminBlog from './components/AdminBlog';
 import AdminRecipes from './components/AdminRecipes';
+import AdminKitchen from './components/AdminKitchen';
 import AdminMessages from './components/AdminMessages';
 import AdminRequests from './components/AdminRequests';
 import AdminPromoCodes from './components/AdminPromoCodes';
@@ -26,7 +27,7 @@ import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
-import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -86,6 +87,7 @@ const AdminDashboard = () => {
         { id: 'availability', label: 'Disponibilitate', icon: CheckCircle, permission: 'availability' },
         { id: 'configurator', label: 'Configurator', icon: Settings, permission: 'configurator' },
         { id: 'recipes', label: 'Rețete', icon: BookOpen, permission: 'recipes' },
+        { id: 'kitchen', label: 'Bucătărie', icon: ChefHat, permission: 'kitchen' },
 
         { header: 'ERP Nomenclatoare' },
         { id: 'suppliers', label: 'Furnizori', icon: Users, permission: 'suppliers' },
@@ -143,7 +145,7 @@ const AdminDashboard = () => {
             return true;
         }
         if (adminRole === 'chef') {
-            return ['orders', 'recipes'].includes(tab);
+            return ['orders', 'recipes', 'kitchen'].includes(tab);
         }
         if (adminRole === 'cost_productie') {
             // Explicitly deny procurement if needed, though default is false
@@ -1010,7 +1012,12 @@ const AdminDashboard = () => {
                         </div>
                     )}
 
-
+                    {/* KITCHEN TAB */}
+                    {activeTab === 'kitchen' && (
+                        <div className="tab-pane">
+                            <AdminKitchen />
+                        </div>
+                    )}
 
                     {/* DRIVER APPS TAB */}
                     {activeTab === 'drivers_apps' && (
