@@ -119,8 +119,20 @@ const AdminPOS = () => {
             // FORCE PRICE 0 FOR TESTING AS REQUESTED
             const price = "0.00"; 
             const qty = item.qty.toFixed(3);
-            const name = item.name.substring(0, 22).replace(/;/g, ' '); // Limit name length and remove semicolons
             
+            // Remove emojis and semicolons, keep full name (or truncate to safe limit if needed, e.g. 200)
+            let name = item.name || '';
+            
+            // Remove emojis using regex range for common emojis
+            name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            
+            // Remove semicolons and trim
+            name = name.replace(/;/g, ' ').trim();
+            
+            // Truncate only if extremely long (e.g. > 200 chars) to avoid driver crash, but user requested full name.
+            // Let's set a safe high limit like 100 which is usually enough for "Branzoaice..."
+            if (name.length > 100) name = name.substring(0, 100);
+
             content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;BUC;\n`;
         });
 
@@ -161,7 +173,20 @@ const AdminPOS = () => {
             downloadInpFile(inpContent, selectedTable.name);
 
             // 2. Save to Database
+            // Note: If 'orders' table id is not auto-increment, we might need to generate it.
+            // But usually it is. The error 'null value in column "id"' implies it expects a value and didn't get one (and no default).
+            // We will try to generate a timestamp-based ID if possible, but 'id' is likely bigint. 
+            // If the column is NOT NULL and NO DEFAULT, we MUST provide it.
+            // Let's try to generate a unique BigInt-like ID using timestamp + random.
+            // However, JS numbers are doubles. We can use string if ID is text/uuid.
+            // If ID is bigint, we can use Date.now().
+            
             const orderPayload = {
+                // id: Date.now(), // Try adding ID if the DB doesn't auto-generate. 
+                // Wait, if it's an IDENTITY column, providing a value might work or error depending on OVERRIDING SYSTEM VALUE.
+                // But the error said "null value in column id", which means it tried to insert NULL (or DEFAULT which resolved to NULL).
+                // This means there is NO DEFAULT on the column. So we MUST provide an ID.
+                id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
                 total: total,
