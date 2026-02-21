@@ -234,7 +234,7 @@ const AdminPOS = () => {
         window.URL.revokeObjectURL(url);
     };
 
-    // Checkout
+    // Checkout (Save Only)
     const handleCheckout = async (paymentMethod) => {
         if (!selectedTable) return;
         if (cart.length === 0) return alert("Coșul este gol!");
@@ -246,20 +246,8 @@ const AdminPOS = () => {
             const finalTableName = selectedTable.name;
             const finalTotal = total;
 
-            // 1. Save to Database
-            // Note: If 'orders' table id is not auto-increment, we might need to generate it.
-            // But usually it is. The error 'null value in column "id"' implies it expects a value and didn't get one (and no default).
-            // We will try to generate a timestamp-based ID if possible, but 'id' is likely bigint. 
-            // If the column is NOT NULL and NO DEFAULT, we MUST provide it.
-            // Let's try to generate a unique BigInt-like ID using timestamp + random.
-            // However, JS numbers are doubles. We can use string if ID is text/uuid.
-            // If ID is bigint, we can use Date.now().
-            
             const orderPayload = {
-                // id: Date.now(), // Try adding ID if the DB doesn't auto-generate. 
-                // Wait, if it's an IDENTITY column, providing a value might work or error depending on OVERRIDING SYSTEM VALUE.
-                // But the error said "null value in column id", which means it tried to insert NULL (or DEFAULT which resolved to NULL).
-                // This means there is NO DEFAULT on the column. So we MUST provide an ID.
+                // ... (rest of payload construction remains same, just need to ensure I don't delete it)
                 id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
@@ -270,7 +258,6 @@ const AdminPOS = () => {
                 table_number: finalTableName,
                 fiscal_print_status: 'pending',
                 items: finalCart.map(item => {
-                    // Also clean name in stored items for consistency (optional but good practice)
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
                     return {
@@ -297,13 +284,7 @@ const AdminPOS = () => {
             const { error } = await supabase.from('orders').insert([orderPayload]);
             if (error) throw error;
 
-            // Show Success Modal instead of Alert + Download
-            setCompletedOrder({
-                items: finalCart,
-                tableName: finalTableName,
-                paymentMethod: paymentMethod,
-                total: finalTotal
-            });
+            alert("Comandă salvată cu succes!");
 
             // Close table immediately
             setTables(prev => prev.filter(t => t.id !== selectedTableId));
@@ -314,6 +295,17 @@ const AdminPOS = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Manual Bon Generation
+    const handleGenerateBon = () => {
+        if (!selectedTable) return alert("Selectează o masă!");
+        if (cart.length === 0) return alert("Coșul este gol!");
+        
+        // Defaulting to 'cash' (0) for manual generation as requested for testing
+        // If needed, we can ask the user, but for now a single button implies a default or current context.
+        const content = generateInpContent(cart, 'cash');
+        downloadInpFile(content, selectedTable.name);
     };
 
     // Derived UI Data
@@ -503,7 +495,19 @@ const AdminPOS = () => {
                                 <span>{total.toFixed(2)} Lei</span>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                                <button
+                                    onClick={handleGenerateBon}
+                                    style={{
+                                        background: '#3b82f6', color: 'white', border: 'none',
+                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        fontSize: '0.9rem'
+                                    }}
+                                    title="Generează fișier .inp pentru teste (Numerar)"
+                                >
+                                    <Printer size={18} /> BON
+                                </button>
                                 <button
                                     onClick={() => handleCheckout('cash')}
                                     disabled={isSaving}
@@ -538,56 +542,6 @@ const AdminPOS = () => {
                     </div>
                 )}
             </div>
-
-            {/* Success Modal */}
-            {completedOrder && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', textAlign: 'center', minWidth: '350px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <CheckCircle size={48} color="#16a34a" style={{ margin: '0 auto' }} />
-                        </div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#0f172a' }}>Comandă Salvată!</h2>
-                        <p style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: '#64748b' }}>Masa: <span style={{ fontWeight: '600', color: '#0f172a' }}>{completedOrder.tableName}</span></p>
-                        <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1.5rem' }}>Total: {completedOrder.total.toFixed(2)} Lei</p>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <button
-                                onClick={() => {
-                                    const content = generateInpContent(completedOrder.items, completedOrder.paymentMethod);
-                                    downloadInpFile(content, completedOrder.tableName);
-                                }}
-                                style={{
-                                    background: '#2563eb', color: 'white', border: 'none', padding: '1rem',
-                                    borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                    transition: 'background 0.2s'
-                                }}
-                                onMouseOver={e => e.currentTarget.style.background = '#1d4ed8'}
-                                onMouseOut={e => e.currentTarget.style.background = '#2563eb'}
-                            >
-                                <Printer size={20} /> Generează Bon (.inp)
-                            </button>
-                            
-                            <button
-                                onClick={() => setCompletedOrder(null)}
-                                style={{
-                                    background: 'white', color: '#64748b', border: '1px solid #cbd5e1', padding: '0.75rem',
-                                    borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseOver={e => {e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a';}}
-                                onMouseOut={e => {e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#64748b';}}
-                            >
-                                Închide / Masă Nouă
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
