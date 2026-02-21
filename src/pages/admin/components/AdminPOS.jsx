@@ -214,36 +214,36 @@ const AdminPOS = () => {
     const categoriesList = ['all', ...new Set(dailyProducts.map(p => p.category))];
 
     return (
-        <div style={{ display: 'flex', height: 'calc(100vh - 80px)', background: '#f1f5f9', gap: '1rem', padding: '1rem' }}>
+        <div style={{ display: 'flex', height: 'calc(100vh - 70px)', background: '#f1f5f9', gap: '0.5rem', padding: '0.5rem' }}>
 
             {/* Left: Product Catalog */}
-            <div style={{ flex: 2, background: 'white', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ flex: 3, background: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 {/* Search & Filter */}
-                <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
+                <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                        <Search size={20} style={{ position: 'absolute', left: 10, top: 10, color: '#94a3b8' }} />
+                        <Search size={18} style={{ position: 'absolute', left: 8, top: 9, color: '#94a3b8' }} />
                         <input
                             type="text"
                             placeholder="Caută produse..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{
-                                width: '100%', padding: '10px 10px 10px 40px',
-                                borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none'
+                                width: '100%', padding: '8px 8px 8px 35px', fontSize: '0.9rem',
+                                borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none'
                             }}
                         />
                     </div>
                 </div>
 
                 {/* Categories */}
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', paddingBottom: '0.25rem', marginBottom: '0.5rem' }}>
                     {categoriesList.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             style={{
-                                padding: '6px 12px',
-                                borderRadius: '20px',
+                                padding: '4px 10px',
+                                borderRadius: '16px',
                                 border: '1px solid',
                                 borderColor: selectedCategory === cat ? '#2563eb' : '#e2e8f0',
                                 background: selectedCategory === cat ? '#eff6ff' : 'white',
@@ -251,6 +251,7 @@ const AdminPOS = () => {
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
                                 fontWeight: '600',
+                                fontSize: '0.8rem',
                                 textTransform: 'capitalize'
                             }}
                         >
@@ -260,14 +261,14 @@ const AdminPOS = () => {
                 </div>
 
                 {/* Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem', overflowY: 'auto', paddingRight: '5px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.5rem', overflowY: 'auto', paddingRight: '2px' }}>
                     {filteredProducts.map(product => (
                         <div
                             key={product.id}
                             onClick={() => addToCart(product)}
                             style={{
                                 border: '1px solid #e2e8f0',
-                                borderRadius: '8px',
+                                borderRadius: '6px',
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                                 transition: 'transform 0.1s',
@@ -277,16 +278,16 @@ const AdminPOS = () => {
                             onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
                             onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            <div style={{ height: '100px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ height: '70px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 {product.image ? (
                                     <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <span style={{ fontSize: '2rem' }}>🍽️</span>
+                                    <span style={{ fontSize: '1.5rem' }}>🍽️</span>
                                 )}
                             </div>
-                            <div style={{ padding: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '4px', lineHeight: '1.2' }}>{product.name}</div>
-                                <div style={{ color: '#2563eb', fontWeight: '700' }}>{product.price} Lei</div>
+                            <div style={{ padding: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                <div style={{ fontWeight: '600', fontSize: '0.8rem', marginBottom: '2px', lineHeight: '1.1', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{product.name}</div>
+                                <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.85rem' }}>{product.price} Lei</div>
                             </div>
                         </div>
                     ))}
@@ -294,47 +295,46 @@ const AdminPOS = () => {
             </div>
 
             {/* Right: Cart / Table Info */}
-            <div style={{ flex: 1, background: 'white', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <div style={{ flex: 2, minWidth: '280px', maxWidth: '400px', background: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 
                 {/* Table Management */}
-                <div style={{ marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>MESE DESCHISE</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ marginBottom: '0.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <input 
                             type="text" 
-                            placeholder="Nume masă (ex: 5)"
+                            placeholder="Masă nouă..."
                             value={newTableName}
                             onChange={(e) => setNewTableName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddTable()}
-                            style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                         />
-                        <button onClick={handleAddTable} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', padding: '0 1rem', cursor: 'pointer' }}>
-                            <Plus size={20} />
+                        <button onClick={handleAddTable} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', padding: '0 0.75rem', cursor: 'pointer' }}>
+                            <Plus size={18} />
                         </button>
                     </div>
 
                     {/* Active Tables Chips */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {tables.length === 0 && <span style={{fontSize: '0.8rem', color: '#94a3b8'}}>Nu există mese deschise</span>}
+                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxHeight: '60px', overflowY: 'auto' }}>
+                        {tables.length === 0 && <span style={{fontSize: '0.75rem', color: '#94a3b8'}}>Fără mese</span>}
                         {tables.map(table => (
                             <div 
                                 key={table.id}
                                 onClick={() => setSelectedTableId(table.id)}
                                 style={{ 
-                                    padding: '6px 12px', borderRadius: '20px', 
+                                    padding: '4px 8px', borderRadius: '12px', 
                                     background: selectedTableId === table.id ? '#2563eb' : '#f1f5f9',
                                     color: selectedTableId === table.id ? 'white' : '#64748b',
-                                    cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600',
-                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600',
+                                    display: 'flex', alignItems: 'center', gap: '4px',
                                     border: '1px solid', borderColor: selectedTableId === table.id ? '#2563eb' : '#e2e8f0'
                                 }}
                             >
-                                <span>{table.name}</span>
+                                <span style={{ maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{table.name}</span>
                                 <span 
                                     onClick={(e) => handleDeleteTable(e, table.id)} 
                                     style={{ 
-                                        opacity: 0.7, cursor: 'pointer', marginLeft: '4px',
-                                        background: 'rgba(0,0,0,0.1)', borderRadius: '50%', width: '16px', height: '16px',
+                                        opacity: 0.8, cursor: 'pointer',
+                                        background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '14px', height: '14px',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px'
                                     }}
                                 >×</span>
@@ -345,34 +345,34 @@ const AdminPOS = () => {
 
                 {selectedTable ? (
                     <>
-                        <div style={{ marginBottom: '1rem', textAlign: 'center', fontWeight: '700', fontSize: '1.2rem', color: '#0f172a' }}>
-                            Comandă: {selectedTable.name}
+                        <div style={{ marginBottom: '0.5rem', textAlign: 'center', fontWeight: '700', fontSize: '1rem', color: '#0f172a', padding: '0.25rem', background: '#f8fafc', borderRadius: '4px' }}>
+                            {selectedTable.name}
                         </div>
 
                         {/* Cart Items */}
-                        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem' }}>
+                        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '0.5rem', paddingRight: '2px' }}>
                             {cart.length === 0 ? (
-                                <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '2rem' }}>
-                                    <ShoppingCart size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                                    <p>Selectează produse din stânga</p>
+                                <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '1rem' }}>
+                                    <ShoppingCart size={32} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                                    <p style={{ fontSize: '0.8rem' }}>Coș gol</p>
                                 </div>
                             ) : (
                                 cart.map((item, idx) => (
-                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px dashed #f1f5f9' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{item.name}</div>
-                                            <div style={{ color: '#64748b', fontSize: '0.85rem' }}>{item.price} Lei / buc</div>
+                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px dashed #f1f5f9' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                                            <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.price} Lei</div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <button onClick={() => updateQty(item.id, -1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Minus size={14} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '8px' }}>
+                                            <button onClick={() => updateQty(item.id, -1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Minus size={12} />
                                             </button>
-                                            <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
-                                            <button onClick={() => updateQty(item.id, 1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Plus size={14} />
+                                            <span style={{ fontWeight: '700', minWidth: '16px', textAlign: 'center', fontSize: '0.85rem' }}>{item.qty}</span>
+                                            <button onClick={() => updateQty(item.id, 1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Plus size={12} />
                                             </button>
-                                            <button onClick={() => removeFromCart(item.id)} style={{ marginLeft: '8px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                <Trash2 size={16} />
+                                            <button onClick={() => removeFromCart(item.id)} style={{ marginLeft: '4px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}>
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     </div>
@@ -381,44 +381,44 @@ const AdminPOS = () => {
                         </div>
 
                         {/* Footer Totals */}
-                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                        <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>
                                 <span>TOTAL</span>
                                 <span>{total.toFixed(2)} Lei</span>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                 <button
                                     onClick={() => handleCheckout('cash')}
                                     disabled={isSaving}
                                     style={{
                                         background: '#16a34a', color: 'white', border: 'none',
-                                        padding: '1rem', borderRadius: '8px', fontWeight: '700', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        opacity: isSaving ? 0.7 : 1
+                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        opacity: isSaving ? 0.7 : 1, fontSize: '0.9rem'
                                     }}
                                 >
-                                    <Banknote size={20} /> NUMERAR
+                                    <Banknote size={18} /> NUMERAR
                                 </button>
                                 <button
                                     onClick={() => handleCheckout('card')}
                                     disabled={isSaving}
                                     style={{
                                         background: '#2563eb', color: 'white', border: 'none',
-                                        padding: '1rem', borderRadius: '8px', fontWeight: '700', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        opacity: isSaving ? 0.7 : 1
+                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        opacity: isSaving ? 0.7 : 1, fontSize: '0.9rem'
                                     }}
                                 >
-                                    <CreditCard size={20} /> CARD
+                                    <CreditCard size={18} /> CARD
                                 </button>
                             </div>
                         </div>
                     </>
                 ) : (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexDirection: 'column' }}>
-                        <p style={{ fontWeight: '600' }}>Nicio masă selectată</p>
-                        <p style={{ fontSize: '0.9rem' }}>Creează sau selectează o masă pentru a începe</p>
+                        <p style={{ fontWeight: '600', fontSize: '0.9rem' }}>Nicio masă selectată</p>
+                        <p style={{ fontSize: '0.8rem' }}>Creează sau selectează o masă pentru a începe</p>
                     </div>
                 )}
             </div>
