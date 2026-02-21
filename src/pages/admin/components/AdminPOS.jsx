@@ -127,6 +127,9 @@ const AdminPOS = () => {
             // Ranges: Miscellaneous Symbols, Dingbats, Transport/Map, Emoticons, etc.
             name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             
+            // Remove diacritics (Romanian characters)
+            name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
             // Remove semicolons and trim
             name = name.replace(/;/g, ' ').replace(/\s+/g, ' ').trim();
             
