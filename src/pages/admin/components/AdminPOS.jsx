@@ -257,20 +257,33 @@ const AdminPOS = () => {
         if (!selectedTable) return alert("Selectează o masă!");
         if (cart.length === 0) return alert("Coșul este gol!");
 
-        if (!window.confirm("Trimiteți comanda la bucătărie? Stocul va fi scăzut automat.")) return;
+        // Identify items that need to be sent (qty > sent_qty)
+        const itemsToSend = cart.filter(item => (item.qty - (item.sent_qty || 0)) > 0);
+
+        if (itemsToSend.length === 0) {
+            return alert("Toate produsele au fost deja trimise la bucătărie!");
+        }
+
+        if (!window.confirm(`Trimiteți ${itemsToSend.length} produse noi la bucătărie? Stocul va fi scăzut automat.`)) return;
 
         setIsSaving(true);
         try {
-            const finalCart = [...cart];
             const finalTableName = selectedTable.name;
-            const finalTotal = total;
+            
+            // Calculate total for THIS kitchen ticket (only new items)
+            const ticketTotal = itemsToSend.reduce((sum, item) => {
+                const qtyToSend = item.qty - (item.sent_qty || 0);
+                return sum + (item.price * qtyToSend);
+            }, 0);
 
-            // 1. Deduct Stock (FIFO Logic)
-            for (const item of finalCart) {
+            // 1. Deduct Stock (FIFO Logic) - ONLY for new quantity
+            for (const item of itemsToSend) {
+                const qtyToSend = item.qty - (item.sent_qty || 0);
                 const recipe = recipes.find(r => r.linked_product_id === item.id);
+                
                 if (recipe && recipe.ingredients) {
                     for (const ing of recipe.ingredients) {
-                        let needed = parseFloat(ing.qty) * item.qty;
+                        let needed = parseFloat(ing.qty) * qtyToSend;
                         
                         // Fetch batches FIFO
                         const { data: batches } = await supabase
@@ -297,7 +310,7 @@ const AdminPOS = () => {
                                     batch_id: batch.id,
                                     item_id: ing.ingredient_id,
                                     quantity: take,
-                                    reason: `Comandă Masa ${finalTableName}: ${item.name}`,
+                                    reason: `Comandă Masa ${finalTableName}: ${item.name} (x${qtyToSend})`,
                                     operator_name: user?.email || 'POS'
                                 }]);
 
@@ -308,25 +321,26 @@ const AdminPOS = () => {
                 }
             }
 
-            // 2. Create Order (Status: preparing)
+            // 2. Create Order (Status: preparing) - ONLY for new items
             const orderPayload = {
                 id: Date.now(),
                 user_id: user?.id,
                 status: 'preparing', // Sends to Kitchen Kanban
-                total: finalTotal,
-                final_total: finalTotal,
+                total: ticketTotal,
+                final_total: ticketTotal,
                 delivery_cost: 0,
                 is_pos_order: true,
                 table_number: finalTableName,
                 fiscal_print_status: 'pending',
-                items: finalCart.map(item => {
+                items: itemsToSend.map(item => {
+                    const qtyToSend = item.qty - (item.sent_qty || 0);
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
                     return {
                         id: item.id,
                         name: cleanName,
                         price: item.price,
-                        quantity: item.qty,
+                        quantity: qtyToSend, // Only send new quantity
                         vat: 9
                     };
                 }),
@@ -339,7 +353,7 @@ const AdminPOS = () => {
                     city: 'Local',
                     email: '',
                     deliveryMethod: 'dinein',
-                    paymentMethod: 'pending' // Payment not yet made
+                    paymentMethod: 'pending' 
                 }
             };
 
@@ -348,8 +362,12 @@ const AdminPOS = () => {
 
             alert("Comanda a fost trimisă la bucătărie!");
 
-            // 3. Clear Table Items (Keep Table)
-            updateTableItems(selectedTableId, []);
+            // 3. Update Table Items: Mark items as sent (update sent_qty = current qty)
+            const updatedItems = cart.map(item => ({
+                ...item,
+                sent_qty: item.qty
+            }));
+            updateTableItems(selectedTableId, updatedItems);
 
         } catch (err) {
             console.error(err);
