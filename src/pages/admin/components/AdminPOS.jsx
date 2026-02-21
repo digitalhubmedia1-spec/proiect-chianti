@@ -25,7 +25,13 @@ const AdminPOS = () => {
     // Initialize: Load Daily Menu
     useEffect(() => {
         const loadMenu = async () => {
-            const today = new Date().toISOString().split('T')[0];
+            // Use local date instead of UTC (toISOString) to match AdminMenuPlanner
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            
             const dailyItems = await fetchDailyMenu(today);
 
             // Map daily items to full product details
