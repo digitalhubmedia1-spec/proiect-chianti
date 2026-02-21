@@ -86,7 +86,11 @@ const AdminOperators = () => {
             .eq('id', id);
 
         if (error) {
-            alert("Eroare la ștergere: " + error.message);
+            if (error.message.includes('permission denied')) {
+                alert("Eroare Permisiuni: Nu aveți dreptul să ștergeți utilizatori.\n\nSOLUȚIE: Rulați scriptul 'fix_admin_users_permissions.sql' în Supabase SQL Editor.");
+            } else {
+                alert("Eroare la ștergere: " + error.message);
+            }
         } else {
             setOperators(prev => prev.filter(op => op.id !== id));
             logAction('OPERATORI', `Șters utilizator #${id}`);
@@ -107,7 +111,11 @@ const AdminOperators = () => {
             .single();
 
         if (error) {
-            alert("Eroare la creare: " + error.message);
+            if (error.message.includes('permission denied')) {
+                alert("Eroare Permisiuni: Baza de date a refuzat crearea utilizatorului.\n\nSOLUȚIE: Trebuie să actualizați politicile de securitate. Rulați scriptul 'fix_admin_users_permissions.sql' în Supabase Dashboard -> SQL Editor.");
+            } else {
+                alert("Eroare la creare: " + error.message);
+            }
         } else {
             setOperators([...operators, data]);
             setIsAddOpen(false);
