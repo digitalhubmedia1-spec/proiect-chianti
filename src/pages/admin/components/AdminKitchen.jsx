@@ -16,6 +16,9 @@ const AdminKitchen = () => {
     const [selectedProduct, setSelectedProduct] = useState(null); // For Info Modal
     const [calculatorProduct, setCalculatorProduct] = useState(null); // For Calculator Modal
     const [calculatorMode, setCalculatorMode] = useState('single'); // 'single' or 'total'
+    
+    // Lightbox State
+    const [lightboxImage, setLightboxImage] = useState(null);
 
     // Recipe Data Cache
     const [recipesCache, setRecipesCache] = useState({}); // { productId: { recipe, ingredients } }
@@ -72,7 +75,11 @@ const AdminKitchen = () => {
                 .eq('linked_product_id', productId)
                 .single();
 
-            if (recipeError || !recipeData) {
+            if (recipeError) {
+                // It's normal to not have a recipe, but let's log if it's a real error
+                if (recipeError.code !== 'PGRST116') { // PGRST116 is "The result contains 0 rows"
+                     console.error("Error fetching recipe for product", productId, recipeError);
+                }
                 setRecipesCache(prev => ({ ...prev, [productId]: null }));
                 return null;
             }
@@ -180,7 +187,7 @@ const AdminKitchen = () => {
             {selectedProduct && (
                 <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
                     <div className="modal-content kitchen-modal" onClick={e => e.stopPropagation()}>
-                        <button className="close-btn" onClick={() => setSelectedProduct(null)}><X size={24} /></button>
+                        <button className="close-btn" onClick={() => setSelectedProduct(null)}><X size={32} /></button>
                         
                         <div className="modal-header-kitchen">
                             <img src={selectedProduct.image} alt={selectedProduct.name} className="modal-prod-img" />
@@ -193,15 +200,15 @@ const AdminKitchen = () => {
                         <div className="modal-body-scroll">
                             <div className="section">
                                 <h3><FileText size={20} /> Instrucțiuni Interne</h3>
-                                <p>{selectedProduct.internal_instructions || "Nu există instrucțiuni specifice."}</p>
+                                <p style={{ whiteSpace: 'pre-wrap' }}>{selectedProduct.internal_instructions || "Nu există instrucțiuni specifice."}</p>
                             </div>
 
                             {recipesCache[selectedProduct.id]?.recipe && (
                                 <div className="section">
                                     <h3><List size={20} /> Mod de Preparare (Rețetă)</h3>
                                     <div className="recipe-instructions">
-                                        {recipesCache[selectedProduct.id].recipe.instructions ? (
-                                            <p style={{ whiteSpace: 'pre-wrap' }}>{recipesCache[selectedProduct.id].recipe.instructions}</p>
+                                        {recipesCache[selectedProduct.id].recipe.preparation_method ? (
+                                            <p style={{ whiteSpace: 'pre-wrap' }}>{recipesCache[selectedProduct.id].recipe.preparation_method}</p>
                                         ) : (
                                             <p className="text-muted">Fără instrucțiuni în rețetă.</p>
                                         )}
@@ -227,7 +234,7 @@ const AdminKitchen = () => {
                                     <h3>Galerie Uz Intern</h3>
                                     <div className="internal-gallery">
                                         {selectedProduct.production_gallery.map((img, idx) => (
-                                            <img key={idx} src={img} alt={`Internal ${idx}`} onClick={() => window.open(img, '_blank')} />
+                                            <img key={idx} src={img} alt={`Internal ${idx}`} onClick={() => setLightboxImage(img)} />
                                         ))}
                                     </div>
                                 </div>
@@ -237,11 +244,23 @@ const AdminKitchen = () => {
                 </div>
             )}
 
+            {/* LIGHTBOX MODAL */}
+            {lightboxImage && (
+                <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
+                    <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+                        <button className="lightbox-close" onClick={() => setLightboxImage(null)}>
+                            <X size={32} />
+                        </button>
+                        <img src={lightboxImage} alt="Fullscreen Preview" className="lightbox-img" />
+                    </div>
+                </div>
+            )}
+
             {/* CALCULATOR MODAL */}
             {calculatorProduct && (
                 <div className="modal-overlay" onClick={() => setCalculatorProduct(null)}>
                     <div className="modal-content kitchen-modal" onClick={e => e.stopPropagation()}>
-                        <button className="close-btn" onClick={() => setCalculatorProduct(null)}><X size={24} /></button>
+                        <button className="close-btn" onClick={() => setCalculatorProduct(null)}><X size={32} /></button>
                         
                         <div className="modal-header-kitchen">
                             <div>
