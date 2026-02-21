@@ -502,12 +502,6 @@ const AdminDashboard = () => {
                     {isMobile && <button onClick={() => setIsSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'white' }}><X size={24} /></button>}
                 </div>
 
-                {/* DEBUG BANNER - TEMPORARY FOR DIAGNOSIS */}
-                <div style={{ background: '#fef3c7', padding: '0.5rem', fontSize: '0.7rem', color: '#b45309', textAlign: 'center', borderBottom: '1px solid #fcd34d' }}>
-                   Rol: <strong>{adminRole || 'Nedetectat'}</strong> <br/>
-                   (DB: {localStorage.getItem('admin_role')})
-                </div>
-
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid #f1f5f9', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
                         <div style={{ padding: '8px', background: '#990000', borderRadius: '50%', color: 'white' }}>
