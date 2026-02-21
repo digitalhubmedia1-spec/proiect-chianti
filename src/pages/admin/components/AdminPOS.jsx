@@ -165,9 +165,8 @@ const AdminPOS = () => {
                 user_id: user?.id,
                 status: 'delivered',
                 total: total,
-                finalTotal: total,
-                paymentMethod: paymentMethod,
-                deliveryCost: 0,
+                final_total: total,
+                delivery_cost: 0,
                 is_pos_order: true,
                 table_number: selectedTable.name,
                 fiscal_print_status: 'pending',
@@ -179,14 +178,15 @@ const AdminPOS = () => {
                     vat: 9
                 })),
                 created_at: new Date().toISOString(),
-                customer: {
+                customer_data: {
                     firstName: `Masa ${selectedTable.name}`,
                     lastName: '',
                     phone: '',
                     address: 'Restaurant',
                     city: 'Local',
                     email: '',
-                    deliveryMethod: 'dinein'
+                    deliveryMethod: 'dinein',
+                    paymentMethod: paymentMethod
                 }
             };
 
