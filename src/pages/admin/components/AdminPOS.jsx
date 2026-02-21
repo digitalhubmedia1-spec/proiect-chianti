@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useMenu } from '../../../context/MenuContext';
+import { useRecipes } from '../../../context/RecipeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../supabaseClient';
-import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle } from 'lucide-react';
+import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat } from 'lucide-react';
 
 const ProductCard = ({ product, addToCart }) => {
     const [imgError, setImgError] = useState(false);
@@ -50,6 +51,7 @@ const ProductCard = ({ product, addToCart }) => {
 
 const AdminPOS = () => {
     const { products, categories, fetchDailyMenu } = useMenu();
+    const { recipes } = useRecipes();
     const { user } = useAuth();
 
     // State
@@ -248,6 +250,113 @@ const AdminPOS = () => {
 
         const newItems = table.items.filter(item => item.id !== id);
         updateTableItems(selectedTableId, newItems);
+    };
+
+    // Send to Kitchen (Stock Deduction + Kanban)
+    const handleSendToKitchen = async () => {
+        if (!selectedTable) return alert("Selectează o masă!");
+        if (cart.length === 0) return alert("Coșul este gol!");
+
+        if (!window.confirm("Trimiteți comanda la bucătărie? Stocul va fi scăzut automat.")) return;
+
+        setIsSaving(true);
+        try {
+            const finalCart = [...cart];
+            const finalTableName = selectedTable.name;
+            const finalTotal = total;
+
+            // 1. Deduct Stock (FIFO Logic)
+            for (const item of finalCart) {
+                const recipe = recipes.find(r => r.linked_product_id === item.id);
+                if (recipe && recipe.ingredients) {
+                    for (const ing of recipe.ingredients) {
+                        let needed = parseFloat(ing.qty) * item.qty;
+                        
+                        // Fetch batches FIFO
+                        const { data: batches } = await supabase
+                            .from('inventory_batches')
+                            .select('*')
+                            .eq('item_id', ing.ingredient_id)
+                            .gt('quantity', 0)
+                            .order('expiration_date', { ascending: true })
+                            .order('created_at', { ascending: true });
+
+                        if (batches) {
+                            for (const batch of batches) {
+                                if (needed <= 0.0001) break;
+                                const take = Math.min(batch.quantity, needed);
+
+                                // Update batch
+                                await supabase.from('inventory_batches')
+                                    .update({ quantity: batch.quantity - take })
+                                    .eq('id', batch.id);
+
+                                // Log transaction
+                                await supabase.from('inventory_transactions').insert([{
+                                    transaction_type: 'OUT',
+                                    batch_id: batch.id,
+                                    item_id: ing.ingredient_id,
+                                    quantity: take,
+                                    reason: `Comandă Masa ${finalTableName}: ${item.name}`,
+                                    operator_name: user?.email || 'POS'
+                                }]);
+
+                                needed -= take;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Create Order (Status: preparing)
+            const orderPayload = {
+                id: Date.now(),
+                user_id: user?.id,
+                status: 'preparing', // Sends to Kitchen Kanban
+                total: finalTotal,
+                final_total: finalTotal,
+                delivery_cost: 0,
+                is_pos_order: true,
+                table_number: finalTableName,
+                fiscal_print_status: 'pending',
+                items: finalCart.map(item => {
+                    let cleanName = item.name || '';
+                    cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+                    return {
+                        id: item.id,
+                        name: cleanName,
+                        price: item.price,
+                        quantity: item.qty,
+                        vat: 9
+                    };
+                }),
+                created_at: new Date().toISOString(),
+                customer_data: {
+                    firstName: `Masa ${finalTableName}`,
+                    lastName: '',
+                    phone: '',
+                    address: 'Restaurant',
+                    city: 'Local',
+                    email: '',
+                    deliveryMethod: 'dinein',
+                    paymentMethod: 'pending' // Payment not yet made
+                }
+            };
+
+            const { error } = await supabase.from('orders').insert([orderPayload]);
+            if (error) throw error;
+
+            alert("Comanda a fost trimisă la bucătărie!");
+
+            // 3. Clear Table Items (Keep Table)
+            updateTableItems(selectedTableId, []);
+
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la trimitere: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Calculate Total
@@ -572,42 +681,93 @@ const AdminPOS = () => {
                                 <span>{total.toFixed(2)} Lei</span>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                
+                                {/* Send to Kitchen Button */}
                                 <button
+                                    onClick={handleSendToKitchen}
+                                    disabled={isSaving || cart.length === 0}
+                                    style={{
+                                        background: '#e11d48', // Rose-600
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        padding: '12px',
+                                        fontSize: '1rem',
+                                        fontWeight: '700',
+                                        cursor: isSaving || cart.length === 0 ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        opacity: isSaving || cart.length === 0 ? 0.7 : 1,
+                                        boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.3)'
+                                    }}
+                                >
+                                    <ChefHat size={20} />
+                                    TRIMITE LA BUCĂTĂRIE
+                                </button>
+
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button 
+                                        onClick={() => handleCheckout('cash')}
+                                        disabled={isSaving || cart.length === 0}
+                                        style={{ 
+                                            flex: 1, 
+                                            background: '#10b981', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '6px', 
+                                            padding: '12px', 
+                                            fontSize: '1rem', 
+                                            fontWeight: '700', 
+                                            cursor: isSaving || cart.length === 0 ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                            opacity: isSaving || cart.length === 0 ? 0.7 : 1
+                                        }}
+                                    >
+                                        <Banknote size={20} />
+                                        NUMERAR
+                                    </button>
+                                    <button 
+                                        onClick={() => handleCheckout('card')}
+                                        disabled={isSaving || cart.length === 0}
+                                        style={{ 
+                                            flex: 1, 
+                                            background: '#3b82f6', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '6px', 
+                                            padding: '12px', 
+                                            fontSize: '1rem', 
+                                            fontWeight: '700', 
+                                            cursor: isSaving || cart.length === 0 ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                            opacity: isSaving || cart.length === 0 ? 0.7 : 1
+                                        }}
+                                    >
+                                        <CreditCard size={20} />
+                                        CARD
+                                    </button>
+                                </div>
+                                
+                                <button 
                                     onClick={handleGenerateBon}
-                                    style={{
-                                        background: '#3b82f6', color: 'white', border: 'none',
-                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                        fontSize: '0.9rem'
-                                    }}
-                                    title="Generează fișier .inp pentru teste (Numerar)"
-                                >
-                                    <Printer size={18} /> BON
-                                </button>
-                                <button
-                                    onClick={() => handleCheckout('cash')}
-                                    disabled={isSaving}
-                                    style={{
-                                        background: '#16a34a', color: 'white', border: 'none',
-                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                        opacity: isSaving ? 0.7 : 1, fontSize: '0.9rem'
+                                    disabled={cart.length === 0}
+                                    style={{ 
+                                        background: '#64748b', 
+                                        color: 'white', 
+                                        border: 'none', 
+                                        borderRadius: '6px', 
+                                        padding: '8px', 
+                                        fontSize: '0.9rem', 
+                                        fontWeight: '600', 
+                                        cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        opacity: cart.length === 0 ? 0.7 : 1,
+                                        marginTop: '0.25rem'
                                     }}
                                 >
-                                    <Banknote size={18} /> NUMERAR
-                                </button>
-                                <button
-                                    onClick={() => handleCheckout('card')}
-                                    disabled={isSaving}
-                                    style={{
-                                        background: '#2563eb', color: 'white', border: 'none',
-                                        padding: '0.75rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                        opacity: isSaving ? 0.7 : 1, fontSize: '0.9rem'
-                                    }}
-                                >
-                                    <CreditCard size={18} /> CARD
+                                    <Printer size={16} />
+                                    Generează Bon (Test)
                                 </button>
                             </div>
                         </div>
