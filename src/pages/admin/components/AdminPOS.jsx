@@ -57,6 +57,47 @@ const AdminPOS = () => {
     const [selectedTableId, setSelectedTableId] = useState(null);
     const [newTableName, setNewTableName] = useState('');
     
+    // Auth Role
+    const adminRole = localStorage.getItem('admin_role');
+
+    // Fetch Tables from DB
+    useEffect(() => {
+        const fetchTables = async () => {
+            const { data, error } = await supabase
+                .from('restaurant_tables')
+                .select('*')
+                .order('created_at', { ascending: true });
+            
+            if (error) {
+                console.error("Error fetching tables:", error);
+            } else {
+                setTables(data || []);
+            }
+        };
+        fetchTables();
+
+        // Optional: Real-time subscription could go here
+    }, []);
+
+    // Helper to update table items (Optimistic UI + DB Sync)
+    const updateTableItems = async (tableId, newItems) => {
+        // Optimistic update
+        setTables(prev => prev.map(t => t.id === tableId ? { ...t, items: newItems } : t));
+        
+        // DB Update
+        try {
+            const { error } = await supabase
+                .from('restaurant_tables')
+                .update({ items: newItems })
+                .eq('id', tableId);
+            
+            if (error) throw error;
+        } catch (err) {
+            console.error("Failed to sync table items:", err);
+            // Optionally revert state here if critical
+        }
+    };
+    
     const [dailyProducts, setDailyProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -110,23 +151,58 @@ const AdminPOS = () => {
     }, [products, fetchDailyMenu, posDate]);
 
     // Table Actions
-    const handleAddTable = () => {
+    const handleAddTable = async () => {
         if (!newTableName.trim()) return;
-        const newTable = {
-            id: Date.now().toString(),
-            name: newTableName,
-            items: []
-        };
-        setTables(prev => [...prev, newTable]);
-        setSelectedTableId(newTable.id);
-        setNewTableName('');
+
+        // Role Check: Only 'admin_app' can create tables
+        if (adminRole !== 'admin_app') {
+            alert("Nu ai permisiunea de a crea mese. Doar administratorul poate face asta.");
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('restaurant_tables')
+                .insert([{ name: newTableName, items: [] }])
+                .select();
+
+            if (error) throw error;
+            
+            if (data && data[0]) {
+                setTables(prev => [...prev, data[0]]);
+                setSelectedTableId(data[0].id);
+                setNewTableName('');
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la crearea mesei: " + err.message);
+        }
     };
 
-    const handleDeleteTable = (e, tableId) => {
+    const handleDeleteTable = async (e, tableId) => {
         e.stopPropagation();
+
+        // Role Check: Only 'admin_app' can delete tables
+        if (adminRole !== 'admin_app') {
+            alert("Nu ai permisiunea de a șterge mese. Doar administratorul poate face asta.");
+            return;
+        }
+
         if (window.confirm('Sigur vrei să ștergi această masă?')) {
-            setTables(prev => prev.filter(t => t.id !== tableId));
-            if (selectedTableId === tableId) setSelectedTableId(null);
+            try {
+                const { error } = await supabase
+                    .from('restaurant_tables')
+                    .delete()
+                    .eq('id', tableId);
+
+                if (error) throw error;
+
+                setTables(prev => prev.filter(t => t.id !== tableId));
+                if (selectedTableId === tableId) setSelectedTableId(null);
+            } catch (err) {
+                console.error(err);
+                alert("Eroare la ștergerea mesei: " + err.message);
+            }
         }
     };
 
@@ -137,44 +213,41 @@ const AdminPOS = () => {
             return;
         }
 
-        setTables(prev => prev.map(table => {
-            if (table.id === selectedTableId) {
-                const existing = table.items.find(item => item.id === product.id);
-                let newItems;
-                if (existing) {
-                    newItems = table.items.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
-                } else {
-                    newItems = [...table.items, { ...product, qty: 1 }];
-                }
-                return { ...table, items: newItems };
-            }
-            return table;
-        }));
+        const table = tables.find(t => t.id === selectedTableId);
+        if (!table) return;
+
+        const existing = table.items.find(item => item.id === product.id);
+        let newItems;
+        if (existing) {
+            newItems = table.items.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+        } else {
+            newItems = [...table.items, { ...product, qty: 1 }];
+        }
+        
+        updateTableItems(selectedTableId, newItems);
     };
 
     const updateQty = (id, delta) => {
-        setTables(prev => prev.map(table => {
-            if (table.id === selectedTableId) {
-                const newItems = table.items.map(item => {
-                    if (item.id === id) {
-                        const newQty = Math.max(1, item.qty + delta);
-                        return { ...item, qty: newQty };
-                    }
-                    return item;
-                });
-                return { ...table, items: newItems };
+        const table = tables.find(t => t.id === selectedTableId);
+        if (!table) return;
+
+        const newItems = table.items.map(item => {
+            if (item.id === id) {
+                const newQty = Math.max(1, item.qty + delta);
+                return { ...item, qty: newQty };
             }
-            return table;
-        }));
+            return item;
+        });
+        
+        updateTableItems(selectedTableId, newItems);
     };
 
     const removeFromCart = (id) => {
-        setTables(prev => prev.map(table => {
-            if (table.id === selectedTableId) {
-                return { ...table, items: table.items.filter(item => item.id !== id) };
-            }
-            return table;
-        }));
+        const table = tables.find(t => t.id === selectedTableId);
+        if (!table) return;
+
+        const newItems = table.items.filter(item => item.id !== id);
+        updateTableItems(selectedTableId, newItems);
     };
 
     // Calculate Total
@@ -286,9 +359,9 @@ const AdminPOS = () => {
 
             alert("Comandă salvată cu succes!");
 
-            // Close table immediately
-            setTables(prev => prev.filter(t => t.id !== selectedTableId));
-            setSelectedTableId(null);
+            // Clear table items but KEEP the table
+            updateTableItems(selectedTableId, []);
+            
         } catch (err) {
             console.error(err);
             alert("Eroare la salvare: " + err.message);
@@ -407,19 +480,21 @@ const AdminPOS = () => {
                 
                 {/* Table Management */}
                 <div style={{ marginBottom: '0.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <input 
-                            type="text" 
-                            placeholder="Masă nouă..."
-                            value={newTableName}
-                            onChange={(e) => setNewTableName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddTable()}
-                            style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                        />
-                        <button onClick={handleAddTable} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', padding: '0 0.75rem', cursor: 'pointer' }}>
-                            <Plus size={18} />
-                        </button>
-                    </div>
+                    {adminRole === 'admin_app' && (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <input 
+                                type="text" 
+                                placeholder="Masă nouă..."
+                                value={newTableName}
+                                onChange={(e) => setNewTableName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddTable()}
+                                style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                            />
+                            <button onClick={handleAddTable} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', padding: '0 0.75rem', cursor: 'pointer' }}>
+                                <Plus size={18} />
+                            </button>
+                        </div>
+                    )}
 
                     {/* Active Tables Chips */}
                     <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxHeight: '60px', overflowY: 'auto' }}>
@@ -438,14 +513,16 @@ const AdminPOS = () => {
                                 }}
                             >
                                 <span style={{ maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{table.name}</span>
-                                <span 
-                                    onClick={(e) => handleDeleteTable(e, table.id)} 
-                                    style={{ 
-                                        opacity: 0.8, cursor: 'pointer',
-                                        background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '14px', height: '14px',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px'
-                                    }}
-                                >×</span>
+                                {adminRole === 'admin_app' && (
+                                    <span 
+                                        onClick={(e) => handleDeleteTable(e, table.id)} 
+                                        style={{ 
+                                            opacity: 0.8, cursor: 'pointer',
+                                            background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '14px', height: '14px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px'
+                                        }}
+                                    >×</span>
+                                )}
                             </div>
                         ))}
                     </div>
