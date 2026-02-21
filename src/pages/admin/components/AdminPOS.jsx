@@ -124,14 +124,14 @@ const AdminPOS = () => {
             let name = item.name || '';
             
             // Remove emojis using regex range for common emojis
+            // Ranges: Miscellaneous Symbols, Dingbats, Transport/Map, Emoticons, etc.
             name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             
             // Remove semicolons and trim
-            name = name.replace(/;/g, ' ').trim();
+            name = name.replace(/;/g, ' ').replace(/\s+/g, ' ').trim();
             
-            // Truncate only if extremely long (e.g. > 200 chars) to avoid driver crash, but user requested full name.
-            // Let's set a safe high limit like 100 which is usually enough for "Branzoaice..."
-            if (name.length > 100) name = name.substring(0, 100);
+            // Truncate only if extremely long (e.g. > 150 chars) to avoid driver crash, but user requested full name.
+            if (name.length > 150) name = name.substring(0, 150);
 
             content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;BUC;\n`;
         });
@@ -195,13 +195,18 @@ const AdminPOS = () => {
                 is_pos_order: true,
                 table_number: selectedTable.name,
                 fiscal_print_status: 'pending',
-                items: cart.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.qty,
-                    vat: 9
-                })),
+                items: cart.map(item => {
+                    // Also clean name in stored items for consistency (optional but good practice)
+                    let cleanName = item.name || '';
+                    cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+                    return {
+                        id: item.id,
+                        name: cleanName,
+                        price: item.price,
+                        quantity: item.qty,
+                        vat: 9
+                    };
+                }),
                 created_at: new Date().toISOString(),
                 customer_data: {
                     firstName: `Masa ${selectedTable.name}`,
