@@ -198,8 +198,8 @@ const AdminOperators = () => {
                                     onChange={e => setNewOp({ ...newOp, role: e.target.value })}
                                     style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                                 >
-                                    <option value="operator">Operator (General)</option>
-                                    <option value="chef">Bucătar</option>
+                                    <option value="operator">Manager Locație (Acces Total)</option>
+                                    <option value="chef">Bucătar (Acces Limitat)</option>
                                     <option value="achizitor">Achizitor</option>
                                     <option value="contabil">Contabil</option>
                                 </select>

@@ -67,20 +67,27 @@ const AdminDashboard = () => {
     useEffect(() => {
         const role = localStorage.getItem('admin_role');
         const name = localStorage.getItem('admin_name');
-        setAdminRole(role || 'operator');
+        
+        if (!role) {
+             navigate('/admin/login');
+             return;
+        }
+
+        const cleanRole = role.trim();
+        setAdminRole(cleanRole);
         setAdminName(name || 'Admin');
 
-        if (role === 'chef') {
+        if (cleanRole === 'chef') {
             setActiveTab('orders');
         }
-        if (role === 'cost_productie') {
+        if (cleanRole === 'cost_productie') {
             setActiveTab('recipes');
         }
     }, []);
 
     // Navigation Config
     const NAV_ITEMS = [
-        { id: 'pos', label: 'POS / Ospătar', icon: ShoppingCart, permission: 'orders' },
+        { id: 'pos', label: 'POS / Ospătar', icon: ShoppingCart, permission: 'pos' },
         { id: 'orders', label: 'Comenzi', icon: ClipboardList, permission: 'orders' },
         { id: 'products', label: 'Produse', icon: Box, permission: 'products' },
         { id: 'categories', label: 'Categorii', icon: ClipboardList, permission: 'categories' },
@@ -110,7 +117,7 @@ const AdminDashboard = () => {
         { id: 'requests', label: 'Cereri', icon: FileText, permission: 'requests' },
 
         { header: 'Administrare' },
-        { id: 'events', label: 'Evenimente', icon: CalendarIcon, permission: 'orders' },
+        { id: 'events', label: 'Evenimente', icon: CalendarIcon, permission: 'events' },
         { id: 'planner', label: 'Planificator Meniu', icon: CalendarIcon, permission: 'products' },
         { id: 'delivery_zones', label: 'Livrare', icon: Truck, permission: 'promo' },
         { id: 'drivers_apps', label: 'Aplicații Livratori', icon: Truck, permission: 'drivers' },
@@ -122,32 +129,39 @@ const AdminDashboard = () => {
 
     const canAccess = (tab) => {
         if (!adminRole) return false;
-        if (adminRole === 'admin_app') return true; // Super admin
+        
+        // Normalize role for comparison
+        const role = adminRole.toLowerCase().trim();
 
-        if (adminRole === 'contabil') {
+        // Handle Chef/Bucatar Role FIRST to ensure restriction
+        if (role === 'chef' || role === 'bucatar' || role === 'bucătar') {
+            return ['orders', 'kitchen'].includes(tab);
+        }
+
+        if (role === 'admin_app') return true; // Super admin
+
+        if (role === 'contabil') {
             // Allowed: Orders, Reports, Logs, Suppliers, Inventory, Locations
-            const allowed = ['orders', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
+            const allowed = ['orders', 'pos', 'events', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
-        if (adminRole === 'achizitor') {
+        if (role === 'achizitor') {
             // Achizitor needs procurement flow logic
             const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
-        if (adminRole === 'gestionar') {
+        if (role === 'gestionar') {
             const allowed = ['suppliers', 'locations', 'inventory_items', 'inventory_objects'];
             return allowed.includes(tab);
         }
 
-        if (adminRole === 'operator') {
+        if (role === 'operator') {
             return true;
         }
-        if (adminRole === 'chef') {
-            return ['orders', 'recipes', 'kitchen'].includes(tab);
-        }
-        if (adminRole === 'cost_productie') {
+
+        if (role === 'cost_productie') {
             // Explicitly deny procurement if needed, though default is false
             return ['recipes'].includes(tab);
         }
@@ -488,6 +502,12 @@ const AdminDashboard = () => {
                     {isMobile && <button onClick={() => setIsSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'white' }}><X size={24} /></button>}
                 </div>
 
+                {/* DEBUG BANNER - TEMPORARY FOR DIAGNOSIS */}
+                <div style={{ background: '#fef3c7', padding: '0.5rem', fontSize: '0.7rem', color: '#b45309', textAlign: 'center', borderBottom: '1px solid #fcd34d' }}>
+                   Rol: <strong>{adminRole || 'Nedetectat'}</strong> <br/>
+                   (DB: {localStorage.getItem('admin_role')})
+                </div>
+
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid #f1f5f9', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
                         <div style={{ padding: '8px', background: '#990000', borderRadius: '50%', color: 'white' }}>
@@ -495,18 +515,42 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                             <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{adminName}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'capitalize' }}>{adminRole}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'capitalize' }}>
+                                {adminRole} {adminRole === 'chef' ? '(Bucătar)' : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <nav style={{ flex: 1, padding: '0 1rem' }}>
                     {NAV_ITEMS.map((item, index) => {
+                        // FORCE HIDE FOR CHEF - NUCLEAR OPTION
+                        const currentRole = (adminRole || '').toLowerCase().trim();
+                        if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen'].includes(item.id) && !item.header) {
+                            return null;
+                        }
+
                         // Header
                         if (item.header) {
-                            // Check if user has access to at least one item in this section? 
-                            // Simplification: Just show headers, or maybe filter out if no items visible. 
-                            // For now simple render.
+                            // Check if user has access to at least one item in this section
+                            let hasVisibleChildren = false;
+                            for (let i = index + 1; i < NAV_ITEMS.length; i++) {
+                                if (NAV_ITEMS[i].header) break; // End of section
+                                
+                                // ALSO APPLY FORCE HIDE TO HEADER LOGIC
+                                const childId = NAV_ITEMS[i].id;
+                                if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen'].includes(childId)) {
+                                    continue;
+                                }
+
+                                if (canAccess(NAV_ITEMS[i].permission)) {
+                                    hasVisibleChildren = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!hasVisibleChildren) return null;
+
                             return <div key={index} style={{ padding: '1rem 0 0.5rem 0', fontSize: '0.75rem', color: '#990000', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{item.header}</div>;
                         }
                         // Nav Item
