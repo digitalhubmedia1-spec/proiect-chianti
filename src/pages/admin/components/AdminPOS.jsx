@@ -18,21 +18,40 @@ const AdminPOS = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Date State for POS
+    const [posDate, setPosDate] = useState(new Date());
+
     // Derived
     const selectedTable = tables.find(t => t.id === selectedTableId);
     const cart = selectedTable ? selectedTable.items : [];
 
+    // Helper: Format Date for DB
+    const formatDateForDB = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Helper: Format Date for Display
+    const formatDateForDisplay = (date) => {
+        return date.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
+    };
+
+    // Change Date
+    const changeDate = (days) => {
+        const next = new Date(posDate);
+        next.setDate(next.getDate() + days);
+        setPosDate(next);
+    };
+
     // Initialize: Load Daily Menu
     useEffect(() => {
         const loadMenu = async () => {
-            // Use local date instead of UTC (toISOString) to match AdminMenuPlanner
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const today = `${year}-${month}-${day}`;
+            const dateStr = formatDateForDB(posDate);
+            console.log("Loading menu for:", dateStr); // Debug
             
-            const dailyItems = await fetchDailyMenu(today);
+            const dailyItems = await fetchDailyMenu(dateStr);
 
             // Map daily items to full product details
             const available = dailyItems.map(di => {
@@ -43,7 +62,7 @@ const AdminPOS = () => {
             setDailyProducts(available);
         };
         if (products.length > 0) loadMenu();
-    }, [products, fetchDailyMenu]);
+    }, [products, fetchDailyMenu, posDate]);
 
     // Table Actions
     const handleAddTable = () => {
@@ -257,6 +276,20 @@ const AdminPOS = () => {
 
             {/* Left: Product Catalog */}
             <div style={{ flex: 3, background: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                
+                {/* Date Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '6px' }}>
+                    <button onClick={() => changeDate(-1)} style={{ cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px' }}>
+                        <Minus size={16} />
+                    </button>
+                    <div style={{ fontWeight: '700', color: '#0f172a', textTransform: 'capitalize' }}>
+                        {formatDateForDisplay(posDate)}
+                    </div>
+                    <button onClick={() => changeDate(1)} style={{ cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px' }}>
+                        <Plus size={16} />
+                    </button>
+                </div>
+
                 {/* Search & Filter */}
                 <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
@@ -303,7 +336,7 @@ const AdminPOS = () => {
                 {dailyProducts.length === 0 ? (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', gap: '0.5rem' }}>
                         <span style={{ fontSize: '2rem' }}>📅</span>
-                        <p style={{ margin: 0 }}>Nu există produse planificate pentru astăzi.</p>
+                        <p style={{ margin: 0 }}>Nu există produse planificate pentru {formatDateForDisplay(posDate)}.</p>
                         <small>Adaugă produse în meniul zilei din secțiunea Meniu.</small>
                     </div>
                 ) : (
