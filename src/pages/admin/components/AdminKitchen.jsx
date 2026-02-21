@@ -200,7 +200,7 @@ const AdminKitchen = () => {
                         <div className="modal-body-scroll">
                             <div className="section">
                                 <h3><FileText size={20} /> Instrucțiuni Interne</h3>
-                                <p style={{ whiteSpace: 'pre-wrap' }}>{selectedProduct.internal_instructions || "Nu există instrucțiuni specifice."}</p>
+                                <p style={{ whiteSpace: 'pre-wrap' }}>{(selectedProduct.internal_instructions || "Nu există instrucțiuni specifice.").trim()}</p>
                             </div>
 
                             {recipesCache[selectedProduct.id]?.recipe && (
@@ -208,7 +208,7 @@ const AdminKitchen = () => {
                                     <h3><List size={20} /> Mod de Preparare (Rețetă)</h3>
                                     <div className="recipe-instructions">
                                         {recipesCache[selectedProduct.id].recipe.preparation_method ? (
-                                            <p style={{ whiteSpace: 'pre-wrap' }}>{recipesCache[selectedProduct.id].recipe.preparation_method}</p>
+                                            <p style={{ whiteSpace: 'pre-wrap' }}>{recipesCache[selectedProduct.id].recipe.preparation_method.trim()}</p>
                                         ) : (
                                             <p className="text-muted">Fără instrucțiuni în rețetă.</p>
                                         )}
