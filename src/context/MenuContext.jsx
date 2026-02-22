@@ -55,7 +55,7 @@ export const MenuProvider = ({ children }) => {
                         .order('sort_order', { ascending: true }),
                     supabase
                         .from('products')
-                        .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, sort_order, allergens')
+                        .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, allergens')
                         // Removed filter for is_active: true to ensure we load ALL products.
                         // We will filter in the UI if needed, but for Daily Menu we want to show even inactive products.
                 ]);

@@ -158,18 +158,6 @@ const Products = () => {
 
 
 
-    // Build map for efficient lookup
-    const dailyMenuMap = {};
-    if (dailyMenuData) {
-        dailyMenuData.forEach(item => {
-            dailyMenuMap[item.id] = {
-                stock: item.stock,
-                specific_extras_ids: item.specific_extras_ids,
-                sort_order: item.sort_order
-            };
-        });
-    }
-
     // Prevent filtering before data is loaded
     if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
 
@@ -295,91 +283,57 @@ const Products = () => {
 
     // --- VIEW MODE: CATALOG (Existing Logic) ---
 
+    // Build map for efficient lookup (moved here to be available for filtering)
+    const dailyMenuMap = {};
+    if (dailyMenuData) {
+        dailyMenuData.forEach(item => {
+            dailyMenuMap[item.id] = {
+                stock: item.stock,
+                specific_extras_ids: item.specific_extras_ids,
+                sort_order: item.sort_order
+            };
+        });
+    }
+
     // Filter logic to show ONLY delivery products
-    // Filter Logic
-    let filteredProducts = products.filter(product => {
-        // 3. Daily Menu Check (If configured) - THIS IS PRIMARY
-        if (dailyMenuData !== null) {
-            const isToday = formatDate(selectedDate) === formatDate(new Date());
-            if (dailyMenuData.length > 0) {
-                // Explicit configuration exists
-                // Check if product is in the map. If it IS, we force inclusion (ignoring global disabled) unless catered?
-                // Actually, let's keep it safe: 
-                // If it IS in the menu, we return true (or continue logic).
-                // If it is NOT in the menu, we return false.
-
-                if (dailyMenuMap[product.id] !== undefined) {
-                    // OPTIONAL: Filter out catering types if needed, but if Admin added it, display it.
-                    // We SKIP the global availability check effectively by not returning false earlier if we structured it right.
-                    // But we returned early above. We need to restructure.
-                    return true;
-                }
-                return false;
-            } else {
-                // No configuration found -> SHOW NOTHING (User request: strict mode)
-                return false;
-            }
-        }
-
-        // Standard Checks (Only if no Daily Menu override active for this specific item?)
-        // Wait, the logic above returns false if Daily Menu is active but item not found.
-        // If Daily Menu IS active and item IS found, we returned true.
-        // So we need to move the Standard Checks INTO the "else" of "Daily Menu exists" OR run them before but allow override?
-
-        // BETTER LOGIC:
-        // 3. Catering Check (Always enforce?)
-        const cat = categories.find(c => c.name === product.category);
-        if (cat?.type === 'catering') return false;
-        // Check visibility (Hide if category is hidden in admin)
-        if (cat?.is_visible === false) return false;
-
-        // 2. Daily Menu Logic
-        if (dailyMenuData !== null && dailyMenuData.length > 0) {
-            // If Menu Configured: ONLY show if in menu.
-            // If in menu -> SHOW (ignore global is_available)
-            return dailyMenuMap[product.id] !== undefined;
-        }
-
-        // 3. Fallback (Standard Catalog)
-        // If no daily menu configured (or today empty fallback):
-        
-        // Filter out inactive (deleted/hidden) products globally for standard catalog
-        if (product.is_active === false) return false;
-
-        // Enforce is_available
-        if (product.is_available === false) return false;
-
-        // 4. Category Filter
-        if (activeCategory !== "Toate" && product.category !== activeCategory) {
-            // Special handling for Platouri if needed, otherwise strict
-            if (!(activeCategory === "Platouri Fel Principal" && product.name.includes("Platou"))) {
-                return false;
-            }
-        }
-
-        // 5. Search Filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            if (!product.name.toLowerCase().includes(query) &&
+    const filteredProducts = products.filter(product => {
+        // 1. Search Filter (Highest Priority)
+        if (searchTerm) {
+            const query = searchTerm.toLowerCase();
+            if (!product.name.toLowerCase().includes(query) && 
                 !(product.description && product.description.toLowerCase().includes(query))) {
                 return false;
             }
         }
 
+        // 2. Category Filter
+        if (activeCategory !== "Toate" && product.category !== activeCategory) {
+            return false;
+        }
+
+        // 3. Daily Menu Availability Check
+        if (dailyMenuData && dailyMenuData.length > 0) {
+            const menuItem = dailyMenuMap[product.id];
+            if (!menuItem) return false;
+        } else {
+             // Fallback
+             if (product.is_active === false) return false;
+             if (product.is_available === false) return false;
+        }
+
         return true;
     });
 
-    const productsSorted = [...filteredProducts].sort((a, b) => {
+    // Sort Products
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
         if (sortOrder === "asc") return a.price - b.price;
         if (sortOrder === "desc") return b.price - a.price;
 
-        // Default Sort: Respect Daily Menu Order if active
         if (dailyMenuData && dailyMenuData.length > 0) {
-            const orderA = dailyMenuMap[a.id]?.sort_order ?? 9999;
-            const orderB = dailyMenuMap[b.id]?.sort_order ?? 9999;
+            const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
+            const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
             return orderA - orderB;
         }
-
         return 0;
     });
 
@@ -423,14 +377,6 @@ const Products = () => {
                 <div className="container">
                     <h1 className="page-title">Meniul Nostru</h1>
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
-                    
-                    {/* Debug Info - Temporary */}
-                    <div style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', marginBottom: '10px' }}>
-                        Debug: {formatDate(selectedDate)} | 
-                        Menu Items: {dailyMenuData ? dailyMenuData.length : 'Loading...'} | 
-                        Total Products: {products.length} |
-                        Error: {menuError || 'None'}
-                    </div>
 
                     {/* Date Navigation Dropdown */}
                     <div className="date-selector-container" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
