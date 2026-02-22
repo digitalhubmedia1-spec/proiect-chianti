@@ -74,8 +74,10 @@ const AdminKitchen = () => {
     };
 
     useEffect(() => {
-        fetchDailyPlan();
-    }, [selectedDate]);
+        if (products.length > 0) {
+            fetchDailyPlan();
+        }
+    }, [selectedDate, products]);
 
     const formatDate = (date) => {
         const year = date.getFullYear();
