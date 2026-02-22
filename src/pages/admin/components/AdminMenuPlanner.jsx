@@ -184,7 +184,29 @@ const AdminMenuPlanner = () => {
 
     const toggleItem = (id) => {
         const newSet = new Set(activeItems);
-        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+            // Reset values for this product to ensure a clean state
+            setStockValues(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+            setSortOrderValues(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+            setExtrasValues(prev => {
+                const next = { ...prev };
+                // Initialize with empty array to avoid falling back to global defaults
+                // User wants a "clean" state with no extras selected by default
+                next[id] = [];
+                return next;
+            });
+        }
         setActiveItems(newSet);
     };
 
