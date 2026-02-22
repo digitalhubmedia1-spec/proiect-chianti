@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Download, Search, Filter, Trash2, XCircle } from 'lucide-react';
+import { Download, Search, Filter, Trash2, XCircle, Edit, Save, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -8,9 +8,22 @@ import * as XLSX from 'xlsx';
 const EventReservations = ({ eventId }) => {
     const [reservations, setReservations] = useState([]);
     const [tables, setTables] = useState({});
+    const [tablesList, setTablesList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Edit State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        id: null,
+        guest_name: '',
+        guest_phone: '',
+        table_id: '',
+        seat_count: 1,
+        dietary_preference: 'none',
+        observations: ''
+    });
 
     useEffect(() => {
         fetchReservations();
@@ -56,6 +69,7 @@ const EventReservations = ({ eventId }) => {
                 tablesMap[t.id] = t.label;
             });
             setTables(tablesMap);
+            setTablesList(tablesData);
         }
 
         setReservations(resData || []);
@@ -74,6 +88,45 @@ const EventReservations = ({ eventId }) => {
         const { error } = await supabase.from('event_reservations').delete().eq('id', id);
         if (error) alert('Eroare: ' + error.message);
         else fetchReservations();
+    };
+
+    const handleEditClick = (reservation) => {
+        setEditFormData({
+            id: reservation.id,
+            guest_name: reservation.guest_name,
+            guest_phone: reservation.guest_phone,
+            table_id: reservation.table_id || '',
+            seat_count: reservation.seat_count,
+            dietary_preference: reservation.dietary_preference || 'none',
+            observations: reservation.observations || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editFormData.guest_name || !editFormData.guest_phone) {
+            alert("Numele și telefonul sunt obligatorii!");
+            return;
+        }
+
+        const { error } = await supabase
+            .from('event_reservations')
+            .update({
+                guest_name: editFormData.guest_name,
+                guest_phone: editFormData.guest_phone,
+                table_id: editFormData.table_id || null,
+                seat_count: parseInt(editFormData.seat_count),
+                dietary_preference: editFormData.dietary_preference,
+                observations: editFormData.observations
+            })
+            .eq('id', editFormData.id);
+
+        if (error) {
+            alert('Eroare la actualizare: ' + error.message);
+        } else {
+            setShowEditModal(false);
+            fetchReservations();
+        }
     };
 
     const filteredReservations = reservations.filter(r => {
@@ -249,6 +302,13 @@ const EventReservations = ({ eventId }) => {
                                         </button>
                                     )}
                                     <button 
+                                        onClick={() => handleEditClick(r)}
+                                        title="Editează Rezervarea"
+                                        style={{ color: '#3b82f6', background: 'none', border: '1px solid #3b82f6', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                        <Edit size={14} /> Editează
+                                    </button>
+                                    <button 
                                         onClick={() => handleDelete(r.id)}
                                         title="Șterge Rezervarea"
                                         style={{ color: '#ef4444', background: 'none', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -266,6 +326,91 @@ const EventReservations = ({ eventId }) => {
                     )}
                 </tbody>
             </table>
+
+            {showEditModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', width: '500px', maxWidth: '90%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Editează Rezervare</h3>
+                            <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Nume</label>
+                                <input 
+                                    value={editFormData.guest_name} 
+                                    onChange={e => setEditFormData({...editFormData, guest_name: e.target.value})}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefon</label>
+                                <input 
+                                    value={editFormData.guest_phone} 
+                                    onChange={e => setEditFormData({...editFormData, guest_phone: e.target.value})}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Masa</label>
+                                    <select 
+                                        value={editFormData.table_id} 
+                                        onChange={e => setEditFormData({...editFormData, table_id: e.target.value})}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                    >
+                                        <option value="">Nespecificată</option>
+                                        {tablesList.map(t => (
+                                            <option key={t.id} value={t.id}>{t.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Locuri</label>
+                                    <input 
+                                        type="number"
+                                        min="1"
+                                        value={editFormData.seat_count} 
+                                        onChange={e => setEditFormData({...editFormData, seat_count: e.target.value})}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Preferințe Alimentare</label>
+                                <select 
+                                    value={editFormData.dietary_preference} 
+                                    onChange={e => setEditFormData({...editFormData, dietary_preference: e.target.value})}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                >
+                                    <option value="none">Fără preferințe</option>
+                                    <option value="post">Post</option>
+                                    <option value="frupt">Frupt</option>
+                                    <option value="both">Post & Frupt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Observații</label>
+                                <textarea 
+                                    rows="3"
+                                    value={editFormData.observations} 
+                                    onChange={e => setEditFormData({...editFormData, observations: e.target.value})}
+                                    placeholder="Ex: Vrea masă lângă muzică..."
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ddd' }}
+                                />
+                            </div>
+                            
+                            <button 
+                                onClick={handleSaveEdit}
+                                style={{ marginTop: '1rem', padding: '0.75rem', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                            >
+                                <Save size={18} /> Salvează Modificările
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
