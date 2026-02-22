@@ -642,7 +642,7 @@ export const MenuProvider = ({ children }) => {
     };
 
     const fetchDailyMenu = async (dateStr) => {
-        if (!supabase) return [];
+        if (!supabase) return null;
         try {
             const { data, error } = await supabase
                 .from('daily_menu_items')
@@ -651,7 +651,9 @@ export const MenuProvider = ({ children }) => {
                 .order('sort_order', { ascending: true });
 
             if (error) throw error;
+            
             if (!data) return [];
+            
             return data.map(item => ({
                 id: item.product_id,
                 stock: item.stock,
@@ -660,7 +662,8 @@ export const MenuProvider = ({ children }) => {
             }));
         } catch (error) {
             console.error("Error fetching daily menu:", error);
-            return [];
+            // Return null to indicate failure (allows fallback in UI)
+            return null;
         }
     };
 

@@ -419,6 +419,13 @@ const Products = () => {
                 <div className="container">
                     <h1 className="page-title">Meniul Nostru</h1>
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
+                    
+                    {/* Debug Info - Temporary */}
+                    <div style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', marginBottom: '10px' }}>
+                        Debug: {formatDate(selectedDate)} | 
+                        Menu Items: {dailyMenuData ? dailyMenuData.length : 'Loading...'} | 
+                        Total Products: {products.length}
+                    </div>
 
                     {/* Date Navigation Dropdown */}
                     <div className="date-selector-container" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
