@@ -44,8 +44,8 @@ export const MenuProvider = ({ children }) => {
             }
 
             try {
-                // Parallel Fetch
-                const [catsResult, prodsResult] = await Promise.all([
+                // Parallel Fetch with allSettled to prevent one failure from blocking the other
+                const results = await Promise.allSettled([
                     supabase
                         .from('categories')
                         .select('*, parent_id, is_visible')
@@ -56,23 +56,29 @@ export const MenuProvider = ({ children }) => {
                         .eq('is_active', true)
                 ]);
 
-                if (catsResult.error) throw catsResult.error;
-                const newCats = catsResult.data || [];
-                setCategories(newCats);
-                localStorage.setItem('chianti_categories', JSON.stringify(newCats));
+                const catsResult = results[0];
+                const prodsResult = results[1];
 
-                if (prodsResult.error) throw prodsResult.error;
-                const newProds = prodsResult.data || [];
-                setProducts(newProds);
-                localStorage.setItem('chianti_products', JSON.stringify(newProds));
+                if (catsResult.status === 'fulfilled' && !catsResult.value.error) {
+                    const newCats = catsResult.value.data || [];
+                    setCategories(newCats);
+                    localStorage.setItem('chianti_categories', JSON.stringify(newCats));
+                } else {
+                    console.error("Categories fetch failed:", catsResult.reason || catsResult.value?.error);
+                }
+
+                if (prodsResult.status === 'fulfilled' && !prodsResult.value.error) {
+                    const newProds = prodsResult.value.data || [];
+                    setProducts(newProds);
+                    localStorage.setItem('chianti_products', JSON.stringify(newProds));
+                } else {
+                    console.error("Products fetch failed:", prodsResult.reason || prodsResult.value?.error);
+                    // If fetch failed, keep cache or empty?
+                    // If cache exists, it's already set in step 1.
+                }
 
             } catch (error) {
-                console.error("Failed to load menu data:", error);
-                // If cache existed, we still have it. If not, empty.
-                if (!localStorage.getItem('chianti_products')) {
-                    setCategories([]);
-                    setProducts([]);
-                }
+                console.error("Unexpected error loading menu data:", error);
             } finally {
                 setLoading(false);
             }

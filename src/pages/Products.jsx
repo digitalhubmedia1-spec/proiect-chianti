@@ -108,24 +108,9 @@ const Products = () => {
         const loadDailyMenu = async () => {
             if (fetchDailyMenu) {
                 const dateStr = formatDate(selectedDate);
-                
-                // 1. Try Cache First
-                const cacheKey = `daily_menu_${dateStr}`;
-                const cached = sessionStorage.getItem(cacheKey);
-                if (cached) {
-                    try {
-                        setDailyMenuData(JSON.parse(cached));
-                    } catch (e) {
-                        console.error("Cache parse error", e);
-                    }
-                }
-
-                // 2. Fetch Fresh Data
+                // Always fetch fresh data for daily menu to ensure accuracy
                 const data = await fetchDailyMenu(dateStr);
                 setDailyMenuData(data);
-                
-                // 3. Update Cache
-                sessionStorage.setItem(cacheKey, JSON.stringify(data));
             }
         };
         loadDailyMenu();
