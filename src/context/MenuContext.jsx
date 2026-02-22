@@ -618,15 +618,17 @@ export const MenuProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('daily_menu_items')
-                .select('product_id, stock, specific_extras_ids')
-                .eq('date', dateStr);
+                .select('product_id, stock, specific_extras_ids, sort_order')
+                .eq('date', dateStr)
+                .order('sort_order', { ascending: true });
 
             if (error) throw error;
             if (!data) return [];
             return data.map(item => ({
                 id: item.product_id,
                 stock: item.stock,
-                specific_extras_ids: item.specific_extras_ids
+                specific_extras_ids: item.specific_extras_ids,
+                sort_order: item.sort_order
             }));
         } catch (error) {
             console.error("Error fetching daily menu:", error);

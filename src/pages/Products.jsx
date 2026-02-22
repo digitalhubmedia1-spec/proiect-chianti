@@ -151,7 +151,8 @@ const Products = () => {
         dailyMenuData.forEach(item => {
             dailyMenuMap[item.id] = {
                 stock: item.stock,
-                specific_extras_ids: item.specific_extras_ids
+                specific_extras_ids: item.specific_extras_ids,
+                sort_order: item.sort_order
             };
         });
     }
@@ -354,6 +355,14 @@ const Products = () => {
     const productsSorted = [...filteredProducts].sort((a, b) => {
         if (sortOrder === "asc") return a.price - b.price;
         if (sortOrder === "desc") return b.price - a.price;
+
+        // Default Sort: Respect Daily Menu Order if active
+        if (dailyMenuData && dailyMenuData.length > 0) {
+            const orderA = dailyMenuMap[a.id]?.sort_order ?? 9999;
+            const orderB = dailyMenuMap[b.id]?.sort_order ?? 9999;
+            return orderA - orderB;
+        }
+
         return 0;
     });
 

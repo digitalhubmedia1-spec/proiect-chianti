@@ -1,0 +1,1 @@
+ALTER TABLE daily_menu_items ADD COLUMN IF NOT EXISTS sort_order INTEGER;

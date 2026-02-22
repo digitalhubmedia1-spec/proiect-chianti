@@ -90,6 +90,7 @@ const AdminMenuPlanner = () => {
     const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const [activeItems, setActiveItems] = useState(new Set());
     const [stockValues, setStockValues] = useState({});
+    const [sortOrderValues, setSortOrderValues] = useState({});
     const [extrasValues, setExtrasValues] = useState({}); // { productId: [extraId1, extraId2] }
 
     // --- WEEKLY VIEW STATE ---
@@ -112,25 +113,29 @@ const AdminMenuPlanner = () => {
         setLoading(true);
         setActiveItems(new Set());
         setStockValues({});
+        setSortOrderValues({});
         setExtrasValues({});
 
         const dateStr = formatDate(selectedDate);
 
-        const { data, error } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids').eq('date', dateStr);
+        const { data, error } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids, sort_order').eq('date', dateStr);
         if (data) {
             const ids = new Set();
             const stocks = {};
+            const sortOrders = {};
             const extrasMap = {};
 
             data.forEach(i => {
                 ids.add(i.product_id);
                 stocks[i.product_id] = i.stock;
+                if (i.sort_order) sortOrders[i.product_id] = i.sort_order;
                 if (i.specific_extras_ids !== null) {
                     extrasMap[i.product_id] = i.specific_extras_ids;
                 }
             });
             setActiveItems(ids);
             setStockValues(stocks);
+            setSortOrderValues(sortOrders);
             setExtrasValues(extrasMap);
         }
         setLoading(false);
@@ -195,6 +200,24 @@ const AdminMenuPlanner = () => {
             // Optional: You could list the names of invalid items for better UX
             const invalidNames = invalidItems.map(id => products.find(p => p.id === id)?.name).filter(Boolean).slice(0, 3).join(", ");
             alert(`Eroare: Trebuie să setați un număr minim de porții (mai mare ca 0) pentru toate produsele selectate!\nVerificați: ${invalidNames}${invalidItems.length > 3 ? '...' : ''}`);
+            return;
+        }
+
+        // VALIDATION: UNIQUE SORT ORDER
+        const usedOrders = new Set();
+        const duplicateOrders = [];
+        Array.from(activeItems).forEach(id => {
+            const order = sortOrderValues[id];
+            if (order && order !== '') {
+                if (usedOrders.has(order)) {
+                    duplicateOrders.push(order);
+                }
+                usedOrders.add(order);
+            }
+        });
+
+        if (duplicateOrders.length > 0) {
+            alert(`Eroare: Ordinea ${duplicateOrders[0]} este duplicată! Vă rugăm să asigurați o ordine unică pentru fiecare produs.`);
             return;
         }
 
@@ -356,6 +379,7 @@ const AdminMenuPlanner = () => {
             product_id: id,
             is_available: true,
             stock: parseInt(stockValues[id]),
+            sort_order: sortOrderValues[id] ? parseInt(sortOrderValues[id]) : null,
             specific_extras_ids: extrasValues[id] !== undefined ? extrasValues[id] : null
         }));
 
@@ -380,18 +404,21 @@ const AdminMenuPlanner = () => {
         do { srcDate.setDate(srcDate.getDate() - 1); } while (srcDate.getDay() === 0 || srcDate.getDay() === 6);
 
         setLoading(true);
-        const { data } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids').eq('date', formatDate(srcDate));
+        const { data } = await supabase.from('daily_menu_items').select('product_id, stock, specific_extras_ids, sort_order').eq('date', formatDate(srcDate));
         if (data) {
             const ids = new Set();
             const stocks = {};
+            const sortOrders = {};
             const extrasMap = {};
             data.forEach(i => {
                 ids.add(i.product_id);
                 stocks[i.product_id] = i.stock;
+                if (i.sort_order) sortOrders[i.product_id] = i.sort_order;
                 if (i.specific_extras_ids !== null) extrasMap[i.product_id] = i.specific_extras_ids;
             });
             setActiveItems(ids);
             setStockValues(stocks);
+            setSortOrderValues(sortOrders);
             setExtrasValues(extrasMap);
         }
         setLoading(false);
@@ -497,6 +524,15 @@ const AdminMenuPlanner = () => {
         return !cat || cat.type !== 'catering';
     });
     const displayProducts = filterCategory === "Toate" ? standardProducts : standardProducts.filter(p => p.category === filterCategory);
+
+    // --- DUPLICATE CHECK ---
+    const activeSortOrders = Array.from(activeItems)
+        .map(id => sortOrderValues[id])
+        .filter(v => v && v !== '');
+    
+    const duplicateOrdersSet = new Set(
+        activeSortOrders.filter((item, index) => activeSortOrders.indexOf(item) !== index)
+    );
 
     // --- RENDER WEEKLY GRID ---
     const renderWeeklyGrid = () => {
@@ -705,6 +741,27 @@ const AdminMenuPlanner = () => {
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
                                 </div>
                                 {activeItems.has(product.id) && (
+                                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Ordine</span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            style={{ 
+                                                width: '60px', 
+                                                padding: '4px', 
+                                                borderRadius: '4px', 
+                                                border: duplicateOrdersSet.has(sortOrderValues[product.id]) ? '2px solid red' : '1px solid #cbd5e1', 
+                                                textAlign: 'center',
+                                                background: duplicateOrdersSet.has(sortOrderValues[product.id]) ? '#fee2e2' : 'white'
+                                            }}
+                                            value={sortOrderValues[product.id] ?? ''}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setSortOrderValues(prev => ({ ...prev, [product.id]: val }));
+                                            }}
+                                        />
+                                    </div>
                                     <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                         <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Porții</span>
                                         <input
