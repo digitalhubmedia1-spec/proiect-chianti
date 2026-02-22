@@ -19,7 +19,7 @@ export const useConsumption = () => {
                 // Fetch from DB
                 let menuQuery = supabase
                     .from('daily_menu_items')
-                    .select('product_id, stock, date');
+                    .select('product_id, stock, date, specific_extras_ids');
 
                 if (startDate && endDate) {
                     menuQuery = menuQuery.gte('date', startDate).lte('date', endDate);
@@ -29,7 +29,25 @@ export const useConsumption = () => {
 
                 const { data, error: menuError } = await menuQuery;
                 if (menuError) throw menuError;
-                menuItems = data || [];
+                
+                // Expand with extras
+                const expandedData = [];
+                if (data) {
+                    data.forEach(item => {
+                        expandedData.push(item);
+                        if (item.specific_extras_ids && Array.isArray(item.specific_extras_ids)) {
+                            item.specific_extras_ids.forEach(eid => {
+                                expandedData.push({
+                                    product_id: parseInt(eid),
+                                    stock: item.stock,
+                                    date: item.date,
+                                    is_extra: true
+                                });
+                            });
+                        }
+                    });
+                }
+                menuItems = expandedData;
             }
 
             if (!menuItems || menuItems.length === 0) {

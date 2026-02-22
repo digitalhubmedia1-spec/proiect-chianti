@@ -460,6 +460,19 @@ const AdminMenuPlanner = () => {
                             stock: qty,
                             date: formatDate(selectedDate)
                         });
+
+                        // Add extras for this product (same quantity)
+                        const extras = extrasValues[id];
+                        if (extras && Array.isArray(extras) && extras.length > 0) {
+                            extras.forEach(extraId => {
+                                items.push({
+                                    product_id: parseInt(extraId),
+                                    stock: qty,
+                                    date: formatDate(selectedDate),
+                                    is_extra: true
+                                });
+                            });
+                        }
                     }
                 }
             });
