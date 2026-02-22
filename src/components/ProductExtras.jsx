@@ -3,11 +3,19 @@ import { useMenu } from '../context/MenuContext';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
-const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
+const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
     const { fetchExtras, products } = useMenu();
     const { addToCart } = useCart();
     const [extras, setExtras] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const handleAdd = (extra) => {
+        if (onAdd) {
+            onAdd(extra);
+        } else {
+            addToCart(extra);
+        }
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -91,7 +99,7 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '1rem' }}>
                     {availableExtras.map(extra => (
-                        <div key={extra.id} onClick={(e) => { e.stopPropagation(); addToCart(extra); }}
+                        <div key={extra.id} onClick={(e) => { e.stopPropagation(); handleAdd(extra); }}
                             style={{
                                 background: 'white',
                                 border: '1px solid #f1f5f9',
@@ -171,7 +179,7 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small' }) => {
                     <div key={extra.id}
                         onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(extra);
+                            handleAdd(extra);
                         }}
                         style={{
                             display: 'flex',

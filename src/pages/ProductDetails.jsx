@@ -10,7 +10,7 @@ import './ProductDetails.css';
 const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addToCart } = useCart();
+    const { addToCart, cartItems } = useCart();
     const { products, categories, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
     const [searchParams] = useSearchParams();
     const dateParam = searchParams.get('date');
@@ -98,6 +98,19 @@ const ProductDetails = () => {
 
     const openImageModal = () => setIsImageModalOpen(true);
     const closeImageModal = () => setIsImageModalOpen(false);
+
+    // Helper to handle adding extras
+    const handleExtraAdd = (extraProduct) => {
+        // Check if main product is in cart (by ID)
+        const isMainProductInCart = cartItems.some(item => item.id === product.id);
+
+        if (isMainProductInCart) {
+            addToCart(extraProduct);
+            // alert(`${extraProduct.name} a fost adăugat în coș!`);
+        } else {
+            alert(`Nu poți adăuga "${extraProduct.name}" fără a adăuga mai întâi produsul principal (${product.name}) în coș.`);
+        }
+    };
 
     // Combine main image and gallery for the list
     const allImages = [product.image, ...(product.gallery || [])].filter(Boolean);
@@ -255,7 +268,7 @@ const ProductDetails = () => {
                         </button>
                     </div>
 
-                    <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} mode="large" />
+                    <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} mode="large" onAdd={handleExtraAdd} />
                 </div>
             </div>
 
