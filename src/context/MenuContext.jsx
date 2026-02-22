@@ -15,9 +15,12 @@ export const MenuProvider = ({ children }) => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [error, setError] = useState(null);
+
     // Initial Load from Supabase
     useEffect(() => {
         const fetchMenuData = async () => {
+            setError(null);
             if (!supabase) {
                 console.warn("Supabase client not initialized.");
                 setCategories([]);
@@ -53,7 +56,8 @@ export const MenuProvider = ({ children }) => {
                     supabase
                         .from('products')
                         .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, sort_order, allergens')
-                        .eq('is_active', true)
+                        // Removed filter for is_active: true to ensure we load ALL products.
+                        // We will filter in the UI if needed, but for Daily Menu we want to show even inactive products.
                 ]);
 
                 const catsResult = results[0];
@@ -65,20 +69,25 @@ export const MenuProvider = ({ children }) => {
                     localStorage.setItem('chianti_categories', JSON.stringify(newCats));
                 } else {
                     console.error("Categories fetch failed:", catsResult.reason || catsResult.value?.error);
+                    setError(catsResult.reason || catsResult.value?.error?.message || "Categories fetch failed");
                 }
 
                 if (prodsResult.status === 'fulfilled' && !prodsResult.value.error) {
                     const newProds = prodsResult.value.data || [];
+                    if (newProds.length === 0) {
+                        console.warn("No products found! Check DB or RLS.");
+                        setError("No products returned from DB.");
+                    }
                     setProducts(newProds);
                     localStorage.setItem('chianti_products', JSON.stringify(newProds));
                 } else {
                     console.error("Products fetch failed:", prodsResult.reason || prodsResult.value?.error);
-                    // If fetch failed, keep cache or empty?
-                    // If cache exists, it's already set in step 1.
+                    setError(prodsResult.reason || prodsResult.value?.error?.message || "Products fetch failed");
                 }
 
             } catch (error) {
                 console.error("Unexpected error loading menu data:", error);
+                setError(error.message);
             } finally {
                 setLoading(false);
             }
@@ -735,7 +744,8 @@ export const MenuProvider = ({ children }) => {
                 alert("Eroare la ștergerea extra: " + error.message);
             }
         },
-        fetchDailyMenu
+        fetchDailyMenu,
+        error // Exposed for debug
     };
 
     return (

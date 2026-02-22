@@ -10,7 +10,7 @@ import SEO from '../components/SEO';
 import './Products.css';
 
 const Products = () => {
-    const { products, categories, loading, fetchDailyMenu } = useMenu();
+    const { products, categories, loading, fetchDailyMenu, error: menuError } = useMenu();
     const [activeCategory, setActiveCategory] = useState("Toate");
     const [isOpen, setIsOpen] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
@@ -342,6 +342,10 @@ const Products = () => {
 
         // 3. Fallback (Standard Catalog)
         // If no daily menu configured (or today empty fallback):
+        
+        // Filter out inactive (deleted/hidden) products globally for standard catalog
+        if (product.is_active === false) return false;
+
         // Enforce is_available
         if (product.is_available === false) return false;
 
@@ -424,7 +428,8 @@ const Products = () => {
                     <div style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', marginBottom: '10px' }}>
                         Debug: {formatDate(selectedDate)} | 
                         Menu Items: {dailyMenuData ? dailyMenuData.length : 'Loading...'} | 
-                        Total Products: {products.length}
+                        Total Products: {products.length} |
+                        Error: {menuError || 'None'}
                     </div>
 
                     {/* Date Navigation Dropdown */}
