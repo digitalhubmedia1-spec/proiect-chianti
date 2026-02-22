@@ -16,7 +16,6 @@ export const MenuProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // Initial Load from Supabase
-    // Initial Load from Supabase
     useEffect(() => {
         const fetchMenuData = async () => {
             if (!supabase) {
@@ -27,30 +26,53 @@ export const MenuProvider = ({ children }) => {
                 return;
             }
 
-            setLoading(true);
+            // 1. Try Local Storage Cache First
             try {
-                // 1. Fetch Categories
-                const { data: catsData, error: catsError } = await supabase
-                    .from('categories')
-                    .select('*, parent_id, is_visible')
-                    .order('sort_order', { ascending: true });
+                const cachedCats = localStorage.getItem('chianti_categories');
+                const cachedProds = localStorage.getItem('chianti_products');
+                
+                if (cachedCats && cachedProds) {
+                    setCategories(JSON.parse(cachedCats));
+                    setProducts(JSON.parse(cachedProds));
+                    setLoading(false); // Show cached content immediately
+                } else {
+                    setLoading(true); // Only show spinner if no cache
+                }
+            } catch (e) {
+                console.error("Cache read error", e);
+                setLoading(true);
+            }
 
-                if (catsError) throw catsError;
-                setCategories(catsData || []);
+            try {
+                // Parallel Fetch
+                const [catsResult, prodsResult] = await Promise.all([
+                    supabase
+                        .from('categories')
+                        .select('*, parent_id, is_visible')
+                        .order('sort_order', { ascending: true }),
+                    supabase
+                        .from('products')
+                        .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, sort_order, allergens')
+                        .eq('is_active', true)
+                ]);
 
-                // 2. Fetch Products
-                const { data: prodsData, error: prodsError } = await supabase
-                    .from('products')
-                    .select('*')
-                    .eq('is_active', true);
+                if (catsResult.error) throw catsResult.error;
+                const newCats = catsResult.data || [];
+                setCategories(newCats);
+                localStorage.setItem('chianti_categories', JSON.stringify(newCats));
 
-                if (prodsError) throw prodsError;
-                setProducts(prodsData || []);
+                if (prodsResult.error) throw prodsResult.error;
+                const newProds = prodsResult.data || [];
+                setProducts(newProds);
+                localStorage.setItem('chianti_products', JSON.stringify(newProds));
 
             } catch (error) {
                 console.error("Failed to load menu data:", error);
-                setCategories([]);
-                setProducts([]);
+                // If cache existed, we still have it. If not, empty.
+                if (!localStorage.getItem('chianti_products')) {
+                    setCategories([]);
+                    setProducts([]);
+                }
             } finally {
                 setLoading(false);
             }

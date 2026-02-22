@@ -106,13 +106,26 @@ const Products = () => {
 
     useEffect(() => {
         const loadDailyMenu = async () => {
-            // If fetchDailyMenu is likely undefined if context wasn't updated live? 
-            // Just in case, check context update. 
-            // But we are in the same component.
             if (fetchDailyMenu) {
                 const dateStr = formatDate(selectedDate);
+                
+                // 1. Try Cache First
+                const cacheKey = `daily_menu_${dateStr}`;
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        setDailyMenuData(JSON.parse(cached));
+                    } catch (e) {
+                        console.error("Cache parse error", e);
+                    }
+                }
+
+                // 2. Fetch Fresh Data
                 const data = await fetchDailyMenu(dateStr);
                 setDailyMenuData(data);
+                
+                // 3. Update Cache
+                sessionStorage.setItem(cacheKey, JSON.stringify(data));
             }
         };
         loadDailyMenu();
@@ -127,18 +140,33 @@ const Products = () => {
     };
 
     useEffect(() => {
+        // 1. Initial Load Logic (Popup + Status)
+        const initialCheck = () => {
+            const status = getScheduleStatus();
+            setIsOpen(status.isOpen);
+
+            // Check if popup already shown in this session
+            const hasShown = sessionStorage.getItem('chianti_popup_shown');
+            
+            if (!hasShown && status.showWarning) {
+                setPopupContent({ title: status.title, message: status.message });
+                setShowPopup(true);
+                sessionStorage.setItem('chianti_popup_shown', 'true');
+            }
+        };
+
+        // 2. Interval Logic (Status Updates Only - Never Open Popup)
         const updateStatus = () => {
             const status = getScheduleStatus();
             setIsOpen(status.isOpen);
-            if (status.showWarning) {
-                setPopupContent({ title: status.title, message: status.message });
-                setShowPopup(true);
-            } else {
+            
+            // Auto-close if restaurant opens
+            if (!status.showWarning) {
                 setShowPopup(false);
             }
         };
 
-        updateStatus();
+        initialCheck();
         const interval = setInterval(updateStatus, 60000);
         return () => clearInterval(interval);
     }, []);
