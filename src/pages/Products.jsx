@@ -298,8 +298,8 @@ const Products = () => {
     // Filter logic to show ONLY delivery products
     const filteredProducts = products.filter(product => {
         // 1. Search Filter (Highest Priority)
-        if (searchTerm) {
-            const query = searchTerm.toLowerCase();
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
             if (!product.name.toLowerCase().includes(query) && 
                 !(product.description && product.description.toLowerCase().includes(query))) {
                 return false;
