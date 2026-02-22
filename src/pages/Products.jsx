@@ -341,8 +341,8 @@ const Products = () => {
 
     const indexOfLastProduct = currentPage * itemsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
-    const currentProducts = productsSorted.slice(indexOfFirstProduct, indexOfLastProduct);
-    const totalPages = Math.ceil(productsSorted.length / itemsPerPage);
+    const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
     const truncate = (str, n) => {
         return (str && str.length > n) ? str.substr(0, n - 1) + "..." : str;
