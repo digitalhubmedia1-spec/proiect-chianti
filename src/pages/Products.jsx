@@ -312,14 +312,11 @@ const Products = () => {
         }
 
         // 3. Daily Menu Availability Check
-        if (dailyMenuData && dailyMenuData.length > 0) {
-            const menuItem = dailyMenuMap[product.id];
-            if (!menuItem) return false;
-        } else {
-             // Fallback
-             if (product.is_active === false) return false;
-             if (product.is_available === false) return false;
-        }
+        // Strictly enforce daily menu visibility.
+        // If dailyMenuData is loaded (even if empty), we only show items in it.
+        // If it's null (loading), we show nothing until it loads.
+        const menuItem = dailyMenuMap[product.id];
+        if (!menuItem) return false;
 
         return true;
     });
@@ -566,8 +563,12 @@ const Products = () => {
                                 );
                             })
                         ) : (
-                            <div className="no-products" style={{ width: '100%' }}>
-                                <p>Nu am găsit produse conform criteriilor selectate.</p>
+                            <div className="no-products" style={{ width: '100%', textAlign: 'center', padding: '2rem' }}>
+                                {dailyMenuData && dailyMenuData.length === 0 ? (
+                                    <p style={{ fontSize: '1.2rem', color: '#64748b' }}>Nu există meniu configurat pentru această dată.</p>
+                                ) : (
+                                    <p>Nu am găsit produse conform criteriilor selectate.</p>
+                                )}
                             </div>
                         )}
 
