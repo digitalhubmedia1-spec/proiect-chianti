@@ -130,13 +130,10 @@ const Products = () => {
             const status = getScheduleStatus();
             setIsOpen(status.isOpen);
 
-            // Check if popup already shown in this session
-            const hasShown = sessionStorage.getItem('chianti_popup_shown');
-            
-            if (!hasShown && status.showWarning) {
+            // Always show popup on initial load if warning is needed
+            if (status.showWarning) {
                 setPopupContent({ title: status.title, message: status.message });
                 setShowPopup(true);
-                sessionStorage.setItem('chianti_popup_shown', 'true');
             }
         };
 
