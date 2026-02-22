@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { useMenu } from '../../../context/MenuContext';
-import { Calendar as CalendarIcon, Info, Calculator, X, ChevronRight, CheckCircle, ChefHat, FileText, List } from 'lucide-react';
+import { Calendar as CalendarIcon, Info, Calculator, X, ChevronRight, CheckCircle, ChefHat, FileText, List, ClipboardList } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './AdminKitchen.css'; // We will create this CSS file
@@ -22,6 +22,56 @@ const AdminKitchen = () => {
 
     // Recipe Data Cache
     const [recipesCache, setRecipesCache] = useState({}); // { productId: { recipe, ingredients } }
+
+    // Total Requirements Logic
+    const [isTotalRequirementsModalOpen, setIsTotalRequirementsModalOpen] = useState(false);
+    const [totalRequirements, setTotalRequirements] = useState([]);
+    const [calculatingTotal, setCalculatingTotal] = useState(false);
+
+    const handleCalculateTotalRequirements = async () => {
+        if (plannedItems.length === 0) return;
+        setCalculatingTotal(true);
+        const totals = {}; // { key: { name, qty, unit } }
+
+        try {
+            for (const item of plannedItems) {
+                // Fetch recipe if not in cache
+                let result = recipesCache[item.id];
+                
+                // If not cached (undefined), fetch it. If null, it means no recipe exists.
+                if (result === undefined) {
+                    result = await fetchRecipeDetails(item.id);
+                }
+
+                if (result && result.ingredients) {
+                    result.ingredients.forEach(ing => {
+                        const totalQty = ing.qty * item.planned_stock;
+                        const key = `${ing.name}-${ing.unit}`;
+                        
+                        if (totals[key]) {
+                            totals[key].qty += totalQty;
+                        } else {
+                            totals[key] = {
+                                name: ing.name,
+                                qty: totalQty,
+                                unit: ing.unit
+                            };
+                        }
+                    });
+                }
+            }
+            
+            // Convert to array
+            const totalsArray = Object.values(totals).sort((a, b) => a.name.localeCompare(b.name));
+            setTotalRequirements(totalsArray);
+            setIsTotalRequirementsModalOpen(true);
+        } catch (error) {
+            console.error("Error calculating totals:", error);
+            alert("A apărut o eroare la calcularea necesarului total.");
+        } finally {
+            setCalculatingTotal(false);
+        }
+    };
 
     useEffect(() => {
         fetchDailyPlan();
@@ -150,6 +200,31 @@ const AdminKitchen = () => {
                         onChange={(e) => setSelectedDate(new Date(e.target.value))}
                         className="date-input"
                     />
+                    <button 
+                        onClick={handleCalculateTotalRequirements}
+                        disabled={calculatingTotal || plannedItems.length === 0}
+                        title="Calculează necesarul total de ingrediente pentru ziua selectată"
+                        style={{ 
+                            marginLeft: '1rem', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            padding: '8px 16px',
+                            background: '#0f172a',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: (calculatingTotal || plannedItems.length === 0) ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            opacity: (calculatingTotal || plannedItems.length === 0) ? 0.7 : 1,
+                            transition: 'all 0.2s',
+                            fontSize: '0.9rem'
+                        }}
+                        onMouseOver={(e) => !(calculatingTotal || plannedItems.length === 0) && (e.currentTarget.style.background = '#1e293b')}
+                        onMouseOut={(e) => !(calculatingTotal || plannedItems.length === 0) && (e.currentTarget.style.background = '#0f172a')}
+                    >
+                        {calculatingTotal ? 'Se calculează...' : <><ClipboardList size={18} /> Necesar Total</>}
+                    </button>
                 </div>
             </div>
 
@@ -309,6 +384,64 @@ const AdminKitchen = () => {
                                     </tbody>
                                 </table>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+                </div>
+            )}
+
+            {/* TOTAL REQUIREMENTS MODAL */}
+            {isTotalRequirementsModalOpen && (
+                <div className="modal-overlay" onClick={() => setIsTotalRequirementsModalOpen(false)}>
+                    <div className="modal-content kitchen-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                        <button className="close-btn" onClick={() => setIsTotalRequirementsModalOpen(false)}><X size={32} /></button>
+                        
+                        <div className="modal-header-kitchen">
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <ClipboardList size={28} /> Necesar Total
+                                </h2>
+                                <p className="subtitle">Pentru {plannedItems.length} produse planificate pe {selectedDate.toLocaleDateString('ro-RO')}</p>
+                            </div>
+                        </div>
+
+                        <div className="modal-body-scroll">
+                            {totalRequirements.length === 0 ? (
+                                <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Nu există ingrediente necesare (sau produsele nu au rețete definite).</p>
+                            ) : (
+                                <table className="ingredients-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>Ingredient</th>
+                                            <th style={{ textAlign: 'right', padding: '12px', borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>Cantitate Totală</th>
+                                            <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0', paddingLeft: '1rem', color: '#64748b' }}>Unitate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {totalRequirements.map((ing, idx) => (
+                                            <tr key={idx} style={{ background: idx % 2 === 0 ? '#f8fafc' : 'white' }}>
+                                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', fontWeight: '500', color: '#334155' }}>{ing.name}</td>
+                                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 'bold', color: '#0f172a', fontSize: '1.05rem' }}>
+                                                    {ing.qty % 1 === 0 ? ing.qty : ing.qty.toFixed(3)}
+                                                </td>
+                                                <td style={{ padding: '10px', borderBottom: '1px solid #e2e8f0', paddingLeft: '1rem', color: '#64748b' }}>{ing.unit}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                            
+                            <div style={{ marginTop: '2rem', textAlign: 'right', display: 'none' }}> 
+                                {/* Hidden for now as print styles are not defined */}
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="btn-info"
+                                    style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}
+                                >
+                                    <FileText size={16} /> Printează Lista
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
