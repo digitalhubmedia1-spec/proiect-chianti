@@ -741,6 +741,7 @@ const AdminMenuPlanner = () => {
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.category}</div>
                                 </div>
                                 {activeItems.has(product.id) && (
+                                    <>
                                     <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                         <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Ordine</span>
                                         <input
@@ -785,6 +786,7 @@ const AdminMenuPlanner = () => {
                                             <span style={{ marginLeft: '4px', fontSize: '0.7rem', fontWeight: '600' }}>Extra</span>
                                         </button>
                                     </div>
+                                    </>
                                 )}
                             </div>
                         ))}
