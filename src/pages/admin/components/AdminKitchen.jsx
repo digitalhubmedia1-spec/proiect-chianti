@@ -388,8 +388,6 @@ const AdminKitchen = () => {
                     </div>
                 </div>
             )}
-                </div>
-            )}
 
             {/* TOTAL REQUIREMENTS MODAL */}
             {isTotalRequirementsModalOpen && (
