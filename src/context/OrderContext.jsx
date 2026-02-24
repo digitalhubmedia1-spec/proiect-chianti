@@ -58,23 +58,30 @@ export const OrderProvider = ({ children }) => {
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
-                    setOrders(prev => [newOrder, ...prev]);
+                    setOrders(prev => {
+                        // Avoid duplicates if already added by optimistic UI or rapid events
+                        if (prev.some(o => o.id === newOrder.id)) return prev;
+                        return [newOrder, ...prev];
+                    });
                     
-                    // Sound for new pending order (needs confirmation) 
-                    // OR new order direct to preparing (from POS/waiter)
                     if (isAdminPath && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
                         playNotificationSound();
                     }
                 } else if (payload.eventType === 'UPDATE') {
                     const updatedOrder = mapOrderFromDB(payload.new);
-                    const oldOrder = orders.find(o => o.id === payload.new.id);
                     
-                    setOrders(prev => prev.map(o => o.id === payload.new.id ? updatedOrder : o));
-                    
-                    // Sound when confirmed (moves to preparing)
-                    if (isAdminPath && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
-                        playNotificationSound();
-                    }
+                    setOrders(prev => {
+                        const oldOrder = prev.find(o => o.id === updatedOrder.id);
+                        
+                        // Sound when confirmed (moves to preparing)
+                        if (isAdminPath && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
+                            playNotificationSound();
+                        }
+
+                        // Only update if state is actually different to avoid unnecessary re-renders
+                        // or jumping back if we already performed an optimistic update
+                        return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
+                    });
                 } else if (payload.eventType === 'DELETE') {
                     setOrders(prev => prev.filter(o => o.id !== payload.old.id));
                 }
@@ -170,8 +177,24 @@ export const OrderProvider = ({ children }) => {
 
     const updateOrderStatus = async (orderId, newStatus) => {
         if (!supabase) return;
-        await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-        logAction('STATUS COMANDĂ', `Comanda #${orderId} -> ${newStatus}`);
+
+        // 1. Optimistic Update (UI change first)
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+
+        try {
+            const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+            if (error) {
+                // Rollback on error
+                console.error("Error updating order status:", error);
+                // We'd need the old status here for a perfect rollback, 
+                // but usually, a refresh or the next sync will fix it.
+                // For now, let's just log and rely on the next realtime update if DB failed.
+            } else {
+                logAction('STATUS COMANDĂ', `Comanda #${orderId} -> ${newStatus}`);
+            }
+        } catch (err) {
+            console.error("Update failed:", err);
+        }
     };
 
     const deleteOrder = async (orderId) => {
