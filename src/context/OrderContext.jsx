@@ -58,17 +58,20 @@ export const OrderProvider = ({ children }) => {
         const channel = supabase
             .channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                // Check if we are specifically in the Admin Orders or Kanban section
-                const isOrdersSection = window.location.pathname.includes('/admin/orders') || 
-                                       window.location.pathname.includes('/admin/kanban');
+                // Check if we are specifically in the Admin Orders, Kanban or Kitchen section
+                const isNotificationSection = window.location.pathname.includes('/admin/orders') || 
+                                             window.location.pathname.includes('/admin/kanban') ||
+                                             window.location.pathname.includes('/admin/bucatarie');
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
                     setOrders(prev => {
                         if (prev.some(o => o.id === newOrder.id)) return prev;
                         
-                        // Sound only in Orders/Kanban section
-                        if (isOrdersSection && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
+                        // Sound for new orders: 
+                        // 1. 'pending' (from web, needs confirmation)
+                        // 2. 'preparing' (from waiter/POS, direct to kitchen)
+                        if (isNotificationSection && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
                             playNotificationSound();
                         }
                         return [newOrder, ...prev];
@@ -78,15 +81,15 @@ export const OrderProvider = ({ children }) => {
                     
                     setOrders(prev => {
                         // Check if this specific order is currently being updated by the client
-                        // If so, we ignore the server's update to prevent jumping back
                         if (pendingUpdates.has(updatedOrder.id)) {
                             return prev;
                         }
 
                         const oldOrder = prev.find(o => o.id === updatedOrder.id);
                         
-                        // Sound only in Orders/Kanban section
-                        if (isOrdersSection && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
+                        // Sound logic: 
+                        // Trigger sound when confirmed (status moves from pending to preparing)
+                        if (isNotificationSection && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
                             playNotificationSound();
                         }
                         return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
