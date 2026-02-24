@@ -8,6 +8,7 @@ export const useOrder = () => useContext(OrderContext);
 
 export const OrderProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
+    const [pendingUpdates, setPendingUpdates] = useState(new Set());
 
     // Helper to normalize DB snake_case to Frontend camelCase
     const mapOrderFromDB = (dbOrder) => ({
@@ -35,7 +36,7 @@ export const OrderProvider = ({ children }) => {
     useEffect(() => {
         if (!supabase) return;
 
-        // 1. Initial Fetch
+        // 1. Initial Fetch (Only on mount)
         const fetchOrders = async () => {
             const { data, error } = await supabase
                 .from('orders')
@@ -48,38 +49,41 @@ export const OrderProvider = ({ children }) => {
         };
 
         fetchOrders();
+    }, [supabase]); // Run once when supabase is available
 
-        // 2. Realtime Subscription
+    useEffect(() => {
+        if (!supabase) return;
+
+        // 2. Realtime Subscription (Only on mount)
         const channel = supabase
             .channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                // Check for notifications
                 const isAdminPath = window.location.pathname.includes('/admin');
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
                     setOrders(prev => {
-                        // Avoid duplicates if already added by optimistic UI or rapid events
                         if (prev.some(o => o.id === newOrder.id)) return prev;
+                        
+                        if (isAdminPath && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
+                            playNotificationSound();
+                        }
                         return [newOrder, ...prev];
                     });
-                    
-                    if (isAdminPath && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
-                        playNotificationSound();
-                    }
                 } else if (payload.eventType === 'UPDATE') {
                     const updatedOrder = mapOrderFromDB(payload.new);
                     
                     setOrders(prev => {
+                        // Check if this specific order is currently being updated by the client
+                        // If so, we ignore the server's update to prevent jumping back
+                        if (pendingUpdates.has(updatedOrder.id)) {
+                            return prev;
+                        }
+
                         const oldOrder = prev.find(o => o.id === updatedOrder.id);
-                        
-                        // Sound when confirmed (moves to preparing)
                         if (isAdminPath && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
                             playNotificationSound();
                         }
-
-                        // Only update if state is actually different to avoid unnecessary re-renders
-                        // or jumping back if we already performed an optimistic update
                         return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
                     });
                 } else if (payload.eventType === 'DELETE') {
@@ -91,7 +95,7 @@ export const OrderProvider = ({ children }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [orders]); // Added orders to dependencies to check old status on update
+    }, [supabase]); // Only re-subscribe if supabase instance changes, not on order changes
 
     const addOrder = async (orderData) => {
         if (!supabase) return 'LOCAL_ID_' + Date.now(); // Fallback for no-db mode? Or fail.
@@ -178,22 +182,37 @@ export const OrderProvider = ({ children }) => {
     const updateOrderStatus = async (orderId, newStatus) => {
         if (!supabase) return;
 
-        // 1. Optimistic Update (UI change first)
+        // 1. Add to pending updates (UI lock)
+        setPendingUpdates(prev => new Set(prev).add(orderId));
+
+        // 2. Optimistic Update
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
 
         try {
             const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+            
+            // Release the UI lock after a short delay to let realtime catch up
+            setTimeout(() => {
+                setPendingUpdates(prev => {
+                    const next = new Set(prev);
+                    next.delete(orderId);
+                    return next;
+                });
+            }, 1000);
+
             if (error) {
-                // Rollback on error
                 console.error("Error updating order status:", error);
-                // We'd need the old status here for a perfect rollback, 
-                // but usually, a refresh or the next sync will fix it.
-                // For now, let's just log and rely on the next realtime update if DB failed.
             } else {
                 logAction('STATUS COMANDĂ', `Comanda #${orderId} -> ${newStatus}`);
             }
         } catch (err) {
             console.error("Update failed:", err);
+            // Emergency cleanup
+            setPendingUpdates(prev => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
         }
     };
 
