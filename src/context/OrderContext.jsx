@@ -58,14 +58,17 @@ export const OrderProvider = ({ children }) => {
         const channel = supabase
             .channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                const isAdminPath = window.location.pathname.includes('/admin');
+                // Check if we are specifically in the Admin Orders or Kanban section
+                const isOrdersSection = window.location.pathname.includes('/admin/orders') || 
+                                       window.location.pathname.includes('/admin/kanban');
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
                     setOrders(prev => {
                         if (prev.some(o => o.id === newOrder.id)) return prev;
                         
-                        if (isAdminPath && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
+                        // Sound only in Orders/Kanban section
+                        if (isOrdersSection && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
                             playNotificationSound();
                         }
                         return [newOrder, ...prev];
@@ -81,7 +84,9 @@ export const OrderProvider = ({ children }) => {
                         }
 
                         const oldOrder = prev.find(o => o.id === updatedOrder.id);
-                        if (isAdminPath && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
+                        
+                        // Sound only in Orders/Kanban section
+                        if (isOrdersSection && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
                             playNotificationSound();
                         }
                         return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
