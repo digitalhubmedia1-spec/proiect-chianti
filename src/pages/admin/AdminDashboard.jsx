@@ -42,8 +42,14 @@ const AdminDashboard = () => {
         fetchExtras, addExtra, removeExtra, // Added Extras
         toggleCategoryVisibility
     } = useMenu();
-    const [activeTab, setActiveTab] = useState('orders'); // Default to orders as it's common
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('adminActiveTab') || 'orders';
+    }); // Default to orders as it's common
     const navigate = useNavigate();
+
+    useEffect(() => {
+        localStorage.setItem('adminActiveTab', activeTab);
+    }, [activeTab]);
 
     // Role Management
     const [adminRole, setAdminRole] = useState(null);

@@ -59,9 +59,12 @@ export const OrderProvider = ({ children }) => {
             .channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
                 // Check if we are specifically in the Admin Orders, Kanban or Kitchen section
+                const currentTab = localStorage.getItem('adminActiveTab');
                 const isNotificationSection = window.location.pathname.includes('/admin/orders') || 
                                              window.location.pathname.includes('/admin/kanban') ||
-                                             window.location.pathname.includes('/admin/bucatarie');
+                                             window.location.pathname.includes('/admin/bucatarie') ||
+                                             currentTab === 'orders' || 
+                                             currentTab === 'kitchen';
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
