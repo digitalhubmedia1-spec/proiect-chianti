@@ -22,6 +22,16 @@ export const OrderProvider = ({ children }) => {
         userId: dbOrder.user_id
     });
 
+    const playNotificationSound = () => {
+        try {
+            const audio = new Audio('/ding-bell-right-answer.mp3');
+            audio.volume = 1.0;
+            audio.play().catch(err => console.error("Audio play failed:", err));
+        } catch (err) {
+            console.error("Audio creation failed:", err);
+        }
+    };
+
     useEffect(() => {
         if (!supabase) return;
 
@@ -43,10 +53,28 @@ export const OrderProvider = ({ children }) => {
         const channel = supabase
             .channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                // Check for notifications
+                const isAdminPath = window.location.pathname.includes('/admin');
+                
                 if (payload.eventType === 'INSERT') {
-                    setOrders(prev => [mapOrderFromDB(payload.new), ...prev]);
+                    const newOrder = mapOrderFromDB(payload.new);
+                    setOrders(prev => [newOrder, ...prev]);
+                    
+                    // Sound for new pending order (needs confirmation) 
+                    // OR new order direct to preparing (from POS/waiter)
+                    if (isAdminPath && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
+                        playNotificationSound();
+                    }
                 } else if (payload.eventType === 'UPDATE') {
-                    setOrders(prev => prev.map(o => o.id === payload.new.id ? mapOrderFromDB(payload.new) : o));
+                    const updatedOrder = mapOrderFromDB(payload.new);
+                    const oldOrder = orders.find(o => o.id === payload.new.id);
+                    
+                    setOrders(prev => prev.map(o => o.id === payload.new.id ? updatedOrder : o));
+                    
+                    // Sound when confirmed (moves to preparing)
+                    if (isAdminPath && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
+                        playNotificationSound();
+                    }
                 } else if (payload.eventType === 'DELETE') {
                     setOrders(prev => prev.filter(o => o.id !== payload.old.id));
                 }
@@ -56,7 +84,7 @@ export const OrderProvider = ({ children }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [orders]); // Added orders to dependencies to check old status on update
 
     const addOrder = async (orderData) => {
         if (!supabase) return 'LOCAL_ID_' + Date.now(); // Fallback for no-db mode? Or fail.
