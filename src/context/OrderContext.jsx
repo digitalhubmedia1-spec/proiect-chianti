@@ -64,7 +64,14 @@ export const OrderProvider = ({ children }) => {
                                              window.location.pathname.includes('/admin/kanban') ||
                                              window.location.pathname.includes('/admin/bucatarie') ||
                                              currentTab === 'orders' || 
-                                             currentTab === 'kitchen';
+                                             currentTab === 'kitchen' ||
+                                             currentTab === 'kitchen_monitor'; // Added for kitchen monitor view if applicable
+                
+                // For Chef role, we should always allow sound if in kitchen or orders
+                const role = (localStorage.getItem('admin_role') || '').toLowerCase().trim();
+                const isChef = role === 'chef' || role === 'bucatar' || role === 'bucătar';
+                
+                const shouldPlaySound = isNotificationSection || (isChef && (currentTab === 'kitchen' || currentTab === 'orders'));
                 
                 if (payload.eventType === 'INSERT') {
                     const newOrder = mapOrderFromDB(payload.new);
@@ -74,7 +81,7 @@ export const OrderProvider = ({ children }) => {
                         // Sound for new orders: 
                         // 1. 'pending' (from web, needs confirmation)
                         // 2. 'preparing' (from waiter/POS, direct to kitchen)
-                        if (isNotificationSection && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
+                        if (shouldPlaySound && (newOrder.status === 'pending' || newOrder.status === 'preparing')) {
                             playNotificationSound();
                         }
                         return [newOrder, ...prev];
@@ -92,7 +99,7 @@ export const OrderProvider = ({ children }) => {
                         
                         // Sound logic: 
                         // Trigger sound when confirmed (status moves from pending to preparing)
-                        if (isNotificationSection && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
+                        if (shouldPlaySound && oldOrder && oldOrder.status === 'pending' && updatedOrder.status === 'preparing') {
                             playNotificationSound();
                         }
                         return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
