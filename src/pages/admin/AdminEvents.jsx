@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Plus, Calendar, MapPin, Users, Trash2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Trash2, CheckCircle, AlertCircle, ArrowLeft, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminEvents = () => {
@@ -44,6 +44,139 @@ const AdminEvents = () => {
         } catch (error) {
             console.error('Error deleting event:', error);
             alert('Eroare la ștergere: ' + error.message);
+        }
+    };
+
+    const handleDuplicate = async (originalId) => {
+        try {
+            setLoading(true);
+            
+            // 1. Fetch original event
+            const { data: event, error: eventError } = await supabase
+                .from('events')
+                .select('*')
+                .eq('id', originalId)
+                .single();
+
+            if (eventError) throw eventError;
+
+            // 2. Prepare new event data
+            const { id, created_at, updated_at, reservation_token, access_token, ...rest } = event;
+            const newEventData = {
+                ...rest,
+                name: `${event.name} (copie)`,
+                status: 'draft',
+                // reservation_token is intentionally omitted (will be null)
+                // access_token will be auto-generated if it has a default in DB, or we can omit it
+            };
+
+            // 3. Insert new event
+            const { data: newEvent, error: insertError } = await supabase
+                .from('events')
+                .insert([newEventData])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+            const newId = newEvent.id;
+
+            // 4. Duplicate related tables
+            const tablesToDuplicate = [
+                'event_layout_objects',
+                'event_staff_assignments',
+                'event_timeline_items',
+                'event_gallery'
+            ];
+
+            for (const table of tablesToDuplicate) {
+                const { data: records, error: fetchError } = await supabase
+                    .from(table)
+                    .select('*')
+                    .eq('event_id', originalId);
+
+                if (fetchError) {
+                    console.error(`Error fetching from ${table}:`, fetchError);
+                    continue;
+                }
+
+                if (records && records.length > 0) {
+                    const newRecords = records.map(r => {
+                        const { id, created_at, event_id, ...recordRest } = r;
+                        return { ...recordRest, event_id: newId };
+                    });
+
+                    const { error: batchInsertError } = await supabase
+                        .from(table)
+                        .insert(newRecords);
+
+                    if (batchInsertError) {
+                        console.error(`Error inserting into ${table}:`, batchInsertError);
+                    }
+                }
+            }
+
+            // 5. Duplicate Menu Packages & Items (special handling for package_id)
+            const { data: packages, error: packagesError } = await supabase
+                .from('event_menu_packages')
+                .select('*')
+                .eq('event_id', originalId);
+
+            if (packages && packages.length > 0) {
+                const packageIdMap = {};
+                for (const pkg of packages) {
+                    const { id: oldPackageId, created_at, event_id, ...pkgRest } = pkg;
+                    const { data: newPkg, error: newPkgError } = await supabase
+                        .from('event_menu_packages')
+                        .insert([{ ...pkgRest, event_id: newId }])
+                        .select()
+                        .single();
+                    
+                    if (newPkg) {
+                        packageIdMap[oldPackageId] = newPkg.id;
+                    }
+                }
+
+                // Now duplicate menu items and link to new packages
+                const { data: items, error: itemsError } = await supabase
+                    .from('event_menu_items')
+                    .select('*')
+                    .eq('event_id', originalId);
+
+                if (items && items.length > 0) {
+                    const newItems = items.map(item => {
+                        const { id, created_at, event_id, ...itemRest } = item;
+                        return { 
+                            ...itemRest, 
+                            event_id: newId, 
+                            package_id: item.package_id ? packageIdMap[item.package_id] : null 
+                        };
+                    });
+
+                    await supabase.from('event_menu_items').insert(newItems);
+                }
+            } else {
+                // If no packages, just try duplicating items (if any exist without a package)
+                const { data: items, error: itemsError } = await supabase
+                    .from('event_menu_items')
+                    .select('*')
+                    .eq('event_id', originalId);
+
+                if (items && items.length > 0) {
+                    const newItems = items.map(item => {
+                        const { id, created_at, event_id, ...itemRest } = item;
+                        return { ...itemRest, event_id: newId };
+                    });
+                    await supabase.from('event_menu_items').insert(newItems);
+                }
+            }
+
+            alert('Eveniment duplicat cu succes!');
+            fetchEvents();
+        } catch (error) {
+            console.error('Error duplicating event:', error);
+            alert('Eroare la duplicare: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -189,6 +322,13 @@ const AdminEvents = () => {
                                         {event.type === 'client' ? 'Eveniment Client' : 'Eveniment Restaurant'}
                                     </span>
                                     <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDuplicate(event.id); }}
+                                            style={{ padding: '6px', borderRadius: '6px', border: 'none', background: '#f3f4f6', color: '#4b5563', cursor: 'pointer' }}
+                                            title="Duplică eveniment"
+                                        >
+                                            <Copy size={16} />
+                                        </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDelete(event.id); }}
                                             style={{ padding: '6px', borderRadius: '6px', border: 'none', background: '#fee2e2', color: '#ef4444', cursor: 'pointer' }}
