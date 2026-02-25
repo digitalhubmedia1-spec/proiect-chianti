@@ -144,7 +144,7 @@ const AdminDashboard = () => {
 
         // Handle Chef/Bucatar Role FIRST to ensure restriction
         if (role === 'chef' || role === 'bucatar' || role === 'bucătar') {
-            return ['orders', 'kitchen'].includes(tab);
+            return ['orders', 'kitchen', 'recipes'].includes(tab);
         }
 
         if (role === 'admin_app') return true; // Super admin
@@ -534,7 +534,7 @@ const AdminDashboard = () => {
                     {NAV_ITEMS.map((item, index) => {
                         // FORCE HIDE FOR CHEF - NUCLEAR OPTION
                         const currentRole = (adminRole || '').toLowerCase().trim();
-                        if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen'].includes(item.id) && !item.header) {
+                        if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes'].includes(item.id) && !item.header) {
                             return null;
                         }
 
@@ -547,7 +547,7 @@ const AdminDashboard = () => {
                                 
                                 // ALSO APPLY FORCE HIDE TO HEADER LOGIC
                                 const childId = NAV_ITEMS[i].id;
-                                if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen'].includes(childId)) {
+                                if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes'].includes(childId)) {
                                     continue;
                                 }
 
