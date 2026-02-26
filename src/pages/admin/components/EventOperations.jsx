@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, Upload, Download, Eye, X, Settings, Shield } from 'lucide-react';
+import { Clock, Users, CheckCircle, FileText, Plus, Trash2, Save, Upload, Download, Eye, X, Settings, Shield, Edit2, Check } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -38,6 +38,8 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     const [newRoleName, setNewRoleName] = useState('');
 
     const [newItem, setNewItem] = useState({ time_start: '', activity: '', notes: '', assigned_role_id: '' });
+    const [editingItemId, setEditingItemId] = useState(null);
+    const [editingItem, setEditingItem] = useState({ time_start: '', activity: '', notes: '', assigned_role_id: '' });
     const [newStaff, setNewStaff] = useState({ staff_name: '', role: '' }); // role will store the role name string for compatibility
     
     const [pvData, setPvData] = useState({
@@ -116,8 +118,47 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
     };
 
     const handleDeleteItem = async (id) => {
+        if (!confirm("Sigur ștergi această activitate?")) return;
         await supabase.from('event_timeline_items').delete().eq('id', id);
         setTimeline(timeline.filter(i => i.id !== id));
+    };
+
+    const startEditing = (item) => {
+        setEditingItemId(item.id);
+        setEditingItem({
+            time_start: item.time_start.slice(0, 5),
+            activity: item.activity,
+            notes: item.notes || '',
+            assigned_role_id: item.assigned_role_id || ''
+        });
+    };
+
+    const cancelEditing = () => {
+        setEditingItemId(null);
+        setEditingItem({ time_start: '', activity: '', notes: '', assigned_role_id: '' });
+    };
+
+    const handleUpdateItem = async (id) => {
+        if (!editingItem.time_start || !editingItem.activity) return;
+
+        const payload = {
+            ...editingItem,
+            assigned_role_id: editingItem.assigned_role_id || null
+        };
+
+        const { data, error } = await supabase
+            .from('event_timeline_items')
+            .update(payload)
+            .eq('id', id)
+            .select('*, staff_roles(name)')
+            .single();
+
+        if (data) {
+            setTimeline(timeline.map(i => i.id === id ? data : i).sort((a, b) => a.time_start.localeCompare(b.time_start)));
+            setEditingItemId(null);
+        } else if (error) {
+            alert("Eroare actualizare activitate: " + error.message);
+        }
     };
 
     const toggleItemStatus = async (item) => {
@@ -306,20 +347,57 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {timeline.map(item => (
                             <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: item.status === 'done' ? '#f0fdf4' : 'white', opacity: item.status === 'done' ? 0.7 : 1 }}>
-                                <button onClick={() => toggleItemStatus(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: item.status === 'done' ? '#16a34a' : '#d1d5db' }}>
-                                    <CheckCircle size={24} fill={item.status === 'done' ? '#16a34a' : 'white'} />
-                                </button>
-                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', width: '80px' }}>{item.time_start.slice(0, 5)}</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: '500', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.activity}</div>
-                                    {item.staff_roles && (
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', marginTop: '4px' }}>
-                                            <Shield size={12} /> {item.staff_roles.name}
+                                {editingItemId === item.id ? (
+                                    <>
+                                        <input 
+                                            type="time" 
+                                            value={editingItem.time_start} 
+                                            onChange={e => setEditingItem({ ...editingItem, time_start: e.target.value })} 
+                                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', width: '100px' }} 
+                                        />
+                                        <div style={{ flex: 1, display: 'flex', gap: '10px' }}>
+                                            <input 
+                                                value={editingItem.activity} 
+                                                onChange={e => setEditingItem({ ...editingItem, activity: e.target.value })} 
+                                                style={{ flex: 2, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} 
+                                            />
+                                            <select 
+                                                value={editingItem.assigned_role_id} 
+                                                onChange={e => setEditingItem({ ...editingItem, assigned_role_id: e.target.value })}
+                                                style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                            >
+                                                <option value="">-- Fără Rol --</option>
+                                                {roles.map(r => (
+                                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
-                                    )}
-                                    {item.notes && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{item.notes}</div>}
-                                </div>
-                                <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            <button onClick={() => handleUpdateItem(item.id)} style={{ color: '#16a34a', background: 'none', border: 'none', cursor: 'pointer' }}><Check size={20} /></button>
+                                            <button onClick={cancelEditing} style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => toggleItemStatus(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: item.status === 'done' ? '#16a34a' : '#d1d5db' }}>
+                                            <CheckCircle size={24} fill={item.status === 'done' ? '#16a34a' : 'white'} />
+                                        </button>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', width: '80px' }}>{item.time_start.slice(0, 5)}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: '500', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.activity}</div>
+                                            {item.staff_roles && (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', marginTop: '4px' }}>
+                                                    <Shield size={12} /> {item.staff_roles.name}
+                                                </div>
+                                            )}
+                                            {item.notes && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{item.notes}</div>}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button onClick={() => startEditing(item)} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         ))}
                         {timeline.length === 0 && <div style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>Nu există activități în desfășurător.</div>}
