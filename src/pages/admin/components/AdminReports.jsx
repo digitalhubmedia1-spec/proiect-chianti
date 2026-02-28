@@ -13,6 +13,10 @@ const AdminReports = () => {
     const [receptionHistory, setReceptionHistory] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    // Filters
+    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     // Reception Edit State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -103,11 +107,17 @@ const AdminReports = () => {
 
     useEffect(() => {
         loadReport(activeReport);
-    }, [activeReport]);
+    }, [activeReport, startDate, endDate]);
 
     const loadReport = async (type) => {
         setLoading(true);
         try {
+            // Adjust end date to include the whole day
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+            const endDateISO = endDateTime.toISOString();
+            const startDateISO = new Date(startDate).toISOString();
+
             if (type === 'expiry') {
                 const { data } = await supabase
                     .from('inventory_batches')
@@ -146,8 +156,9 @@ const AdminReports = () => {
                     .from('inventory_transactions')
                     .select('*, inventory_items(name, unit), locations:from_location_id(name)')
                     .eq('transaction_type', 'OUT')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
+                    .gte('created_at', startDateISO)
+                    .lte('created_at', endDateISO)
+                    .order('created_at', { ascending: false });
                 setConsumption(data || []);
             }
             else if (type === 'reception') {
@@ -155,8 +166,9 @@ const AdminReports = () => {
                     .from('inventory_transactions')
                     .select('*, inventory_items(name, unit), locations:to_location_id(name)')
                     .eq('transaction_type', 'IN')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
+                    .gte('created_at', startDateISO)
+                    .lte('created_at', endDateISO)
+                    .order('created_at', { ascending: false });
                 setReceptionHistory(data || []);
             }
         } catch (error) {
@@ -343,6 +355,30 @@ const AdminReports = () => {
                 <button className={`tab-btn ${activeReport === 'reception' ? 'active' : ''}`} onClick={() => setActiveReport('reception')}>
                     <Truck size={18} style={{ marginRight: '8px' }} /> Istoric Recepții
                 </button>
+
+                {(activeReport === 'consumption' || activeReport === 'reception') && (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <Calendar size={16} color="#64748b" />
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>De la:</span>
+                            <input 
+                                type="date" 
+                                value={startDate} 
+                                onChange={e => setStartDate(e.target.value)}
+                                style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Până la:</span>
+                            <input 
+                                type="date" 
+                                value={endDate} 
+                                onChange={e => setEndDate(e.target.value)}
+                                style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem' }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-outline-primary" onClick={exportToCSV} title="Export CSV (Excel)">
