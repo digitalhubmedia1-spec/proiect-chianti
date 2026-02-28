@@ -19,11 +19,13 @@ const AdminRecipes = () => {
     // --- ROLE & PERMISSIONS ---
     const [adminRole, setAdminRole] = useState(null);
     useEffect(() => {
-        const role = localStorage.getItem('admin_role');
+        const rawRole = localStorage.getItem('admin_role') || '';
+        const role = rawRole.toLowerCase().trim();
         setAdminRole(role);
+        
         if (role === 'cost_productie') {
             setActiveTab('cost_calculator');
-        } else if (role === 'bucatar') {
+        } else if (role === 'bucatar' || role === 'bucătar' || role === 'chef') {
             setActiveTab('manage');
         }
     }, []);
@@ -527,11 +529,14 @@ const AdminRecipes = () => {
         doc.save(`Preturi_Referinta_${dateStr.replace(/\./g, '-')}.pdf`);
     };
 
+    // Helper to check if user is a cook
+    const isCook = adminRole === 'bucatar' || adminRole === 'bucătar' || adminRole === 'chef';
+
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
-            {/* Header Tabs (Hidden for cost_productie or bucatar limited views) */}
-            {adminRole !== 'cost_productie' && adminRole !== 'bucatar' && (
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+            {/* Header Tabs (Conditional display based on role) */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                {adminRole !== 'cost_productie' && (
                     <button
                         className={`tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
                         onClick={() => setActiveTab('manage')}
@@ -539,7 +544,9 @@ const AdminRecipes = () => {
                     >
                         Gestionare Rețete
                     </button>
+                )}
 
+                {!isCook && (
                     <button
                         className={`tab-btn ${activeTab === 'cost_calculator' ? 'active' : ''}`}
                         onClick={() => setActiveTab('cost_calculator')}
@@ -547,7 +554,9 @@ const AdminRecipes = () => {
                     >
                         Prețuri Referință & Costuri
                     </button>
+                )}
 
+                {!isCook && adminRole !== 'cost_productie' && (
                     <button
                         className={`tab-btn ${activeTab === 'production' ? 'active' : ''}`}
                         onClick={() => setActiveTab('production')}
@@ -555,8 +564,8 @@ const AdminRecipes = () => {
                     >
                         Producție (Scădere Stoc)
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* --- TAB 1: MANAGE RECIPES --- */}
             {
@@ -664,7 +673,7 @@ const AdminRecipes = () => {
 
             {/* --- TAB 2: COST CALCULATOR & REF PRICES --- */}
             {
-                activeTab === 'cost_calculator' && adminRole !== 'bucatar' && (
+                activeTab === 'cost_calculator' && !isCook && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                         {/* RECIPE MULTI-SELECTOR (SHARED) */}
@@ -975,7 +984,7 @@ const AdminRecipes = () => {
 
             {/* --- TAB 3: PRODUCTION --- */}
             {
-                activeTab === 'production' && adminRole !== 'bucatar' && (
+                activeTab === 'production' && !isCook && (
                     <div>
                         <div className="calculator-panel" style={{ background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                             <h3>Calculator Producție (FIFO)</h3>
