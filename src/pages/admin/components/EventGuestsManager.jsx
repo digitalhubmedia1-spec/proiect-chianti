@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Trash2, Users, X, UserPlus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Users, X, UserPlus, ChevronDown, ChevronRight, FileDown } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const EventGuestsManager = ({ eventId, allowMinors }) => {
     const [tables, setTables] = useState([]);
@@ -83,6 +85,109 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
         if (!window.confirm("Ștergi acest invitat?")) return;
         await supabase.from('event_guests').delete().eq('id', guestId);
         setGuests(prev => prev.filter(g => g.id !== guestId));
+    };
+
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('ro-RO');
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(153, 0, 0); // #990000
+        doc.text('Lista Invitati pe Mese', 14, 22);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139); // #64748b
+        doc.text(`Data export: ${dateStr}`, 14, 28);
+
+        let currentY = 35;
+
+        // Render each table
+        tables.forEach((table, index) => {
+            const tableGuests = guestsForTable(table.id);
+            if (tableGuests.length === 0) return;
+
+            // Table Header Title
+            doc.setFontSize(12);
+            doc.setTextColor(30, 41, 59); // #1e293b
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${table.type === 'presidium' ? '👑 ' : ''}${table.label} (${tableGuests.length} invitati)`, 14, currentY);
+            currentY += 5;
+
+            const tableData = tableGuests.map((g, idx) => [
+                idx + 1,
+                g.full_name,
+                g.type === 'adult' ? 'Adult' : 'Minor',
+                g.menu_preference || '-',
+                g.notes || '-'
+            ]);
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [['Nr.', 'Nume Complet', 'Tip', 'Preferinta Meniu', 'Note / Alergii']],
+                body: tableData,
+                headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 'auto' }
+                },
+                margin: { left: 14, right: 14 }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 15;
+
+            // Check for page break
+            if (currentY > 250 && index < tables.length - 1) {
+                doc.addPage();
+                currentY = 20;
+            }
+        });
+
+        // Unassigned guests
+        if (unassignedGuests.length > 0) {
+            if (currentY > 230) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            doc.setFontSize(12);
+            doc.setTextColor(30, 41, 59);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Invitati Nealocati (${unassignedGuests.length})`, 14, currentY);
+            currentY += 5;
+
+            const unassignedData = unassignedGuests.map((g, idx) => [
+                idx + 1,
+                g.full_name,
+                g.type === 'adult' ? 'Adult' : 'Minor',
+                g.menu_preference || '-',
+                g.notes || '-'
+            ]);
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [['Nr.', 'Nume Complet', 'Tip', 'Preferinta Meniu', 'Note / Alergii']],
+                body: unassignedData,
+                headStyles: { fillColor: [100, 116, 139], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 'auto' }
+                },
+                margin: { left: 14, right: 14 }
+            });
+        }
+
+        doc.save(`Lista_Invitati_Eveniment_${eventId}.pdf`);
     };
 
     const totalGuests = guests.length;
@@ -290,30 +395,53 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
 
     return (
         <div>
-            {/* Summary Bar */}
-            <div style={{
-                display: 'flex', gap: '16px', marginBottom: '20px', padding: '16px',
-                background: 'white', borderRadius: '10px', border: '1px solid #e5e7eb'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Users size={20} color="#6b7280" />
-                    <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>Total:</span>
-                    <strong style={{ fontSize: '1.1rem' }}>{totalGuests}</strong>
-                </div>
-                <div style={{ borderLeft: '1px solid #e5e7eb', paddingLeft: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '0.8rem', background: '#dbeafe', color: '#1e40af', fontWeight: '600' }}>
-                        {adultCount} Adulți
-                    </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Users size={20} color="#990000" />
+                        <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{totalGuests}</span>
+                        <span style={{ color: '#64748b' }}>Total</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>{adultCount}</span>
+                        <span style={{ color: '#64748b' }}>Adulți</span>
+                    </div>
                     {allowMinors && (
-                        <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '0.8rem', background: '#fce7f3', color: '#be185d', fontWeight: '600' }}>
-                            {minorCount} Minori
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>{minorCount}</span>
+                            <span style={{ color: '#64748b' }}>Minori</span>
+                        </div>
                     )}
                 </div>
-                <div style={{ borderLeft: '1px solid #e5e7eb', paddingLeft: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                        Neasignați: <strong style={{ color: unassignedGuests.length > 0 ? '#dc2626' : '#16a34a' }}>{unassignedGuests.length}</strong>
-                    </span>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={guests.length === 0}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 18px', borderRadius: '8px',
+                            background: guests.length === 0 ? '#cbd5e1' : '#990000',
+                            color: 'white', border: 'none', fontWeight: '600',
+                            cursor: guests.length === 0 ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 2px 4px rgba(153,0,0,0.2)'
+                        }}
+                    >
+                        <FileDown size={18} /> Export PDF Mese
+                    </button>
+
+                    <button
+                        onClick={() => openForm('unassigned')}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 18px', borderRadius: '8px',
+                            background: 'white', color: '#1e293b',
+                            border: '1px solid #cbd5e1', fontWeight: '600',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <UserPlus size={18} /> Adaugă Invitat
+                    </button>
                 </div>
             </div>
 
