@@ -824,6 +824,9 @@ const AdminDashboard = () => {
                                     <tbody>
                                         {products
                                             .filter(p => {
+                                                // 0. Active Check (Exclude soft-deleted products)
+                                                if (p.is_active === false) return false;
+
                                                 const cat = categories.find(c => c.name === p.category);
                                                 // 1. Filter by Type (Delivery/Catering)
                                                 const type = cat ? (cat.type || 'delivery') : 'delivery';
@@ -870,6 +873,7 @@ const AdminDashboard = () => {
                                                 </tr>
                                             ))}
                                         {products.filter(p => {
+                                            if (p.is_active === false) return false;
                                             const cat = categories.find(c => c.name === p.category);
                                             const type = cat ? (cat.type || 'delivery') : 'delivery';
                                             if (type !== activeProductTabType) return false;

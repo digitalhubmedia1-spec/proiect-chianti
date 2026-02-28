@@ -1,36 +1,22 @@
 const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-const fs = require('fs');
 
-// Load env
-function loadEnv() {
-    try {
-        const envPath = path.resolve(__dirname, '.env');
-        if (!fs.existsSync(envPath)) return {};
-        return fs.readFileSync(envPath, 'utf8').split('\n').reduce((acc, line) => {
-            const [key, val] = line.split('=');
-            if (key && val) acc[key.trim()] = val.trim();
-            return acc;
-        }, {});
-    } catch (e) { return {}; }
-}
-const env = loadEnv();
-const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+const supabaseUrl = 'https://atzmcflvnzezfumbmgiz.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0em1jZmx2bnplemZ1bWJtZ2l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzExMjcsImV4cCI6MjA4MzY0NzEyN30.LSiuLKxi_PEdD6eMxk691JpN6OjS4jmiNuJXkD4MYtk';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function checkSchema() {
-    // We can't query information_schema easily with js client sometimes without rpc, 
-    // but we can just fetch one row and see keys.
+async function checkOrderColumns() {
+    console.log("Checking columns for 'orders' table...");
     const { data, error } = await supabase.from('orders').select('*').limit(1);
-
     if (error) {
-        console.error("Error:", error);
+        console.error("Error fetching orders:", error);
+    } else if (data && data.length > 0) {
+        console.log("Found order columns:", Object.keys(data[0]));
+        console.log("ID type:", typeof data[0].id);
+        console.log("Items type:", Array.isArray(data[0].items) ? 'Array' : typeof data[0].items);
+        console.log("Total type:", typeof data[0].total);
     } else {
-        if (data.length > 0) {
-            console.log("Existing Columns:", Object.keys(data[0]));
-        } else {
-            console.log("Table allows access but is empty. Cannot determine columns easily via row.");
-        }
+        console.log("No orders found.");
     }
 }
 
-checkSchema();
+checkOrderColumns();

@@ -278,7 +278,11 @@ export const OrderProvider = ({ children }) => {
         console.log(`[updateOrderItems] New total calculated: ${newTotal} (items: ${itemsTotal}, delivery: ${deliveryCost})`);
 
         // 1. Add to pending updates (UI lock)
-        setPendingUpdates(prev => new Set(prev).add(orderId));
+        setPendingUpdates(prev => {
+            const next = new Set(prev).add(orderId);
+            pendingUpdatesRef.current = next;
+            return next;
+        });
 
         // 2. Optimistic Update
         setOrders(prev => {

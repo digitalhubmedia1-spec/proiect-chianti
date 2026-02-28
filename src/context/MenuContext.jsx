@@ -36,7 +36,9 @@ export const MenuProvider = ({ children }) => {
                 
                 if (cachedCats && cachedProds) {
                     setCategories(JSON.parse(cachedCats));
-                    setProducts(JSON.parse(cachedProds));
+                    // Filter inactive products from cache just in case
+                    const prods = JSON.parse(cachedProds);
+                    setProducts(prods.filter(p => p.is_active !== false));
                     setLoading(false); // Show cached content immediately
                 } else {
                     setLoading(true); // Only show spinner if no cache
@@ -73,13 +75,15 @@ export const MenuProvider = ({ children }) => {
                 }
 
                 if (prodsResult.status === 'fulfilled' && !prodsResult.value.error) {
-                    const newProds = prodsResult.value.data || [];
+                    let newProds = prodsResult.value.data || [];
                     if (newProds.length === 0) {
                         console.warn("No products found! Check DB or RLS.");
                         setError("No products returned from DB.");
                     }
-                    setProducts(newProds);
-                    localStorage.setItem('chianti_products', JSON.stringify(newProds));
+                    // Filter out inactive products (soft-deleted)
+                    const activeProds = newProds.filter(p => p.is_active !== false);
+                    setProducts(activeProds);
+                    localStorage.setItem('chianti_products', JSON.stringify(activeProds));
                 } else {
                     console.error("Products fetch failed:", prodsResult.reason || prodsResult.value?.error);
                     setError(prodsResult.reason || prodsResult.value?.error?.message || "Products fetch failed");
@@ -125,7 +129,11 @@ export const MenuProvider = ({ children }) => {
             if (error) throw error;
             const newProduct = data ? data[0] : null;
             if (newProduct) {
-                setProducts(prev => [...prev, newProduct]);
+                setProducts(prev => {
+                    const updated = [...prev, newProduct];
+                    localStorage.setItem('chianti_products', JSON.stringify(updated));
+                    return updated;
+                });
                 logAction('ADĂUGARE PRODUS', `Produs: ${newProduct.name} (${newProduct.price} RON)`);
             }
             return newProduct;
@@ -144,7 +152,11 @@ export const MenuProvider = ({ children }) => {
         try {
             const { error } = await supabase.from('products').update(updatedData).eq('id', id);
             if (error) throw error;
-            setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
+            setProducts(prev => {
+                const updated = prev.map(p => p.id === id ? { ...p, ...updatedData } : p);
+                localStorage.setItem('chianti_products', JSON.stringify(updated));
+                return updated;
+            });
             logAction('ACTUALIZARE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error updating product:", error);
@@ -162,7 +174,13 @@ export const MenuProvider = ({ children }) => {
             // Soft delete
             const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id);
             if (error) throw error;
-            setProducts(prev => prev.filter(p => p.id !== id));
+            
+            setProducts(prev => {
+                const updated = prev.filter(p => p.id !== id);
+                // Persist update to cache immediately
+                localStorage.setItem('chianti_products', JSON.stringify(updated));
+                return updated;
+            });
             logAction('ȘTERGERE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error deleting product:", error);
