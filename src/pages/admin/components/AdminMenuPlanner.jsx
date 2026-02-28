@@ -126,11 +126,19 @@ const AdminMenuPlanner = () => {
             const extrasMap = {};
 
             data.forEach(i => {
-                ids.add(i.product_id);
-                stocks[i.product_id] = i.stock;
-                if (i.sort_order) sortOrders[i.product_id] = i.sort_order;
-                if (i.specific_extras_ids !== null) {
-                    extrasMap[i.product_id] = i.specific_extras_ids;
+                // Only add to activeItems if the product still exists and is active
+                const product = products.find(p => p.id === i.product_id);
+                if (product && product.is_active !== false) {
+                    ids.add(i.product_id);
+                    stocks[i.product_id] = i.stock;
+                    if (i.sort_order) sortOrders[i.product_id] = i.sort_order;
+                    if (i.specific_extras_ids !== null) {
+                        extrasMap[i.product_id] = i.specific_extras_ids;
+                    }
+                } else if (!product) {
+                    console.warn(`[AdminMenuPlanner] Product ${i.product_id} found in daily menu but not in products list! (Possibly hard-deleted)`);
+                } else if (product.is_active === false) {
+                    console.warn(`[AdminMenuPlanner] Product ${product.name} (${i.product_id}) found in daily menu but is marked as inactive!`);
                 }
             });
             setActiveItems(ids);
@@ -160,8 +168,12 @@ const AdminMenuPlanner = () => {
         if (data) {
             const mapping = {};
             data.forEach(item => {
-                if (!mapping[item.date]) mapping[item.date] = {};
-                mapping[item.date][item.product_id] = item.stock;
+                // Check if product is active before mapping
+                const product = products.find(p => p.id === item.product_id);
+                if (product && product.is_active !== false) {
+                    if (!mapping[item.date]) mapping[item.date] = {};
+                    mapping[item.date][item.product_id] = item.stock;
+                }
             });
             setWeeklyData(mapping);
         }

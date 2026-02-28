@@ -213,7 +213,11 @@ export const OrderProvider = ({ children }) => {
         if (!supabase) return;
 
         // 1. Add to pending updates (UI lock)
-        setPendingUpdates(prev => new Set(prev).add(orderId));
+        setPendingUpdates(prev => {
+            const next = new Set(prev).add(orderId);
+            pendingUpdatesRef.current = next; // Update ref immediately!
+            return next;
+        });
 
         // 2. Optimistic Update
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
@@ -277,13 +281,17 @@ export const OrderProvider = ({ children }) => {
         setPendingUpdates(prev => new Set(prev).add(orderId));
 
         // 2. Optimistic Update
-        setOrders(prev => prev.map(o => o.id === orderId ? { 
-            ...o, 
-            items: updatedItems, 
-            finalTotal: newTotal, 
-            total: newTotal,
-            final_total: newTotal // Keep snake_case in state too for consistency if needed
-        } : o));
+        setOrders(prev => {
+            const next = prev.map(o => o.id === orderId ? { 
+                ...o, 
+                items: updatedItems, 
+                finalTotal: newTotal, 
+                total: newTotal,
+                final_total: newTotal // Keep snake_case in state too for consistency if needed
+            } : o);
+            ordersRef.current = next; // Update ref immediately!
+            return next;
+        });
 
         try {
             const updatePayload = { 
@@ -320,6 +328,7 @@ export const OrderProvider = ({ children }) => {
                 setPendingUpdates(prev => {
                     const next = new Set(prev);
                     next.delete(orderId);
+                    pendingUpdatesRef.current = next; // Update ref immediately!
                     return next;
                 });
             }, 2000); // Increased delay slightly

@@ -31,7 +31,7 @@ const ProductDetails = () => {
         if (loading) return;
         setIsOpen(isRestaurantOpen());
         const foundProduct = products.find(p => p.id === parseInt(id));
-        if (foundProduct) {
+        if (foundProduct && foundProduct.is_active !== false) {
             setProduct(foundProduct);
             setActiveImage(foundProduct.image);
             setSelectedOptions({}); // Reset options

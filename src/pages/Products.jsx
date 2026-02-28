@@ -294,6 +294,9 @@ const Products = () => {
 
     // Filter logic to show ONLY delivery products
     const filteredProducts = products.filter(product => {
+        // 0. Active Check (Do not show inactive products)
+        if (product.is_active === false) return false;
+
         // 1. Search Filter (Highest Priority)
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
