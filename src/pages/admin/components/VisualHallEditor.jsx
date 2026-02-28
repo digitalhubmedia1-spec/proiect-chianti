@@ -15,6 +15,8 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [reservations, setReservations] = useState([]);
+    const [locks, setLocks] = useState([]);
 
     const GRID_SIZE = 20;
 
@@ -25,23 +27,40 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const { data: hallData } = await supabase
-                .from('event_halls')
-                .select('*')
-                .eq('id', hallId)
-                .single();
-            setHall(hallData);
+            const [hallRes, objRes, resRes, locksRes] = await Promise.all([
+                supabase.from('event_halls').select('*').eq('id', hallId).single(),
+                supabase.from('event_layout_objects').select('*').eq('event_id', eventId),
+                supabase.from('event_reservations').select('*').eq('event_id', eventId).eq('status', 'confirmed'),
+                supabase.from('event_table_locks').select('*').eq('event_id', eventId).gt('expires_at', new Date().toISOString())
+            ]);
 
-            const { data: objData } = await supabase
-                .from('event_layout_objects')
-                .select('*')
-                .eq('event_id', eventId);
-            setObjects(objData || []);
+            setHall(hallRes.data);
+            setObjects(objRes.data || []);
+            setReservations(resRes.data || []);
+            setLocks(locksRes.data || []);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
+    };
+
+    // Check availability for a table
+    const getTableStatus = (tableId) => {
+        const tableReservations = (reservations || []).filter(r => r.table_id === tableId.toString());
+        const reservedSeats = tableReservations.reduce((sum, r) => sum + r.seat_count, 0);
+        
+        const tableLocks = (locks || []).filter(l => l.table_id === tableId.toString());
+        const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
+
+        const totalOccupied = reservedSeats + lockedSeats;
+
+        const obj = objects.find(o => o.id === tableId);
+        if (!obj) return 'unknown';
+
+        if (totalOccupied >= obj.capacity) return 'full';
+        if (totalOccupied > 0) return 'partial';
+        return 'available';
     };
 
     // --- GEOMETRY & ZONES ---
@@ -147,17 +166,39 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                     color: isSelected ? '#166534' : 'white',
                     boxShadow: isSelected ? '0 0 0 3px rgba(22,163,74,0.3)' : 'none'
                 };
-            default: // Tables (Toate patrate/dreptunghiulare acum)
+            default: { // Tables
+                const status = getTableStatus(obj.id);
+                let bg = isSelected ? '#dbeafe' : '#f8fafc';
+                let border = isSelected ? '#2563eb' : '#94a3b8';
+                let color = '#334155';
+
+                if (status === 'full') { 
+                    bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; 
+                } else if (status === 'partial') { 
+                    bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; 
+                } else if (status === 'available') {
+                    if (obj.capacity < 6) {
+                        bg = '#dcfce7'; border = '#22c55e'; color = '#166534';
+                    } else {
+                        bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e';
+                    }
+                }
+
+                if (isSelected) {
+                    border = '#2563eb';
+                }
+
                 return {
                     ...base,
-                    width: 80, // Standardizat la 80px
-                    height: 80, // Standardizat la 80px pentru patrate
-                    borderRadius: '6px', // Fara cercuri (50%)
-                    background: isSelected ? '#dbeafe' : '#f8fafc',
-                    border: `2px solid ${isSelected ? '#2563eb' : '#94a3b8'}`,
-                    color: '#334155',
+                    width: 80,
+                    height: 80,
+                    borderRadius: '6px',
+                    background: bg,
+                    border: `2px solid ${border}`,
+                    color: color,
                     boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
                 };
+            }
         }
     };
 
@@ -423,6 +464,13 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                         </>
                     )}
                     <button onClick={exportFloorPlanPDF} style={{ ...iconBtnStyle, color: '#990000' }} title="Export PDF Plan"><Download size={20} /></button>
+                </div>
+
+                {/* Legend */}
+                <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '3px' }}></div> Liber (&lt;6 locuri)</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '3px' }}></div> Liber (&ge;6 locuri) / Parțial</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '3px' }}></div> Ocupat</div>
                 </div>
             </div>
 
