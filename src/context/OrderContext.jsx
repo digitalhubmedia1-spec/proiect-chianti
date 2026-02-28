@@ -10,11 +10,16 @@ export const OrderProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [pendingUpdates, setPendingUpdates] = useState(new Set());
     const pendingUpdatesRef = useRef(new Set());
+    const ordersRef = useRef([]);
 
-    // Sync ref with state to avoid stale closures in realtime events
+    // Sync refs with state to avoid stale closures in realtime events and async functions
     useEffect(() => {
         pendingUpdatesRef.current = pendingUpdates;
     }, [pendingUpdates]);
+
+    useEffect(() => {
+        ordersRef.current = orders;
+    }, [orders]);
 
     // Helper to normalize DB snake_case to Frontend camelCase
     const mapOrderFromDB = (dbOrder) => ({
@@ -251,47 +256,64 @@ export const OrderProvider = ({ children }) => {
 
     const updateOrderItems = async (orderId, updatedItems) => {
         if (!supabase) return;
+        
+        console.log(`[updateOrderItems] Start update for Order #${orderId}`, updatedItems);
+
+        // Find current order from ref to avoid stale closure or async issues
+        const currentOrder = ordersRef.current.find(o => o.id === orderId);
+        if (!currentOrder) {
+            console.error(`[updateOrderItems] Order #${orderId} not found in state!`);
+            return;
+        }
 
         // Recalculate total based on updated items
         const itemsTotal = updatedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
-        
-        // Find order in latest state
-        let currentOrder;
-        setOrders(prev => {
-            currentOrder = prev.find(o => o.id === orderId);
-            return prev;
-        });
-
-        const deliveryCost = currentOrder ? (Number(currentOrder.deliveryCost) || 0) : 0;
+        const deliveryCost = Number(currentOrder.deliveryCost) || 0;
         const newTotal = Number((itemsTotal + deliveryCost).toFixed(2));
+
+        console.log(`[updateOrderItems] New total calculated: ${newTotal} (items: ${itemsTotal}, delivery: ${deliveryCost})`);
 
         // 1. Add to pending updates (UI lock)
         setPendingUpdates(prev => new Set(prev).add(orderId));
 
         // 2. Optimistic Update
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, items: updatedItems, finalTotal: newTotal, total: newTotal } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { 
+            ...o, 
+            items: updatedItems, 
+            finalTotal: newTotal, 
+            total: newTotal,
+            final_total: newTotal // Keep snake_case in state too for consistency if needed
+        } : o));
 
         try {
-            const { error } = await supabase
+            const updatePayload = { 
+                items: updatedItems, 
+                final_total: newTotal,
+                total: newTotal
+            };
+            
+            console.log(`[updateOrderItems] Sending update to Supabase for #${orderId}`, updatePayload);
+
+            const { data, error } = await supabase
                 .from('orders')
-                .update({ 
-                    items: updatedItems, 
-                    final_total: newTotal,
-                    total: newTotal
-                })
-                .eq('id', orderId);
+                .update(updatePayload)
+                .eq('id', orderId)
+                .select(); // Select back to confirm what was updated
             
             if (error) {
-                console.error("Error updating order items:", error);
-                alert("Eroare la actualizarea produselor: " + error.message);
-                // Revert optimistic update on error? 
-                // fetchOrders would be better but let's just log for now
-            } else {
+                console.error("[updateOrderItems] Supabase Error:", error);
+                alert(`Eroare la actualizarea bazei de date: ${error.message} (${error.code})`);
+                // Revert state if needed? For now let's hope it's rare.
+            } else if (data && data.length > 0) {
+                console.log("[updateOrderItems] Supabase Success! Updated row:", data[0]);
                 logAction('MODIFICARE PRODUSE COMANDĂ', `Comanda #${orderId} - ${updatedItems.length} produse actualizate. Nou total: ${newTotal.toFixed(2)} Lei`);
+            } else {
+                console.warn("[updateOrderItems] No row was updated! Check if the ID exists.");
+                alert("Nu s-a putut actualiza comanda în baza de date. Verifică dacă ID-ul este corect.");
             }
         } catch (err) {
-            console.error("Update failed:", err);
-            alert("Eroare neașteptată la actualizarea produselor.");
+            console.error("[updateOrderItems] Unexpected error:", err);
+            alert("A apărut o eroare neașteptată la actualizarea produselor.");
         } finally {
             // Release the UI lock after a short delay to let realtime catch up
             setTimeout(() => {
@@ -300,7 +322,7 @@ export const OrderProvider = ({ children }) => {
                     next.delete(orderId);
                     return next;
                 });
-            }, 1500);
+            }, 2000); // Increased delay slightly
         }
     };
 
