@@ -294,12 +294,21 @@ const AdminReports = () => {
         else if (activeReport === 'consumption') {
             header = ['Data', 'Produs', 'Locatie', 'Cantitate', 'Motiv'];
             rows = consumption.map(t => [
-                new Date(t.created_at).toLocaleDateString(), t.inventory_items?.name, t.locations?.name, t.quantity, t.reason
+                new Date(t.created_at).toLocaleDateString('ro-RO') + ' ' + new Date(t.created_at).toLocaleTimeString('ro-RO'), 
+                t.inventory_items?.name, 
+                t.locations?.name, 
+                t.quantity + ' ' + (t.inventory_items?.unit || ''), 
+                t.reason
             ]);
         } else if (activeReport === 'reception') {
-            header = ['Data', 'Produs', 'Destinatie', 'Cantitate', 'Doc Ref'];
+            header = ['Data', 'Produs', 'Destinatie', 'Cantitate', 'Doc Ref', 'Lot'];
             rows = receptionHistory.map(t => [
-                new Date(t.created_at).toLocaleDateString(), t.inventory_items?.name, t.locations?.name, t.quantity, t.document_ref
+                new Date(t.created_at).toLocaleDateString('ro-RO'), 
+                t.inventory_items?.name, 
+                t.locations?.name, 
+                t.quantity + ' ' + (t.inventory_items?.unit || ''), 
+                t.document_ref || '-',
+                t.batch_id || '-'
             ]);
         }
 
@@ -357,25 +366,36 @@ const AdminReports = () => {
                 </button>
 
                 {(activeReport === 'consumption' || activeReport === 'reception') && (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <Calendar size={16} color="#64748b" />
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>De la:</span>
-                            <input 
-                                type="date" 
-                                value={startDate} 
-                                onChange={e => setStartDate(e.target.value)}
-                                style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem' }}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Până la:</span>
-                            <input 
-                                type="date" 
-                                value={endDate} 
-                                onChange={e => setEndDate(e.target.value)}
-                                style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem' }}
-                            />
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>De la:</span>
+                                <input 
+                                    type="date" 
+                                    value={startDate} 
+                                    onChange={e => setStartDate(e.target.value)}
+                                    style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem', outline: 'none' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>Până la:</span>
+                                <input 
+                                    type="date" 
+                                    value={endDate} 
+                                    onChange={e => setEndDate(e.target.value)}
+                                    style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 6px', fontSize: '0.85rem', outline: 'none' }}
+                                />
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+                                    setEndDate(new Date().toISOString().split('T')[0]);
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#990000', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline', padding: '0 5px' }}
+                            >
+                                Reset
+                            </button>
                         </div>
                     </div>
                 )}
