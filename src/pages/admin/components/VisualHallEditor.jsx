@@ -15,7 +15,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [reservations, setReservations] = useState([]);
+    const [guests, setGuests] = useState([]);
     const [locks, setLocks] = useState([]);
 
     const GRID_SIZE = 20;
@@ -27,16 +27,16 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [hallRes, objRes, resRes, locksRes] = await Promise.all([
+            const [hallRes, objRes, guestsRes, locksRes] = await Promise.all([
                 supabase.from('event_halls').select('*').eq('id', hallId).single(),
                 supabase.from('event_layout_objects').select('*').eq('event_id', eventId),
-                supabase.from('event_reservations').select('*').eq('event_id', eventId).eq('status', 'confirmed'),
+                supabase.from('event_guests').select('*').eq('event_id', eventId),
                 supabase.from('event_table_locks').select('*').eq('event_id', eventId).gt('expires_at', new Date().toISOString())
             ]);
 
             setHall(hallRes.data);
             setObjects(objRes.data || []);
-            setReservations(resRes.data || []);
+            setGuests(guestsRes.data || []);
             setLocks(locksRes.data || []);
         } catch (err) {
             console.error(err);
@@ -47,20 +47,21 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
     // Check availability for a table
     const getTableStatus = (tableId) => {
-        const tableReservations = (reservations || []).filter(r => r.table_id === tableId.toString());
-        const reservedSeats = tableReservations.reduce((sum, r) => sum + r.seat_count, 0);
+        // Count guests assigned to this table
+        const tableGuests = (guests || []).filter(g => g.layout_object_id === tableId);
+        const guestCount = tableGuests.length;
         
         const tableLocks = (locks || []).filter(l => l.table_id === tableId.toString());
         const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
 
-        const totalOccupied = reservedSeats + lockedSeats;
+        const totalOccupied = guestCount + lockedSeats;
 
         const obj = objects.find(o => o.id === tableId);
         if (!obj) return 'unknown';
 
         if (totalOccupied >= obj.capacity) return 'full';
-        if (totalOccupied > 0) return 'partial';
-        return 'available';
+        if (totalOccupied >= 6) return 'at_limit'; // Yellow
+        return 'available'; // Green (under 6)
     };
 
     // --- GEOMETRY & ZONES ---
@@ -173,15 +174,11 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                 let color = '#334155';
 
                 if (status === 'full') { 
-                    bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; 
-                } else if (status === 'partial') { 
-                    bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; 
+                    bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; // Red
+                } else if (status === 'at_limit') { 
+                    bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; // Yellow
                 } else if (status === 'available') {
-                    if (obj.capacity < 6) {
-                        bg = '#dcfce7'; border = '#22c55e'; color = '#166534';
-                    } else {
-                        bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e';
-                    }
+                    bg = '#dcfce7'; border = '#22c55e'; color = '#166534'; // Green
                 }
 
                 if (isSelected) {
@@ -468,9 +465,9 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
                 {/* Legend */}
                 <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '3px' }}></div> Liber (&lt;6 locuri)</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '3px' }}></div> Liber (&ge;6 locuri) / Parțial</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '3px' }}></div> Ocupat</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '3px' }}></div> Liber (&lt;6 persoane)</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '3px' }}></div> Ocupat (&ge;6 persoane)</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '3px' }}></div> Masa Full</div>
                 </div>
             </div>
 

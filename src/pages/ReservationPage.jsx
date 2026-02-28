@@ -10,6 +10,7 @@ const ReservationPage = () => {
     const [hall, setHall] = useState(null);
     const [objects, setObjects] = useState([]);
     const [reservations, setReservations] = useState([]);
+    const [guests, setGuests] = useState([]);
     const [locks, setLocks] = useState([]); // Kept empty for compatibility
     const [gallery, setGallery] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -88,8 +89,13 @@ const ReservationPage = () => {
         const eid = eventIdParam || event?.id;
         if (!eid) return;
 
-        const { data: resData } = await supabase.from('event_reservations').select('*').eq('event_id', eid);
-        setReservations(resData || []);
+        const [resRes, guestsRes] = await Promise.all([
+            supabase.from('event_reservations').select('*').eq('event_id', eid),
+            supabase.from('event_guests').select('*').eq('event_id', eid)
+        ]);
+
+        setReservations(resRes.data || []);
+        setGuests(guestsRes.data || []);
     };
 
     const formRef = React.useRef(null);
@@ -265,6 +271,7 @@ const ReservationPage = () => {
                                 hall={hall} 
                                 objects={objects} 
                                 reservations={reservations} 
+                                guests={guests}
                                 locks={locks}
                                 onTableSelect={handleTableSelect}
                                 selectedTableId={selectedTable?.id}

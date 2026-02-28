@@ -1,29 +1,29 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
-const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, selectedTableId }) => {
+const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableSelect, selectedTableId }) => {
     const canvasRef = useRef(null);
     const [scale, setScale] = useState(1);
     const GRID_SIZE = 20;
 
     // Check availability for a table
     const getTableStatus = (tableId) => {
-        // Check reservation count vs capacity
-        const tableReservations = reservations.filter(r => r.table_id === tableId.toString() && r.status === 'confirmed');
-        const reservedSeats = tableReservations.reduce((sum, r) => sum + r.seat_count, 0);
+        // Count guests assigned to this table (from event_guests)
+        const tableGuests = (guests || []).filter(g => g.layout_object_id === tableId);
+        const guestCount = tableGuests.length;
         
         // Check locks (temporary reservations)
         const tableLocks = locks?.filter(l => l.table_id === tableId.toString()) || [];
         const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
 
-        const totalOccupied = reservedSeats + lockedSeats;
+        const totalOccupied = guestCount + lockedSeats;
 
         const obj = objects.find(o => o.id === tableId);
         if (!obj) return 'unknown';
 
         if (totalOccupied >= obj.capacity) return 'full';
-        if (totalOccupied > 0) return 'partial';
-        return 'available';
+        if (totalOccupied >= 6) return 'at_limit'; // Yellow
+        return 'available'; // Green (under 6)
     };
 
     const getObjectStyle = (obj) => {
@@ -38,14 +38,10 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
         if (obj.type.includes('table')) {
             if (status === 'full') { 
                 bg = '#fee2e2'; border = '#ef4444'; color = '#991b1b'; // Red
-            } else if (status === 'partial') { 
-                bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; // Yellow/Orange
+            } else if (status === 'at_limit') { 
+                bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; // Yellow
             } else if (status === 'available') {
-                if (obj.capacity < 6) {
-                    bg = '#dcfce7'; border = '#22c55e'; color = '#166534'; // Green
-                } else {
-                    bg = '#fef3c7'; border = '#f59e0b'; color = '#92400e'; // Yellow
-                }
+                bg = '#dcfce7'; border = '#22c55e'; color = '#166534'; // Green
             }
         }
 
@@ -164,9 +160,9 @@ const VisualHallViewer = ({ hall, objects, reservations, locks, onTableSelect, s
             
             {/* Legend */}
             <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(255,255,255,0.9)', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#dcfce7', border: '1px solid #22c55e', borderRadius: '2px' }}></div> Liber (&lt;6 locuri)</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '2px' }}></div> Liber (&ge;6 locuri) / Parțial</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '2px' }}></div> Ocupat</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#dcfce7', border: '1px solid #22c55e', borderRadius: '2px' }}></div> Liber (&lt;6 persoane)</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '2px' }}></div> Ocupat (&ge;6 persoane)</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '2px' }}></div> Masa Full</div>
             </div>
         </div>
     );
