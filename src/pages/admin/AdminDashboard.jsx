@@ -92,6 +92,9 @@ const AdminDashboard = () => {
         if (cleanRole === 'ospatar') {
             setActiveTab('pos');
         }
+        if (cleanRole === 'manager eveniment' || cleanRole === 'sef sala') {
+            setActiveTab('events');
+        }
     }, []);
 
     // Navigation Config
@@ -177,6 +180,10 @@ const AdminDashboard = () => {
 
         if (role === 'ospatar') {
             return ['pos', 'orders'].includes(tab);
+        }
+
+        if (role === 'manager eveniment' || role === 'sef sala') {
+            return ['events'].includes(tab);
         }
 
         return false;

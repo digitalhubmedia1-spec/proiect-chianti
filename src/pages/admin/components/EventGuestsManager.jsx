@@ -5,7 +5,7 @@ import { Plus, Trash2, Users, X, UserPlus, ChevronDown, ChevronRight, FileDown }
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const EventGuestsManager = ({ eventId, allowMinors }) => {
+const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const [tables, setTables] = useState([]);
     const [guests, setGuests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -59,6 +59,7 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
     };
 
     const handleAddGuest = async (tableId) => {
+        if (readOnly) return;
         if (!formData.full_name.trim()) return;
 
         const payload = {
@@ -82,6 +83,7 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
     };
 
     const handleDeleteGuest = async (guestId) => {
+        if (readOnly) return;
         if (!window.confirm("Ștergi acest invitat?")) return;
         await supabase.from('event_guests').delete().eq('id', guestId);
         setGuests(prev => prev.filter(g => g.id !== guestId));
@@ -198,7 +200,7 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
 
     // --- INLINE ADD FORM ---
     const renderAddForm = (tableId) => {
-        if (showForm !== tableId) return null;
+        if (readOnly || showForm !== tableId) return null;
         return (
             <div style={{
                 margin: '8px 0', padding: '16px', background: '#f9fafb',
@@ -319,12 +321,14 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
                     </span>
                 )}
             </div>
-            <button
-                onClick={() => handleDeleteGuest(guest.id)}
-                style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-            >
-                <Trash2 size={16} />
-            </button>
+            {!readOnly && (
+                <button
+                    onClick={() => handleDeleteGuest(guest.id)}
+                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                >
+                    <Trash2 size={16} />
+                </button>
+            )}
         </div>
     );
 
@@ -362,7 +366,7 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
                             {tableGuests.length} / {table.capacity || '∞'}
                         </span>
                     </div>
-                    {!isFull && (
+                    {!isFull && !readOnly && (
                         <button
                             onClick={(e) => { e.stopPropagation(); openForm(table.id); }}
                             style={{
@@ -414,35 +418,37 @@ const EventGuestsManager = ({ eventId, allowMinors }) => {
                     )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                        onClick={handleExportPDF}
-                        disabled={guests.length === 0}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '10px 18px', borderRadius: '8px',
-                            background: guests.length === 0 ? '#cbd5e1' : '#990000',
-                            color: 'white', border: 'none', fontWeight: '600',
-                            cursor: guests.length === 0 ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 2px 4px rgba(153,0,0,0.2)'
-                        }}
-                    >
-                        <FileDown size={18} /> Export PDF Mese
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={guests.length === 0}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                padding: '10px 18px', borderRadius: '8px',
+                                background: guests.length === 0 ? '#cbd5e1' : '#990000',
+                                color: 'white', border: 'none', fontWeight: '600',
+                                cursor: guests.length === 0 ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 2px 4px rgba(153,0,0,0.2)'
+                            }}
+                        >
+                            <FileDown size={18} /> Export PDF Mese
+                        </button>
 
-                    <button
-                        onClick={() => openForm('unassigned')}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '10px 18px', borderRadius: '8px',
-                            background: 'white', color: '#1e293b',
-                            border: '1px solid #cbd5e1', fontWeight: '600',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <UserPlus size={18} /> Adaugă Invitat
-                    </button>
-                </div>
+                        {!readOnly && (
+                            <button
+                                onClick={() => openForm('unassigned')}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '10px 18px', borderRadius: '8px',
+                                    background: 'white', color: '#1e293b',
+                                    border: '1px solid #cbd5e1', fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <UserPlus size={18} /> Adaugă Invitat
+                            </button>
+                        )}
+                    </div>
             </div>
 
             {tables.length === 0 && (

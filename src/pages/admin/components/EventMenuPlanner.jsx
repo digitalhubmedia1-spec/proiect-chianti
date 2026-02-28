@@ -28,7 +28,7 @@ const DEFAULT_CATEGORIES = [
     'Garnitură', 'Salată', 'Desert', 'Băutură', 'Altele'
 ];
 
-const EventMenuPlanner = ({ eventId }) => {
+const EventMenuPlanner = ({ eventId, readOnly = false }) => {
     const [items, setItems] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -352,11 +352,13 @@ const EventMenuPlanner = ({ eventId }) => {
                     </span>
                 )}
             </div>
-            <button onClick={() => handleDeleteItem(item.id)} style={{
-                border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px'
-            }}>
-                <Trash2 size={16} />
-            </button>
+            {!readOnly && (
+                <button onClick={() => handleDeleteItem(item.id)} style={{
+                    border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px'
+                }}>
+                    <Trash2 size={16} />
+                </button>
+            )}
         </div>
     );
 
@@ -385,88 +387,92 @@ const EventMenuPlanner = ({ eventId }) => {
                             {categoryItems.length} produse
                         </span>
                     </div>
-                    <button onClick={() => handleDeleteCategory(menuType, category)} style={{
-                        border: 'none', background: 'transparent', color: '#9ca3af', cursor: 'pointer',
-                        fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px'
-                    }}>
-                        <Trash2 size={14} /> Șterge
-                    </button>
+                    {!readOnly && (
+                        <button onClick={() => handleDeleteCategory(menuType, category)} style={{
+                            border: 'none', background: 'transparent', color: '#9ca3af', cursor: 'pointer',
+                            fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px'
+                        }}>
+                            <Trash2 size={14} /> Șterge
+                        </button>
+                    )}
                 </div>
 
                 {/* Existing Items */}
                 {categoryItems.map(renderProductRow)}
 
                 {/* Search Input */}
-                <div ref={isSearchActive ? searchRef : null} style={{ position: 'relative', padding: '8px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Search size={16} color="#9ca3af" />
-                        <input
-                            placeholder="Caută produs pentru a adăuga..."
-                            value={isSearchActive ? searchQuery : ''}
-                            onChange={e => {
-                                setActiveSearch(searchKey);
-                                setSearchQuery(e.target.value);
-                            }}
-                            onFocus={() => {
-                                setActiveSearch(searchKey);
-                                setSearchQuery('');
-                            }}
-                            style={{
-                                flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb',
-                                borderRadius: '6px', fontSize: '0.85rem', outline: 'none'
-                            }}
-                        />
-                    </div>
-
-                    {/* Dropdown Results */}
-                    {isSearchActive && searchQuery.length >= 1 && (
-                        <div style={{
-                            position: 'absolute', top: '100%', left: '14px', right: '14px',
-                            background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto'
-                        }}>
-                            {filteredProducts.length > 0 ? (
-                                filteredProducts.map(p => (
-                                    <div
-                                        key={p.id}
-                                        onClick={() => handleAddProduct(p, menuType, category)}
-                                        style={{
-                                            padding: '10px 14px', cursor: 'pointer',
-                                            borderBottom: '1px solid #f3f4f6',
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <div>
-                                            <span style={{ fontWeight: '500' }}>{p.name}</span>
-                                            {p.category && (
-                                                <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '8px' }}>
-                                                    ({p.category})
-                                                </span>
-                                            )}
-                                            {p.weight && (
-                                                <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '4px' }}>
-                                                    {p.weight}g
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span style={{
-                                            padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem',
-                                            background: '#111827', color: 'white', fontWeight: '600'
-                                        }}>
-                                            + Adaugă
-                                        </span>
-                                    </div>
-                                ))
-                            ) : (
-                                <div style={{ padding: '14px', textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem' }}>
-                                    Niciun produs găsit pentru „{searchQuery}"
-                                </div>
-                            )}
+                {!readOnly && (
+                    <div ref={isSearchActive ? searchRef : null} style={{ position: 'relative', padding: '8px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Search size={16} color="#9ca3af" />
+                            <input
+                                placeholder="Caută produs pentru a adăuga..."
+                                value={isSearchActive ? searchQuery : ''}
+                                onChange={e => {
+                                    setActiveSearch(searchKey);
+                                    setSearchQuery(e.target.value);
+                                }}
+                                onFocus={() => {
+                                    setActiveSearch(searchKey);
+                                    setSearchQuery('');
+                                }}
+                                style={{
+                                    flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb',
+                                    borderRadius: '6px', fontSize: '0.85rem', outline: 'none'
+                                }}
+                            />
                         </div>
-                    )}
-                </div>
+
+                        {/* Dropdown Results */}
+                        {isSearchActive && searchQuery.length >= 1 && (
+                            <div style={{
+                                position: 'absolute', top: '100%', left: '14px', right: '14px',
+                                background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto'
+                            }}>
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.map(p => (
+                                        <div
+                                            key={p.id}
+                                            onClick={() => handleAddProduct(p, menuType, category)}
+                                            style={{
+                                                padding: '10px 14px', cursor: 'pointer',
+                                                borderBottom: '1px solid #f3f4f6',
+                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                        >
+                                            <div>
+                                                <span style={{ fontWeight: '500' }}>{p.name}</span>
+                                                {p.category && (
+                                                    <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '8px' }}>
+                                                        ({p.category})
+                                                    </span>
+                                                )}
+                                                {p.weight && (
+                                                    <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginLeft: '4px' }}>
+                                                        {p.weight}g
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span style={{
+                                                padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem',
+                                                background: '#111827', color: 'white', fontWeight: '600'
+                                            }}>
+                                                + Adaugă
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ padding: '14px', textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem' }}>
+                                        Niciun produs găsit pentru „{searchQuery}"
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         );
     };
@@ -522,67 +528,69 @@ const EventMenuPlanner = ({ eventId }) => {
                     )}
 
                     {/* Add Category Form */}
-                    {showAddCategory === menuType ? (
-                        <div style={{
-                            display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'center', flexWrap: 'wrap'
-                        }}>
-                            <select
-                                value={DEFAULT_CATEGORIES.includes(newCategoryName) ? newCategoryName : ''}
-                                onChange={e => setNewCategoryName(e.target.value)}
-                                style={{
-                                    minWidth: '200px', padding: '9px 10px', borderRadius: '6px',
-                                    border: '1px solid #e5e7eb', fontSize: '0.85rem'
-                                }}
-                            >
-                                <option value="">— Alegeți categorie —</option>
-                                {DEFAULT_CATEGORIES
-                                    .filter(c => !categories.includes(c))
-                                    .map(c => <option key={c} value={c}>{c}</option>)
-                                }
-                            </select>
-                            <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>sau</span>
-                            <input
-                                type="text"
-                                placeholder="Scrieți altă categorie..."
-                                value={DEFAULT_CATEGORIES.includes(newCategoryName) ? '' : newCategoryName}
-                                onChange={e => setNewCategoryName(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(menuType); }}
-                                style={{
-                                    flex: 1, minWidth: '180px', padding: '9px 10px', borderRadius: '6px',
-                                    border: '1px solid #e5e7eb', fontSize: '0.85rem'
-                                }}
-                            />
-                            <button
-                                onClick={() => handleAddCategory(menuType)}
-                                disabled={!newCategoryName.trim()}
-                                style={{
-                                    padding: '9px 18px', borderRadius: '6px', border: 'none',
-                                    background: newCategoryName.trim() ? '#111827' : '#d1d5db',
-                                    color: 'white', cursor: newCategoryName.trim() ? 'pointer' : 'not-allowed',
-                                    fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap'
-                                }}
-                            >
-                                Adaugă
-                            </button>
-                            <button onClick={() => { setShowAddCategory(null); setNewCategoryName(''); }} style={{
-                                border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af'
+                    {!readOnly && (
+                        showAddCategory === menuType ? (
+                            <div style={{
+                                display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'center', flexWrap: 'wrap'
                             }}>
-                                <X size={18} />
+                                <select
+                                    value={DEFAULT_CATEGORIES.includes(newCategoryName) ? newCategoryName : ''}
+                                    onChange={e => setNewCategoryName(e.target.value)}
+                                    style={{
+                                        minWidth: '200px', padding: '9px 10px', borderRadius: '6px',
+                                        border: '1px solid #e5e7eb', fontSize: '0.85rem'
+                                    }}
+                                >
+                                    <option value="">— Alegeți categorie —</option>
+                                    {DEFAULT_CATEGORIES
+                                        .filter(c => !categories.includes(c))
+                                        .map(c => <option key={c} value={c}>{c}</option>)
+                                    }
+                                </select>
+                                <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>sau</span>
+                                <input
+                                    type="text"
+                                    placeholder="Scrieți altă categorie..."
+                                    value={DEFAULT_CATEGORIES.includes(newCategoryName) ? '' : newCategoryName}
+                                    onChange={e => setNewCategoryName(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(menuType); }}
+                                    style={{
+                                        flex: 1, minWidth: '180px', padding: '9px 10px', borderRadius: '6px',
+                                        border: '1px solid #e5e7eb', fontSize: '0.85rem'
+                                    }}
+                                />
+                                <button
+                                    onClick={() => handleAddCategory(menuType)}
+                                    disabled={!newCategoryName.trim()}
+                                    style={{
+                                        padding: '9px 18px', borderRadius: '6px', border: 'none',
+                                        background: newCategoryName.trim() ? '#111827' : '#d1d5db',
+                                        color: 'white', cursor: newCategoryName.trim() ? 'pointer' : 'not-allowed',
+                                        fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    Adaugă
+                                </button>
+                                <button onClick={() => { setShowAddCategory(null); setNewCategoryName(''); }} style={{
+                                    border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af'
+                                }}>
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => { setShowAddCategory(menuType); setNewCategoryName(''); }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px',
+                                    padding: '12px 16px', borderRadius: '8px',
+                                    border: '1px dashed #d1d5db', background: 'transparent',
+                                    cursor: 'pointer', color: '#6b7280', fontSize: '0.85rem', fontWeight: '500',
+                                    width: '100%', justifyContent: 'center'
+                                }}
+                            >
+                                <Plus size={16} /> Adaugă Categorie
                             </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => { setShowAddCategory(menuType); setNewCategoryName(''); }}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px',
-                                padding: '12px 16px', borderRadius: '8px',
-                                border: '1px dashed #d1d5db', background: 'transparent',
-                                cursor: 'pointer', color: '#6b7280', fontSize: '0.85rem', fontWeight: '500',
-                                width: '100%', justifyContent: 'center'
-                            }}
-                        >
-                            <Plus size={16} /> Adaugă Categorie
-                        </button>
+                        )
                     )}
                 </div>
             </div>

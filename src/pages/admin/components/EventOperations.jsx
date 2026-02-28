@@ -25,7 +25,7 @@ const sanitize = (str) => {
         .replace(/ţ/g, 't').replace(/Ţ/g, 'T');
 };
 
-const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
+const EventOperations = ({ eventId, eventStatus, onUpdateStatus, readOnly = false }) => {
     const [activeSection, setActiveSection] = useState('timeline');
     const [timeline, setTimeline] = useState([]);
     const [staff, setStaff] = useState([]);
@@ -311,30 +311,32 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
             {/* TIMELINE */}
             {activeSection === 'timeline' && (
                 <div>
-                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px', flexWrap: 'wrap' }}>
-                        <div>
-                            <label style={{ fontSize: '0.8rem' }}>Ora</label>
-                            <input type="time" value={newItem.time_start} onChange={e => setNewItem({ ...newItem, time_start: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                    {!readOnly && (
+                        <div style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px', flexWrap: 'wrap' }}>
+                            <div>
+                                <label style={{ fontSize: '0.8rem' }}>Ora</label>
+                                <input type="time" value={newItem.time_start} onChange={e => setNewItem({ ...newItem, time_start: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ fontSize: '0.8rem' }}>Activitate</label>
+                                <input placeholder="ex: Sosire Invitați" value={newItem.activity} onChange={e => setNewItem({ ...newItem, activity: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
+                            </div>
+                            <div style={{ minWidth: '150px' }}>
+                                <label style={{ fontSize: '0.8rem' }}>Responsabil (Rol)</label>
+                                <select 
+                                    value={newItem.assigned_role_id} 
+                                    onChange={e => setNewItem({ ...newItem, assigned_role_id: e.target.value })}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}
+                                >
+                                    <option value="">-- Alege Rol --</option>
+                                    {roles.map(r => (
+                                        <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                         </div>
-                        <div style={{ flex: 1, minWidth: '200px' }}>
-                            <label style={{ fontSize: '0.8rem' }}>Activitate</label>
-                            <input placeholder="ex: Sosire Invitați" value={newItem.activity} onChange={e => setNewItem({ ...newItem, activity: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
-                        </div>
-                        <div style={{ minWidth: '150px' }}>
-                            <label style={{ fontSize: '0.8rem' }}>Responsabil (Rol)</label>
-                            <select 
-                                value={newItem.assigned_role_id} 
-                                onChange={e => setNewItem({ ...newItem, assigned_role_id: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}
-                            >
-                                <option value="">-- Alege Rol --</option>
-                                {roles.map(r => (
-                                    <option key={r.id} value={r.id}>{r.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <button onClick={handleAddItem} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
-                    </div>
+                    )}
 
                     {timeline.length > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -379,7 +381,11 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={() => toggleItemStatus(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: item.status === 'done' ? '#16a34a' : '#d1d5db' }}>
+                                        <button 
+                                            onClick={() => toggleItemStatus(item)} 
+                                            disabled={readOnly}
+                                            style={{ background: 'none', border: 'none', cursor: readOnly ? 'default' : 'pointer', color: item.status === 'done' ? '#16a34a' : '#d1d5db' }}
+                                        >
                                             <CheckCircle size={24} fill={item.status === 'done' ? '#16a34a' : 'white'} />
                                         </button>
                                         <div style={{ fontSize: '1.1rem', fontWeight: 'bold', width: '80px' }}>{item.time_start.slice(0, 5)}</div>
@@ -392,10 +398,12 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                             )}
                                             {item.notes && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{item.notes}</div>}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <button onClick={() => startEditing(item)} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
-                                            <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
-                                        </div>
+                                        {!readOnly && (
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <button onClick={() => startEditing(item)} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                                                <button onClick={() => handleDeleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -408,27 +416,29 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
             {/* STAFF */}
             {activeSection === 'staff' && (
                 <div>
-                    <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Nume Membru Staff</label>
-                            <input placeholder="ex: Popescu Ion" value={newStaff.staff_name} onChange={e => setNewStaff({ ...newStaff, staff_name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
-                        </div>
-                        <div style={{ minWidth: '200px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                <label style={{ fontSize: '0.8rem' }}>Rol</label>
-                                <button onClick={() => setShowRoleManager(!showRoleManager)} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                    <Settings size={12} /> Gestionează Roluri
-                                </button>
+                    {!readOnly && (
+                        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px', alignItems: 'end', background: '#f9fafb', padding: '15px', borderRadius: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '0.8rem' }}>Nume Membru Staff</label>
+                                <input placeholder="ex: Popescu Ion" value={newStaff.staff_name} onChange={e => setNewStaff({ ...newStaff, staff_name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }} />
                             </div>
-                            <select value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}>
-                                <option value="">-- Alege Rol --</option>
-                                {roles.map(r => (
-                                    <option key={r.id} value={r.name}>{r.name}</option>
-                                ))}
-                            </select>
+                            <div style={{ minWidth: '200px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                    <label style={{ fontSize: '0.8rem' }}>Rol</label>
+                                    <button onClick={() => setShowRoleManager(!showRoleManager)} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                        <Settings size={12} /> Gestionează Roluri
+                                    </button>
+                                </div>
+                                <select value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', display: 'block' }}>
+                                    <option value="">-- Alege Rol --</option>
+                                    {roles.map(r => (
+                                        <option key={r.id} value={r.name}>{r.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button onClick={handleAddStaff} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
                         </div>
-                        <button onClick={handleAddStaff} style={{ padding: '9px 15px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18} /></button>
-                    </div>
+                    )}
 
                     {/* ROLE MANAGER UI */}
                     {showRoleManager && (
@@ -484,7 +494,9 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                             </span>
                                         </td>
                                         <td style={{ padding: '10px 14px' }}>
-                                            <button onClick={() => handleDeleteStaff(s.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                            {!readOnly && (
+                                                <button onClick={() => handleDeleteStaff(s.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -505,25 +517,31 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                     </div>
 
                     {!pvFileUrl ? (
-                        <label style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            padding: '3rem 2rem', border: '2px dashed #d1d5db', borderRadius: '12px',
-                            background: '#f9fafb', cursor: pvUploading ? 'wait' : 'pointer',
-                            transition: 'all 0.2s', marginBottom: '1.5rem'
-                        }}>
-                            <Upload size={40} color="#9ca3af" style={{ marginBottom: '12px' }} />
-                            <span style={{ fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
-                                {pvUploading ? 'Se încarcă...' : 'Click pentru a încărca documentul'}
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>PDF, JPG, PNG (max 10MB)</span>
-                            <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                onChange={handleUploadPV}
-                                disabled={pvUploading}
-                                style={{ display: 'none' }}
-                            />
-                        </label>
+                        !readOnly ? (
+                            <label style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                padding: '3rem 2rem', border: '2px dashed #d1d5db', borderRadius: '12px',
+                                background: '#f9fafb', cursor: pvUploading ? 'wait' : 'pointer',
+                                transition: 'all 0.2s', marginBottom: '1.5rem'
+                            }}>
+                                <Upload size={40} color="#9ca3af" style={{ marginBottom: '12px' }} />
+                                <span style={{ fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                                    {pvUploading ? 'Se încarcă...' : 'Click pentru a încărca documentul'}
+                                </span>
+                                <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>PDF, JPG, PNG (max 10MB)</span>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                    onChange={handleUploadPV}
+                                    disabled={pvUploading}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                                Niciun proces verbal încărcat încă.
+                            </div>
+                        )
                     ) : (
                         <div style={{
                             padding: '1.5rem', border: '1px solid #d1fae5', borderRadius: '12px',
@@ -534,11 +552,13 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                     <CheckCircle size={22} color="#16a34a" />
                                     <span style={{ fontWeight: '600', color: '#166534' }}>Document încărcat cu succes</span>
                                 </div>
-                                <button onClick={handleDeletePV} title="Șterge document" style={{
-                                    background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px'
-                                }}>
-                                    <X size={18} />
-                                </button>
+                                {!readOnly && (
+                                    <button onClick={handleDeletePV} title="Șterge document" style={{
+                                        background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px'
+                                    }}>
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <a href={pvFileUrl} target="_blank" rel="noopener noreferrer" style={{
@@ -549,20 +569,22 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                                 }}>
                                     <Eye size={16} /> Vizualizare
                                 </a>
-                                <label style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db',
-                                    background: 'white', color: '#374151',
-                                    fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer'
-                                }}>
-                                    <Upload size={16} /> Reîncarcă
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                        onChange={handleUploadPV}
-                                        style={{ display: 'none' }}
-                                    />
-                                </label>
+                                {!readOnly && (
+                                    <label style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db',
+                                        background: 'white', color: '#374151',
+                                        fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer'
+                                    }}>
+                                        <Upload size={16} /> Reîncarcă
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                            onChange={handleUploadPV}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
+                                )}
                             </div>
                             {pvFileUrl.match(/\.(jpg|jpeg|png|webp)$/i) && (
                                 <img src={pvFileUrl} alt="Proces Verbal" style={{
@@ -573,7 +595,7 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus }) => {
                         </div>
                     )}
 
-                    {eventStatus !== 'completed' && (
+                    {eventStatus !== 'completed' && !readOnly && (
                         <button
                             onClick={handleFinalize}
                             disabled={!pvFileUrl}

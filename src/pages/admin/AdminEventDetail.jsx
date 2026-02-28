@@ -17,6 +17,8 @@ const AdminEventDetail = () => {
     const [event, setEvent] = useState(null);
     const [activeTab, setActiveTab] = useState('general'); // general, layout, guests, menu, production
     const [loading, setLoading] = useState(true);
+    const adminRole = localStorage.getItem('admin_role')?.toLowerCase().trim();
+    const isRestrictedRole = adminRole === 'manager eveniment' || adminRole === 'sef sala';
 
     useEffect(() => {
         if (id === 'new') {
@@ -114,9 +116,10 @@ const AdminEventDetail = () => {
                             <label>Nume Eveniment</label>
                             <input
                                 type="text"
+                                readOnly={isRestrictedRole}
                                 value={event.name}
                                 onChange={e => setEvent({ ...event, name: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                             />
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -124,18 +127,20 @@ const AdminEventDetail = () => {
                                 <label>Data Start</label>
                                 <input
                                     type="datetime-local"
+                                    readOnly={isRestrictedRole}
                                     value={event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : ''}
                                     onChange={e => setEvent({ ...event, start_date: e.target.value })}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Data Sfarsit</label>
                                 <input
                                     type="datetime-local"
+                                    readOnly={isRestrictedRole}
                                     value={event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : ''}
                                     onChange={e => setEvent({ ...event, end_date: e.target.value })}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                                 />
                             </div>
                         </div>
@@ -144,9 +149,10 @@ const AdminEventDetail = () => {
                             <div className="form-group">
                                 <label>Tip Eveniment</label>
                                 <select
+                                    disabled={isRestrictedRole}
                                     value={event.type}
                                     onChange={e => setEvent({ ...event, type: e.target.value })}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                                 >
                                     <option value="client">Eveniment Client</option>
                                     <option value="restaurant">Eveniment Restaurant</option>
@@ -156,6 +162,7 @@ const AdminEventDetail = () => {
                                 <input
                                     type="checkbox"
                                     id="allow_minors"
+                                    disabled={isRestrictedRole}
                                     checked={event.allow_minors || false}
                                     onChange={e => setEvent({ ...event, allow_minors: e.target.checked })}
                                     style={{ width: '20px', height: '20px' }}
@@ -171,21 +178,24 @@ const AdminEventDetail = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <input
                                         placeholder="Nume Client"
+                                        readOnly={isRestrictedRole}
                                         value={event.client_name || ''}
                                         onChange={e => setEvent({ ...event, client_name: e.target.value })}
-                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', background: isRestrictedRole ? '#f1f5f9' : 'white' }}
                                     />
                                     <input
                                         placeholder="Telefon"
+                                        readOnly={isRestrictedRole}
                                         value={event.client_phone || ''}
                                         onChange={e => setEvent({ ...event, client_phone: e.target.value })}
-                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', background: isRestrictedRole ? '#f1f5f9' : 'white' }}
                                     />
                                     <input
                                         placeholder="Email"
+                                        readOnly={isRestrictedRole}
                                         value={event.client_email || ''}
                                         onChange={e => setEvent({ ...event, client_email: e.target.value })}
-                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', gridColumn: 'span 2' }}
+                                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', gridColumn: 'span 2', background: isRestrictedRole ? '#f1f5f9' : 'white' }}
                                     />
                                 </div>
                                 {event.access_token && (
@@ -202,9 +212,10 @@ const AdminEventDetail = () => {
                                 <label>Avans (RON)</label>
                                 <input
                                     type="number"
+                                    readOnly={isRestrictedRole}
                                     value={event.deposit_amount || 0}
                                     onChange={e => setEvent({ ...event, deposit_amount: parseFloat(e.target.value) })}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                                 />
                             </div>
                         </div>
@@ -213,9 +224,10 @@ const AdminEventDetail = () => {
                         <div style={{ marginTop: '1rem' }}>
                             <label>Salon</label>
                             <select
+                                disabled={isRestrictedRole}
                                 value={event.hall_id || ''}
                                 onChange={e => setEvent({ ...event, hall_id: e.target.value })}
-                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', background: isRestrictedRole ? '#f9fafb' : 'white' }}
                             >
                                 <option value="">Selectează Salon</option>
                                 <option value="1">Salon Florența</option>
@@ -242,14 +254,18 @@ const AdminEventDetail = () => {
                                             Copiază
                                         </button>
                                     </div>
-                                    <button onClick={generateReservationLink} style={{ fontSize: '0.85rem', color: '#166534', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                                        Regenerează Link
-                                    </button>
+                                    {!isRestrictedRole && (
+                                        <button onClick={generateReservationLink} style={{ fontSize: '0.85rem', color: '#166534', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                            Regenerează Link
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
-                                <button onClick={generateReservationLink} style={{ padding: '10px 20px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-                                    Generează Link Rezervare
-                                </button>
+                                !isRestrictedRole && (
+                                    <button onClick={generateReservationLink} style={{ padding: '10px 20px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                                        Generează Link Rezervare
+                                    </button>
+                                )
                             )}
                         </div>
                     </div>
@@ -257,19 +273,19 @@ const AdminEventDetail = () => {
             case 'layout':
                 return (
                     event.hall_id ? (
-                        <VisualHallEditor eventId={id} hallId={event.hall_id} />
+                        <VisualHallEditor eventId={id} hallId={event.hall_id} readOnly={isRestrictedRole} />
                     ) : (
                         <div style={{ padding: '2rem', textAlign: 'center' }}>Vă rugăm să selectați un salon în tab-ul General mai întâi.</div>
                     )
                 );
             case 'guests':
-                return <EventGuestsManager eventId={id} allowMinors={event.allow_minors || false} />;
+                return <EventGuestsManager eventId={id} allowMinors={event.allow_minors || false} readOnly={isRestrictedRole} />;
             case 'menu':
-                return <EventMenuPlanner eventId={id} />;
+                return <EventMenuPlanner eventId={id} readOnly={isRestrictedRole} />;
             case 'production':
                 return <EventProduction eventId={id} />;
             case 'operations':
-                return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} />;
+                return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} readOnly={isRestrictedRole} />;
             case 'reservations':
                 return <EventReservations eventId={id} />;
             case 'media':
@@ -303,16 +319,18 @@ const AdminEventDetail = () => {
                         }[event.status] || event.status.toUpperCase()}
                     </span>
                 </div>
-                <button
-                    onClick={handleSave}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        background: '#111827', color: 'white', border: 'none',
-                        padding: '10px 20px', borderRadius: '8px', cursor: 'pointer'
-                    }}
-                >
-                    <Save size={18} /> Salvează
-                </button>
+                {!isRestrictedRole && (
+                    <button
+                        onClick={handleSave}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            background: '#111827', color: 'white', border: 'none',
+                            padding: '10px 20px', borderRadius: '8px', cursor: 'pointer'
+                        }}
+                    >
+                        <Save size={18} /> Salvează
+                    </button>
+                )}
             </div>
 
             {/* Tabs */}
@@ -326,7 +344,12 @@ const AdminEventDetail = () => {
                     { id: 'operations', label: 'Operațional', icon: Settings },
                     { id: 'reservations', label: 'Rezervări', icon: Users },
                     { id: 'media', label: 'Media & Setări', icon: Image },
-                ].map(tab => (
+                ].filter(tab => {
+                    if (isRestrictedRole) {
+                        return ['general', 'layout', 'guests', 'menu', 'operations'].includes(tab.id);
+                    }
+                    return true;
+                }).map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}

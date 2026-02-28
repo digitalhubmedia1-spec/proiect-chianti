@@ -132,6 +132,8 @@ const AdminOperators = () => {
             case 'chef': return 'Bucătar';
             case 'contabil': return 'Contabil';
             case 'achizitor': return 'Achizitor';
+            case 'manager eveniment': return 'Manager Eveniment';
+            case 'sef sala': return 'Șef Sală';
             default: return role;
         }
     };
@@ -199,6 +201,8 @@ const AdminOperators = () => {
                                     style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                                 >
                                     <option value="operator">Manager Locație (Acces Total)</option>
+                                    <option value="manager eveniment">Manager Eveniment (Doar Evenimente)</option>
+                                    <option value="sef sala">Șef Sală (Doar Evenimente)</option>
                                     <option value="chef">Bucătar (Acces Limitat)</option>
                                     <option value="achizitor">Achizitor</option>
                                     <option value="contabil">Contabil</option>
