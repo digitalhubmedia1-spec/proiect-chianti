@@ -285,7 +285,7 @@ const AdminEventDetail = () => {
             case 'production':
                 return <EventProduction eventId={id} />;
             case 'operations':
-                return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} readOnly={isRestrictedRole} />;
+                return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} readOnly={isRestrictedRole} userRole={adminRole} />;
             case 'reservations':
                 return <EventReservations eventId={id} />;
             case 'media':

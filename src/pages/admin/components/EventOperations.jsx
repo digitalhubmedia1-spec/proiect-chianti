@@ -25,7 +25,11 @@ const sanitize = (str) => {
         .replace(/ţ/g, 't').replace(/Ţ/g, 'T');
 };
 
-const EventOperations = ({ eventId, eventStatus, onUpdateStatus, readOnly = false }) => {
+const EventOperations = ({ eventId, eventStatus, onUpdateStatus, readOnly = false, userRole = '' }) => {
+    const isSefSala = userRole === 'sef sala';
+    const isManagerEveniment = userRole === 'manager eveniment';
+    const isRestricted = isSefSala || isManagerEveniment;
+
     const [activeSection, setActiveSection] = useState('timeline');
     const [timeline, setTimeline] = useState([]);
     const [staff, setStaff] = useState([]);
@@ -300,12 +304,16 @@ const EventOperations = ({ eventId, eventStatus, onUpdateStatus, readOnly = fals
                 <button onClick={() => setActiveSection('timeline')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'timeline' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'timeline' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
                     <Clock size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Desfășurător
                 </button>
-                <button onClick={() => setActiveSection('staff')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'staff' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'staff' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
-                    <Users size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Echipă & Staff
-                </button>
-                <button onClick={() => setActiveSection('closing')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'closing' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'closing' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
-                    <FileText size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Proces Verbal Închidere
-                </button>
+                {!isRestricted && (
+                    <>
+                        <button onClick={() => setActiveSection('staff')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'staff' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'staff' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
+                            <Users size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Echipă & Staff
+                        </button>
+                        <button onClick={() => setActiveSection('closing')} style={{ background: 'none', border: 'none', borderBottom: activeSection === 'closing' ? '2px solid #990000' : 'none', fontWeight: activeSection === 'closing' ? 'bold' : 'normal', cursor: 'pointer', padding: '5px 10px' }}>
+                            <FileText size={16} style={{ marginBottom: '-3px', marginRight: '5px' }} /> Proces Verbal Închidere
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* TIMELINE */}
