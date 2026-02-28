@@ -555,6 +555,9 @@ const AdminMenuPlanner = () => {
 
     // --- SHARED RENDER VARS ---
     const standardProducts = products.filter(p => {
+        // Only show active products (not soft-deleted)
+        if (p.is_active === false) return false;
+        
         const cat = categories.find(c => c.name === p.category);
         return !cat || cat.type !== 'catering';
     });
@@ -923,6 +926,7 @@ const AdminMenuPlanner = () => {
                                         marginTop: '4px'
                                     }}>
                                         {products
+                                            .filter(p => p.is_active !== false) // Exclude soft-deleted products
                                             .filter(p => p.id !== editingExtrasProduct.id)
                                             .filter(p => !currentExtras.some(e => e.id === p.id))
                                             .filter(p => p.name.toLowerCase().includes(extraSearchTerm.toLowerCase()))

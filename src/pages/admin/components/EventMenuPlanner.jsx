@@ -151,6 +151,7 @@ const EventMenuPlanner = ({ eventId }) => {
         if (searchQuery.length < 1) return [];
         const existingIds = getItemsForCategory(menuType, category).map(i => i.product_id);
         return products
+            .filter(p => p.is_active !== false) // Exclude soft-deleted products
             .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) && !existingIds.includes(p.id))
             .slice(0, 10);
     };
