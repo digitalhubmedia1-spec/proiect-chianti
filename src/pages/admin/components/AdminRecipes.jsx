@@ -23,6 +23,8 @@ const AdminRecipes = () => {
         setAdminRole(role);
         if (role === 'cost_productie') {
             setActiveTab('cost_calculator');
+        } else if (role === 'bucatar') {
+            setActiveTab('manage');
         }
     }, []);
 
@@ -527,8 +529,8 @@ const AdminRecipes = () => {
 
     return (
         <div className="admin-recipes" style={{ padding: '1rem' }}>
-            {/* Header Tabs (Hidden for cost_productie) */}
-            {adminRole !== 'cost_productie' && (
+            {/* Header Tabs (Hidden for cost_productie or bucatar limited views) */}
+            {adminRole !== 'cost_productie' && adminRole !== 'bucatar' && (
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                     <button
                         className={`tab-btn ${activeTab === 'manage' ? 'active' : ''}`}
@@ -545,6 +547,7 @@ const AdminRecipes = () => {
                     >
                         Prețuri Referință & Costuri
                     </button>
+
                     <button
                         className={`tab-btn ${activeTab === 'production' ? 'active' : ''}`}
                         onClick={() => setActiveTab('production')}
@@ -661,7 +664,7 @@ const AdminRecipes = () => {
 
             {/* --- TAB 2: COST CALCULATOR & REF PRICES --- */}
             {
-                activeTab === 'cost_calculator' && (
+                activeTab === 'cost_calculator' && adminRole !== 'bucatar' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                         {/* RECIPE MULTI-SELECTOR (SHARED) */}
@@ -972,7 +975,7 @@ const AdminRecipes = () => {
 
             {/* --- TAB 3: PRODUCTION --- */}
             {
-                activeTab === 'production' && (
+                activeTab === 'production' && adminRole !== 'bucatar' && (
                     <div>
                         <div className="calculator-panel" style={{ background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                             <h3>Calculator Producție (FIFO)</h3>
