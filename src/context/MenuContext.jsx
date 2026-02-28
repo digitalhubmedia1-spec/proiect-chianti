@@ -107,6 +107,13 @@ export const MenuProvider = ({ children }) => {
             return;
         }
         try {
+            // Check for duplicate name
+            const isDuplicate = products.some(p => p.name.toLowerCase().trim() === product.name.toLowerCase().trim());
+            if (isDuplicate) {
+                alert(`Eroare: Există deja un produs cu numele "${product.name}". Te rugăm să folosești un nume diferit.`);
+                return null;
+            }
+
             // Remove 'id' if present to let DB generate it, or handle it
             const { id, ...prodData } = product;
             const payload = {
@@ -150,6 +157,15 @@ export const MenuProvider = ({ children }) => {
             return;
         }
         try {
+            // Check for duplicate name if name is being updated
+            if (updatedData.name) {
+                const isDuplicate = products.some(p => p.id !== id && p.name.toLowerCase().trim() === updatedData.name.toLowerCase().trim());
+                if (isDuplicate) {
+                    alert(`Eroare: Există deja un alt produs cu numele "${updatedData.name}".`);
+                    return;
+                }
+            }
+
             const { error } = await supabase.from('products').update(updatedData).eq('id', id);
             if (error) throw error;
             setProducts(prev => {
