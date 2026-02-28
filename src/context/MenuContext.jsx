@@ -29,24 +29,7 @@ export const MenuProvider = ({ children }) => {
                 return;
             }
 
-            // 1. Try Local Storage Cache First
-            try {
-                const cachedCats = localStorage.getItem('chianti_categories');
-                const cachedProds = localStorage.getItem('chianti_products');
-                
-                if (cachedCats && cachedProds) {
-                    setCategories(JSON.parse(cachedCats));
-                    // Filter inactive products from cache just in case
-                    const prods = JSON.parse(cachedProds);
-                    setProducts(prods.filter(p => p.is_active !== false));
-                    setLoading(false); // Show cached content immediately
-                } else {
-                    setLoading(true); // Only show spinner if no cache
-                }
-            } catch (e) {
-                console.error("Cache read error", e);
-                setLoading(true);
-            }
+            setLoading(true);
 
             try {
                 // Parallel Fetch with allSettled to prevent one failure from blocking the other
@@ -57,7 +40,7 @@ export const MenuProvider = ({ children }) => {
                         .order('sort_order', { ascending: true }),
                     supabase
                         .from('products')
-                        .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, allergens')
+                        .select('id, name, price, category, image, gallery, description, weight, ingredients, product_options, is_active, is_available, allergens, internal_instructions, production_gallery')
                         // Removed filter for is_active: true to ensure we load ALL products.
                         // We will filter in the UI if needed, but for Daily Menu we want to show even inactive products.
                 ]);
@@ -68,7 +51,6 @@ export const MenuProvider = ({ children }) => {
                 if (catsResult.status === 'fulfilled' && !catsResult.value.error) {
                     const newCats = catsResult.value.data || [];
                     setCategories(newCats);
-                    localStorage.setItem('chianti_categories', JSON.stringify(newCats));
                 } else {
                     console.error("Categories fetch failed:", catsResult.reason || catsResult.value?.error);
                     setError(catsResult.reason || catsResult.value?.error?.message || "Categories fetch failed");
@@ -83,7 +65,6 @@ export const MenuProvider = ({ children }) => {
                     // Filter out inactive products (soft-deleted)
                     const activeProds = newProds.filter(p => p.is_active !== false);
                     setProducts(activeProds);
-                    localStorage.setItem('chianti_products', JSON.stringify(activeProds));
                 } else {
                     console.error("Products fetch failed:", prodsResult.reason || prodsResult.value?.error);
                     setError(prodsResult.reason || prodsResult.value?.error?.message || "Products fetch failed");
@@ -124,7 +105,9 @@ export const MenuProvider = ({ children }) => {
                 gallery: prodData.gallery || [],
                 production_gallery: prodData.production_gallery || [],
                 description: prodData.description || '',
+                internal_instructions: prodData.internal_instructions || '',
                 weight: prodData.weight || '',
+                allergens: prodData.allergens || '',
                 ingredients: prodData.ingredients || '',
                 product_options: prodData.product_options || [],
                 is_active: true,
@@ -136,11 +119,7 @@ export const MenuProvider = ({ children }) => {
             if (error) throw error;
             const newProduct = data ? data[0] : null;
             if (newProduct) {
-                setProducts(prev => {
-                    const updated = [...prev, newProduct];
-                    localStorage.setItem('chianti_products', JSON.stringify(updated));
-                    return updated;
-                });
+                setProducts(prev => [...prev, newProduct]);
                 logAction('ADĂUGARE PRODUS', `Produs: ${newProduct.name} (${newProduct.price} RON)`);
             }
             return newProduct;
@@ -168,11 +147,7 @@ export const MenuProvider = ({ children }) => {
 
             const { error } = await supabase.from('products').update(updatedData).eq('id', id);
             if (error) throw error;
-            setProducts(prev => {
-                const updated = prev.map(p => p.id === id ? { ...p, ...updatedData } : p);
-                localStorage.setItem('chianti_products', JSON.stringify(updated));
-                return updated;
-            });
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
             logAction('ACTUALIZARE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error updating product:", error);
@@ -191,12 +166,7 @@ export const MenuProvider = ({ children }) => {
             const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id);
             if (error) throw error;
             
-            setProducts(prev => {
-                const updated = prev.filter(p => p.id !== id);
-                // Persist update to cache immediately
-                localStorage.setItem('chianti_products', JSON.stringify(updated));
-                return updated;
-            });
+            setProducts(prev => prev.filter(p => p.id !== id));
             logAction('ȘTERGERE PRODUS', `Produs ID: ${id}`);
         } catch (error) {
             console.error("Error deleting product:", error);
@@ -272,7 +242,8 @@ export const MenuProvider = ({ children }) => {
             if (error) throw error;
 
             // Update local state
-            setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+            // Use loose equality for ID matching in case of string/number mismatch
+            setCategories(prev => prev.map(c => c.id == id ? { ...c, ...updates } : c));
 
             if (updates.name && updates.name !== cat.name) {
                 logAction('ACTUALIZARE CATEGORIE', `Nume: ${cat.name} -> ${updates.name}`);
