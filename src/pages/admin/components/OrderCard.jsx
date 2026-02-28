@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog, Info } from 'lucide-react';
+import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog, Info, Trash2 } from 'lucide-react';
 import { useMenu } from '../../../context/MenuContext';
+import { useOrder } from '../../../context/OrderContext';
 
 const OrderCard = ({ order, showActions = false, onConfirm }) => {
     const { products } = useMenu();
+    const { updateOrderItems } = useOrder();
     const [lightboxImages, setLightboxImages] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [instructionModal, setInstructionModal] = useState(null); // { title: '', text: '' }
+
+    const role = (localStorage.getItem('admin_role') || '').toLowerCase().trim();
+    const canEditItems = role === 'admin' || role === 'operator';
 
     const deliveryMethod = order.customer.deliveryMethod;
     const isDelivery = deliveryMethod === 'delivery' || deliveryMethod === 'event-location';
@@ -49,6 +54,19 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
     const prevImage = (e) => {
         e.stopPropagation();
         setCurrentImageIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+    };
+
+    const handleDeleteItem = (itemIndex) => {
+        if (!window.confirm('Ești sigur că vrei să ștergi acest produs din comandă?')) return;
+
+        const updatedItems = order.items.filter((_, idx) => idx !== itemIndex);
+
+        if (updatedItems.length === 0) {
+            alert('Nu poți șterge ultimul produs din comandă. Arhivează comanda dacă dorești să o anulezi.');
+            return;
+        }
+
+        updateOrderItems(order.id, updatedItems);
     };
 
     return (
@@ -244,7 +262,31 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                                     )}
                                 </div>
                             </div>
-                            <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '0.5rem', flexShrink: 0 }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '0.5rem', flexShrink: 0 }}>{(item.price * item.quantity).toFixed(2)} Lei</span>
+                                {canEditItems && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteItem(idx); }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: '4px',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        title="Șterge produsul din comandă"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     );
                 })}

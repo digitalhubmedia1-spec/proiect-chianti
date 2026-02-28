@@ -242,6 +242,56 @@ export const OrderProvider = ({ children }) => {
         }
     };
 
+    const updateOrderItems = async (orderId, updatedItems) => {
+        if (!supabase) return;
+
+        // Recalculate total based on updated items
+        const itemsTotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const order = orders.find(o => o.id === orderId);
+        const deliveryCost = order ? (order.deliveryCost || 0) : 0;
+        const newTotal = itemsTotal + deliveryCost;
+
+        // 1. Add to pending updates (UI lock)
+        setPendingUpdates(prev => new Set(prev).add(orderId));
+
+        // 2. Optimistic Update
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, items: updatedItems, finalTotal: newTotal, total: newTotal } : o));
+
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({ 
+                    items: updatedItems, 
+                    final_total: newTotal,
+                    total: newTotal
+                })
+                .eq('id', orderId);
+            
+            // Release the UI lock after a short delay to let realtime catch up
+            setTimeout(() => {
+                setPendingUpdates(prev => {
+                    const next = new Set(prev);
+                    next.delete(orderId);
+                    return next;
+                });
+            }, 1000);
+
+            if (error) {
+                console.error("Error updating order items:", error);
+            } else {
+                logAction('MODIFICARE PRODUSE COMANDĂ', `Comanda #${orderId} - ${updatedItems.length} produse actualizate. Nou total: ${newTotal.toFixed(2)} Lei`);
+            }
+        } catch (err) {
+            console.error("Update failed:", err);
+            // Emergency cleanup
+            setPendingUpdates(prev => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
+        }
+    };
+
     const getOrdersByStatus = (status) => {
         return orders.filter(order => order.status === status && !order.archived);
     };
@@ -307,6 +357,7 @@ export const OrderProvider = ({ children }) => {
             addOrder,
             updateOrderStatus,
             deleteOrder,
+            updateOrderItems,
             getActiveOrders,
             getHistoryOrders,
             getOrdersByStatus,
