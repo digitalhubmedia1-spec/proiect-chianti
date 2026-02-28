@@ -107,6 +107,7 @@ const AdminMenuPlanner = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [filterCategory, setFilterCategory] = useState("Toate");
+    const [searchTerm, setSearchTerm] = useState("");
 
     // --- DATA FETCHING (DAILY) ---
     const fetchDaily = async () => {
@@ -570,6 +571,9 @@ const AdminMenuPlanner = () => {
         // Only show active products (not soft-deleted)
         if (p.is_active === false) return false;
         
+        // Search Filter
+        if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        
         const cat = categories.find(c => c.name === p.category);
         return !cat || cat.type !== 'catering';
     });
@@ -699,6 +703,34 @@ const AdminMenuPlanner = () => {
                             <option key={c.id} value={c.name}>{c.name}</option>
                         ))}
                     </select>
+
+                    {/* Search Bar */}
+                    <div style={{ position: 'relative', width: '250px' }}>
+                        <Search size={18} color="#64748b" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                            type="text"
+                            placeholder="Caută produs..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '8px 10px 8px 35px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                outline: 'none',
+                                fontSize: '0.9rem'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setSearchTerm(''); }}
+                                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
 
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <button
