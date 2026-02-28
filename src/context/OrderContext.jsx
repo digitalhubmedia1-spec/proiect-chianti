@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { logAction } from '../utils/adminLogger';
 
@@ -9,6 +9,12 @@ export const useOrder = () => useContext(OrderContext);
 export const OrderProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [pendingUpdates, setPendingUpdates] = useState(new Set());
+    const pendingUpdatesRef = useRef(new Set());
+
+    // Sync ref with state to avoid stale closures in realtime events
+    useEffect(() => {
+        pendingUpdatesRef.current = pendingUpdates;
+    }, [pendingUpdates]);
 
     // Helper to normalize DB snake_case to Frontend camelCase
     const mapOrderFromDB = (dbOrder) => ({
@@ -91,7 +97,8 @@ export const OrderProvider = ({ children }) => {
                     
                     setOrders(prev => {
                         // Check if this specific order is currently being updated by the client
-                        if (pendingUpdates.has(updatedOrder.id)) {
+                        // Use ref to avoid stale closure from the mount useEffect
+                        if (pendingUpdatesRef.current.has(updatedOrder.id)) {
                             return prev;
                         }
 
@@ -246,10 +253,17 @@ export const OrderProvider = ({ children }) => {
         if (!supabase) return;
 
         // Recalculate total based on updated items
-        const itemsTotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const order = orders.find(o => o.id === orderId);
-        const deliveryCost = order ? (order.deliveryCost || 0) : 0;
-        const newTotal = itemsTotal + deliveryCost;
+        const itemsTotal = updatedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+        
+        // Find order in latest state
+        let currentOrder;
+        setOrders(prev => {
+            currentOrder = prev.find(o => o.id === orderId);
+            return prev;
+        });
+
+        const deliveryCost = currentOrder ? (Number(currentOrder.deliveryCost) || 0) : 0;
+        const newTotal = Number((itemsTotal + deliveryCost).toFixed(2));
 
         // 1. Add to pending updates (UI lock)
         setPendingUpdates(prev => new Set(prev).add(orderId));
@@ -267,6 +281,18 @@ export const OrderProvider = ({ children }) => {
                 })
                 .eq('id', orderId);
             
+            if (error) {
+                console.error("Error updating order items:", error);
+                alert("Eroare la actualizarea produselor: " + error.message);
+                // Revert optimistic update on error? 
+                // fetchOrders would be better but let's just log for now
+            } else {
+                logAction('MODIFICARE PRODUSE COMANDĂ', `Comanda #${orderId} - ${updatedItems.length} produse actualizate. Nou total: ${newTotal.toFixed(2)} Lei`);
+            }
+        } catch (err) {
+            console.error("Update failed:", err);
+            alert("Eroare neașteptată la actualizarea produselor.");
+        } finally {
             // Release the UI lock after a short delay to let realtime catch up
             setTimeout(() => {
                 setPendingUpdates(prev => {
@@ -274,21 +300,7 @@ export const OrderProvider = ({ children }) => {
                     next.delete(orderId);
                     return next;
                 });
-            }, 1000);
-
-            if (error) {
-                console.error("Error updating order items:", error);
-            } else {
-                logAction('MODIFICARE PRODUSE COMANDĂ', `Comanda #${orderId} - ${updatedItems.length} produse actualizate. Nou total: ${newTotal.toFixed(2)} Lei`);
-            }
-        } catch (err) {
-            console.error("Update failed:", err);
-            // Emergency cleanup
-            setPendingUpdates(prev => {
-                const next = new Set(prev);
-                next.delete(orderId);
-                return next;
-            });
+            }, 1500);
         }
     };
 
