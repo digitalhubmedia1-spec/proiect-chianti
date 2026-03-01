@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Save, Plus, RotateCw, ZoomIn, ZoomOut, Move, Trash2, DoorOpen, Download } from 'lucide-react';
+import { Save, Plus, RotateCw, ZoomIn, ZoomOut, Move, Trash2, DoorOpen, Download, Users } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
