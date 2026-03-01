@@ -8,15 +8,21 @@ const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableS
 
     // Check availability for a table
     const getTableStatus = (tableId) => {
-        // Count guests assigned to this table (from event_guests)
-        const tableGuests = (guests || []).filter(g => g.layout_object_id === tableId);
-        const guestCount = tableGuests.length;
+        const tid = tableId.toString();
+
+        // 1. Count guests assigned to this table (physical presence)
+        const guestCount = (guests || []).filter(g => g.layout_object_id === tableId).length;
         
-        // Check locks (temporary reservations)
-        const tableLocks = locks?.filter(l => l.table_id === tableId.toString()) || [];
+        // 2. Count online reservations (confirmed)
+        const reservedCount = (reservations || [])
+            .filter(r => r.table_id?.toString() === tid && r.status === 'confirmed')
+            .reduce((sum, r) => sum + r.seat_count, 0);
+
+        // 3. Check locks (temporary reservations)
+        const tableLocks = locks?.filter(l => l.table_id === tid) || [];
         const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
 
-        const totalOccupied = guestCount + lockedSeats;
+        const totalOccupied = guestCount + reservedCount + lockedSeats;
 
         const obj = objects.find(o => o.id === tableId);
         if (!obj) return 'unknown';
