@@ -166,8 +166,8 @@ const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableS
             
             {/* Legend */}
             <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(255,255,255,0.9)', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#dcfce7', border: '1px solid #22c55e', borderRadius: '2px' }}></div> Liber (&lt;6 persoane)</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '2px' }}></div> Ocupat (&ge;6 persoane)</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#dcfce7', border: '1px solid #22c55e', borderRadius: '2px' }}></div> Liber</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '2px' }}></div> Ocupat</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 12, height: 12, background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '2px' }}></div> Masa Full</div>
             </div>
         </div>

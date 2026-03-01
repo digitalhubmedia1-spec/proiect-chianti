@@ -17,6 +17,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState([]);
     const [locks, setLocks] = useState([]);
+    const [reservations, setReservations] = useState([]);
 
     const GRID_SIZE = 20;
 
@@ -27,17 +28,19 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [hallRes, objRes, guestsRes, locksRes] = await Promise.all([
+            const [hallRes, objRes, guestsRes, locksRes, resRes] = await Promise.all([
                 supabase.from('event_halls').select('*').eq('id', hallId).single(),
                 supabase.from('event_layout_objects').select('*').eq('event_id', eventId),
                 supabase.from('event_guests').select('*').eq('event_id', eventId),
-                supabase.from('event_table_locks').select('*').eq('event_id', eventId).gt('expires_at', new Date().toISOString())
+                supabase.from('event_table_locks').select('*').eq('event_id', eventId).gt('expires_at', new Date().toISOString()),
+                supabase.from('event_reservations').select('*').eq('event_id', eventId).eq('status', 'confirmed')
             ]);
 
             setHall(hallRes.data);
             setObjects(objRes.data || []);
             setGuests(guestsRes.data || []);
             setLocks(locksRes.data || []);
+            setReservations(resRes.data || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -47,14 +50,21 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
     // Check availability for a table
     const getTableStatus = (tableId) => {
-        // Count guests assigned to this table
-        const tableGuests = (guests || []).filter(g => g.layout_object_id === tableId);
-        const guestCount = tableGuests.length;
+        const tid = tableId.toString();
+
+        // 1. Count guests assigned to this table
+        const guestCount = (guests || []).filter(g => g.layout_object_id === tableId).length;
         
-        const tableLocks = (locks || []).filter(l => l.table_id === tableId.toString());
+        // 2. Count online reservations (confirmed)
+        const reservedCount = (reservations || [])
+            .filter(r => r.table_id?.toString() === tid)
+            .reduce((sum, r) => sum + r.seat_count, 0);
+
+        // 3. Check locks (temporary reservations)
+        const tableLocks = (locks || []).filter(l => l.table_id === tid);
         const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
 
-        const totalOccupied = guestCount + lockedSeats;
+        const totalOccupied = guestCount + reservedCount + lockedSeats;
 
         const obj = objects.find(o => o.id === tableId);
         if (!obj) return 'unknown';
@@ -465,14 +475,50 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
 
                 {/* Legend */}
                 <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '3px' }}></div> Liber (&lt;6 persoane)</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '3px' }}></div> Ocupat (&ge;6 persoane)</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '3px' }}></div> Liber</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '3px' }}></div> Ocupat</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 14, height: 14, background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '3px' }}></div> Masa Full</div>
                 </div>
             </div>
 
             {/* Info Panel */}
-            <div style={{ width: '220px', background: 'white', borderLeft: '1px solid #e5e7eb', padding: '1.25rem' }}>
+            <div style={{ width: '220px', background: 'white', borderLeft: '1px solid #e5e7eb', padding: '1.25rem', overflowY: 'auto' }}>
+                {selectedId && objects.find(o => o.id === selectedId)?.type.includes('table') && (() => {
+                    const obj = objects.find(o => o.id === selectedId);
+                    const tid = obj.id.toString();
+                    const guestCount = (guests || []).filter(g => g.layout_object_id === obj.id).length;
+                    const reservedCount = (reservations || []).filter(r => r.table_id?.toString() === tid).reduce((sum, r) => sum + r.seat_count, 0);
+                    const lockedCount = (locks || []).filter(l => l.table_id === tid).reduce((sum, l) => sum + l.seat_count, 0);
+                    const total = guestCount + reservedCount + lockedCount;
+
+                    return (
+                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                            <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0369a1', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Users size={16} /> {obj.label}
+                            </h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#0369a1' }}>Ocupat total:</span>
+                                    <strong style={{ color: total >= obj.capacity ? '#ef4444' : '#0369a1' }}>{total} / {obj.capacity}</strong>
+                                </div>
+                                <div style={{ height: '1px', background: '#bae6fd', margin: '4px 0' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
+                                    <span>Invitați:</span>
+                                    <span>{guestCount}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
+                                    <span>Rezervări:</span>
+                                    <span>{reservedCount}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
+                                    <span>Blocate:</span>
+                                    <span>{lockedCount}</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 <h4 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', marginBottom: '1rem' }}>Statistici Sală</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f9fafb', borderRadius: '6px' }}>
