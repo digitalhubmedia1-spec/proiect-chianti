@@ -496,23 +496,10 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                             <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0369a1', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Users size={16} /> {obj.label}
                             </h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: '#0369a1' }}>Ocupat total:</span>
                                     <strong style={{ color: total >= obj.capacity ? '#ef4444' : '#0369a1' }}>{total} / {obj.capacity}</strong>
-                                </div>
-                                <div style={{ height: '1px', background: '#bae6fd', margin: '4px 0' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
-                                    <span>Invitați:</span>
-                                    <span>{guestCount}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
-                                    <span>Rezervări:</span>
-                                    <span>{reservedCount}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0c4a6e' }}>
-                                    <span>Blocate:</span>
-                                    <span>{lockedCount}</span>
                                 </div>
                             </div>
                         </div>
