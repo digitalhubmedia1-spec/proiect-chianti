@@ -52,26 +52,28 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
     const getTableStatus = (tableId) => {
         const tid = tableId.toString();
 
-        // 1. Count guests assigned to this table
-        const guestCount = (guests || []).filter(g => g.layout_object_id === tableId).length;
+        // 1. Count guests assigned to this table (physical presence) - include seat_count
+        const guestCount = (guests || [])
+            .filter(g => g.layout_object_id === tableId)
+            .reduce((sum, g) => sum + (g.seat_count || 1), 0);
         
         // 2. Count online reservations (confirmed)
         const reservedCount = (reservations || [])
             .filter(r => r.table_id?.toString() === tid)
-            .reduce((sum, r) => sum + r.seat_count, 0);
+            .reduce((sum, r) => sum + (r.seat_count || 0), 0);
 
         // 3. Check locks (temporary reservations)
         const tableLocks = (locks || []).filter(l => l.table_id === tid);
-        const lockedSeats = tableLocks.reduce((sum, l) => sum + l.seat_count, 0);
+        const lockedSeats = tableLocks.reduce((sum, l) => sum + (l.seat_count || 0), 0);
 
         const totalOccupied = guestCount + reservedCount + lockedSeats;
 
         const obj = objects.find(o => o.id === tableId);
         if (!obj) return 'unknown';
 
-        if (totalOccupied >= obj.capacity) return 'full';
-        if (totalOccupied >= 6) return 'at_limit'; // Yellow
-        return 'available'; // Green (under 6)
+        if (totalOccupied >= (obj.capacity || 0)) return 'full';
+        if (totalOccupied > 6) return 'at_limit'; // Yellow if > 6 seats
+        return 'available'; // Green (6 or fewer)
     };
 
     // --- GEOMETRY & ZONES ---
