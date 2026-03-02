@@ -10,8 +10,10 @@ const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableS
     const getTableStatus = (tableId) => {
         const tid = tableId.toString();
 
-        // 1. Count guests assigned to this table (physical presence)
-        const guestCount = (guests || []).filter(g => g.layout_object_id === tableId).length;
+        // 1. Count guests assigned to this table (physical presence) - include seat_count
+        const guestCount = (guests || [])
+            .filter(g => g.layout_object_id === tableId)
+            .reduce((sum, g) => sum + (g.seat_count || 1), 0);
         
         // 2. Count online reservations (confirmed)
         const reservedCount = (reservations || [])
@@ -28,8 +30,8 @@ const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableS
         if (!obj) return 'unknown';
 
         if (totalOccupied >= obj.capacity) return 'full';
-        if (totalOccupied >= 6) return 'at_limit'; // Yellow
-        return 'available'; // Green (under 6)
+        if (totalOccupied > 0) return 'at_limit'; // Yellow if any seat is taken
+        return 'available'; // Green
     };
 
     const getObjectStyle = (obj) => {

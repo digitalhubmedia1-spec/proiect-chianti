@@ -11,7 +11,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const [loading, setLoading] = useState(true);
     const [expandedTables, setExpandedTables] = useState({});
     const [showForm, setShowForm] = useState(null); // tableId or 'unassigned'
-    const [formData, setFormData] = useState({ full_name: '', type: 'adult', menu_preference: '', notes: '' });
+    const [formData, setFormData] = useState({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
 
     useEffect(() => {
         loadData();
@@ -49,13 +49,13 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const unassignedGuests = guests.filter(g => !g.layout_object_id);
 
     const openForm = (tableId) => {
-        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '' });
+        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
         setShowForm(tableId);
     };
 
     const closeForm = () => {
         setShowForm(null);
-        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '' });
+        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
     };
 
     const handleAddGuest = async (tableId) => {
@@ -68,7 +68,8 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             type: formData.type,
             menu_preference: formData.menu_preference || null,
             notes: formData.notes || null,
-            layout_object_id: tableId === 'unassigned' ? null : tableId
+            layout_object_id: tableId === 'unassigned' ? null : tableId,
+            seat_count: parseInt(formData.seat_count) || 1
         };
 
         const { data, error } = await supabase.from('event_guests').insert([payload]).select().single();
@@ -78,7 +79,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         } else {
             setGuests(prev => [...prev, data]);
             // Reset form but keep it open for batch adding
-            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '' });
+            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
         }
     };
 
@@ -113,12 +114,14 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             doc.setFontSize(12);
             doc.setTextColor(30, 41, 59); // #1e293b
             doc.setFont('helvetica', 'bold');
-            doc.text(`${table.type === 'presidium' ? '👑 ' : ''}${table.label} (${tableGuests.length} invitati)`, 14, currentY);
+            const totalSeats = tableGuests.reduce((sum, g) => sum + (g.seat_count || 1), 0);
+            doc.text(`${table.type === 'presidium' ? '👑 ' : ''}${table.label} (${totalSeats} persoane)`, 14, currentY);
             currentY += 5;
 
             const tableData = tableGuests.map((g, idx) => [
                 idx + 1,
                 g.full_name,
+                g.seat_count || 1,
                 g.type === 'adult' ? 'Adult' : 'Minor',
                 g.menu_preference || '-',
                 g.notes || '-'
@@ -126,7 +129,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
 
             autoTable(doc, {
                 startY: currentY,
-                head: [['Nr.', 'Nume Complet', 'Tip', 'Preferinta Meniu', 'Note / Alergii']],
+                head: [['Nr.', 'Nume Complet', 'Pers.', 'Tip', 'Preferinta Meniu', 'Note / Alergii']],
                 body: tableData,
                 headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
@@ -134,9 +137,10 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                 columnStyles: {
                     0: { cellWidth: 10 },
                     1: { cellWidth: 'auto' },
-                    2: { cellWidth: 20 },
-                    3: { cellWidth: 35 },
-                    4: { cellWidth: 'auto' }
+                    2: { cellWidth: 15 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 35 },
+                    5: { cellWidth: 'auto' }
                 },
                 margin: { left: 14, right: 14 }
             });
@@ -192,9 +196,9 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         doc.save(`Lista_Invitati_Eveniment_${eventId}.pdf`);
     };
 
-    const totalGuests = guests.length;
-    const adultCount = guests.filter(g => g.type === 'adult').length;
-    const minorCount = guests.filter(g => g.type === 'minor').length;
+    const totalGuests = guests.reduce((sum, g) => sum + (g.seat_count || 1), 0);
+    const adultCount = guests.filter(g => g.type === 'adult').reduce((sum, g) => sum + (g.seat_count || 1), 0);
+    const minorCount = guests.filter(g => g.type === 'minor').reduce((sum, g) => sum + (g.seat_count || 1), 0);
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se încarcă...</div>;
 
@@ -235,11 +239,16 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             <option value="adult">Adult</option>
                             {allowMinors && <option value="minor">Minor</option>}
                         </select>
-                        {!allowMinors && (
-                            <p style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '4px' }}>
-                                Minorii nu sunt permiși la acest eveniment
-                            </p>
-                        )}
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Persoane (total)</label>
+                        <input
+                            type="number"
+                            min="1"
+                            value={formData.seat_count}
+                            onChange={e => setFormData({ ...formData, seat_count: e.target.value })}
+                            style={inputStyle}
+                        />
                     </div>
                     <div>
                         <label style={labelStyle}>Preferință Meniu</label>
@@ -300,6 +309,14 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                 <span style={{ fontWeight: '500', color: '#111827', minWidth: '160px' }}>{guest.full_name}</span>
+                {guest.seat_count > 1 && (
+                    <span style={{
+                        padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700',
+                        background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a'
+                    }}>
+                        + {guest.seat_count - 1} pers.
+                    </span>
+                )}
                 <span style={{
                     padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
                     background: guest.type === 'adult' ? '#dbeafe' : '#fce7f3',
@@ -336,7 +353,8 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const renderTableSection = (table) => {
         const tableGuests = guestsForTable(table.id);
         const isExpanded = expandedTables[table.id];
-        const isFull = tableGuests.length >= (table.capacity || 999);
+        const currentOccupancy = tableGuests.reduce((sum, g) => sum + (g.seat_count || 1), 0);
+        const isFull = currentOccupancy >= (table.capacity || 999);
 
         return (
             <div key={table.id} style={{
@@ -363,7 +381,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             background: isFull ? '#fee2e2' : '#f0fdf4',
                             color: isFull ? '#991b1b' : '#166534', fontWeight: '600'
                         }}>
-                            {tableGuests.length} / {table.capacity || '∞'}
+                            {currentOccupancy} / {table.capacity || '∞'}
                         </span>
                     </div>
                     {!isFull && !readOnly && (

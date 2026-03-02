@@ -486,7 +486,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                 {selectedId && objects.find(o => o.id === selectedId)?.type.includes('table') && (() => {
                     const obj = objects.find(o => o.id === selectedId);
                     const tid = obj.id.toString();
-                    const guestCount = (guests || []).filter(g => g.layout_object_id === obj.id).length;
+                    const guestCount = (guests || []).filter(g => g.layout_object_id === obj.id).reduce((sum, g) => sum + (g.seat_count || 1), 0);
                     const reservedCount = (reservations || []).filter(r => r.table_id?.toString() === tid).reduce((sum, r) => sum + r.seat_count, 0);
                     const lockedCount = (locks || []).filter(l => l.table_id === tid).reduce((sum, l) => sum + l.seat_count, 0);
                     const total = guestCount + reservedCount + lockedCount;
