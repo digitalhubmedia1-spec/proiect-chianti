@@ -15,9 +15,9 @@ const VisualHallViewer = ({ hall, objects, reservations, guests, locks, onTableS
             .filter(g => g.layout_object_id === tableId)
             .reduce((sum, g) => sum + (g.seat_count || 1), 0);
         
-        // 2. Count online reservations (confirmed)
+        // 2. Count online reservations (all non-cancelled)
         const reservedCount = (reservations || [])
-            .filter(r => r.table_id?.toString() === tid && r.status === 'confirmed')
+            .filter(r => r.table_id?.toString() === tid && r.status !== 'cancelled')
             .reduce((sum, r) => sum + (r.seat_count || 0), 0);
 
         // 3. Check locks (temporary reservations)

@@ -33,7 +33,7 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
                 supabase.from('event_layout_objects').select('*').eq('event_id', eventId),
                 supabase.from('event_guests').select('*').eq('event_id', eventId),
                 supabase.from('event_table_locks').select('*').eq('event_id', eventId).gt('expires_at', new Date().toISOString()),
-                supabase.from('event_reservations').select('*').eq('event_id', eventId).eq('status', 'confirmed')
+                supabase.from('event_reservations').select('*').eq('event_id', eventId).neq('status', 'cancelled')
             ]);
 
             setHall(hallRes.data);
