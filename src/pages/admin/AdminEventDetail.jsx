@@ -286,8 +286,6 @@ const AdminEventDetail = () => {
                 return <EventProduction eventId={id} />;
             case 'operations':
                 return <EventOperations eventId={id} eventStatus={event.status} onUpdateStatus={(s) => setEvent({ ...event, status: s })} readOnly={isRestrictedRole} userRole={adminRole} />;
-            case 'reservations':
-                return <EventReservations eventId={id} />;
             case 'media':
                 return <EventSettingsMedia eventId={id} event={event} onUpdateEvent={setEvent} />;
             default: return null;
@@ -342,7 +340,6 @@ const AdminEventDetail = () => {
                     { id: 'menu', label: 'Meniu', icon: FileText },
                     { id: 'production', label: 'Productie', icon: ChefHat },
                     { id: 'operations', label: 'Operațional', icon: Settings },
-                    { id: 'reservations', label: 'Rezervări', icon: Users },
                     { id: 'media', label: 'Media & Setări', icon: Image },
                 ].filter(tab => {
                     if (isRestrictedRole) {

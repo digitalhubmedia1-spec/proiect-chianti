@@ -41,6 +41,7 @@ const ReservationPage = () => {
 
         const subReservations = supabase.channel('public:event_reservations')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'event_reservations', filter: `event_id=eq.${event.id}` }, () => fetchAvailability())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'event_guests', filter: `event_id=eq.${event.id}` }, () => fetchAvailability())
             .subscribe();
 
         return () => {
@@ -103,13 +104,20 @@ const ReservationPage = () => {
     const getRemainingSeats = (tableId) => {
         if (!tableId) return 0;
         const tid = tableId.toString();
+        
+        // Manual guests
+        const manualGuests = guests
+            .filter(g => g.layout_object_id === tableId)
+            .reduce((sum, g) => sum + (g.seat_count || 1), 0);
+
+        // Online reservations
         const reserved = reservations
-            .filter(r => r.table_id?.toString() === tid && r.status === 'confirmed')
+            .filter(r => r.table_id?.toString() === tid && r.status !== 'cancelled')
             .reduce((sum, r) => sum + r.seat_count, 0);
         
         const obj = objects.find(o => o.id?.toString() === tid);
         const capacity = obj?.capacity || 10;
-        return Math.max(0, capacity - reserved);
+        return Math.max(0, capacity - (manualGuests + reserved));
     };
 
     const handleTableSelect = (table) => {
