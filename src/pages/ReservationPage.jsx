@@ -354,7 +354,7 @@ const ReservationPage = () => {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Nume</label>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Nume *</label>
                                             <input 
                                                 required
                                                 placeholder="Popescu"
@@ -364,7 +364,7 @@ const ReservationPage = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Prenume</label>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Prenume *</label>
                                             <input 
                                                 required
                                                 placeholder="Ion"
@@ -376,9 +376,10 @@ const ReservationPage = () => {
                                     </div>
 
                                     <div style={{ marginBottom: '1rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Telefon</label>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>Telefon *</label>
                                         <input 
                                             required
+                                            type="tel"
                                             placeholder="07xxxxxxxx"
                                             value={formData.phone}
                                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
