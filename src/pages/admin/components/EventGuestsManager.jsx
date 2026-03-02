@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { Plus, Trash2, Users, X, UserPlus, ChevronDown, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Trash2, Users, X, UserPlus, ChevronDown, ChevronRight, FileDown, Edit2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -11,6 +11,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const [loading, setLoading] = useState(true);
     const [expandedTables, setExpandedTables] = useState({});
     const [showForm, setShowForm] = useState(null); // tableId or 'unassigned'
+    const [editingGuestId, setEditingGuestId] = useState(null);
     const [formData, setFormData] = useState({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
 
     useEffect(() => {
@@ -48,19 +49,53 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const guestsForTable = (tableId) => guests.filter(g => g.layout_object_id === tableId);
     const unassignedGuests = guests.filter(g => !g.layout_object_id);
 
-    const openForm = (tableId) => {
-        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
-        setShowForm(tableId);
+    const openForm = (tableId, guest = null) => {
+        if (guest) {
+            setFormData({
+                full_name: guest.full_name,
+                type: guest.type,
+                menu_preference: guest.menu_preference || '',
+                notes: guest.notes || '',
+                seat_count: guest.seat_count || 1
+            });
+            setEditingGuestId(guest.id);
+            setShowForm(tableId);
+        } else {
+            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+            setEditingGuestId(null);
+            setShowForm(tableId);
+        }
     };
 
     const closeForm = () => {
         setShowForm(null);
+        setEditingGuestId(null);
         setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
     };
 
-    const handleAddGuest = async (tableId) => {
+    const handleSaveGuest = async (tableId) => {
         if (readOnly) return;
         if (!formData.full_name.trim()) return;
+
+        const seatCount = parseInt(formData.seat_count) || 1;
+
+        // Capacity validation
+        if (tableId !== 'unassigned') {
+            const table = tables.find(t => t.id === tableId);
+            if (table && table.capacity) {
+                const tableGuests = guestsForTable(tableId);
+                const currentTotal = tableGuests.reduce((sum, g) => {
+                    // If editing, don't count the current guest's old seat count
+                    if (editingGuestId && g.id === editingGuestId) return sum;
+                    return sum + (g.seat_count || 1);
+                }, 0);
+
+                if (currentTotal + seatCount > table.capacity) {
+                    const confirmExtra = window.confirm(`Atenție! Capacitatea mesei (${table.capacity}) va fi depășită (Total nou: ${currentTotal + seatCount}). Dorești să continui oricum?`);
+                    if (!confirmExtra) return;
+                }
+            }
+        }
 
         const payload = {
             event_id: eventId,
@@ -69,17 +104,25 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             menu_preference: formData.menu_preference || null,
             notes: formData.notes || null,
             layout_object_id: tableId === 'unassigned' ? null : tableId,
-            seat_count: parseInt(formData.seat_count) || 1
+            seat_count: seatCount
         };
 
-        const { data, error } = await supabase.from('event_guests').insert([payload]).select().single();
-
-        if (error) {
-            alert("Eroare: " + error.message);
+        if (editingGuestId) {
+            const { data, error } = await supabase.from('event_guests').update(payload).eq('id', editingGuestId).select().single();
+            if (error) {
+                alert("Eroare la actualizare: " + error.message);
+            } else {
+                setGuests(prev => prev.map(g => g.id === editingGuestId ? data : g));
+                closeForm();
+            }
         } else {
-            setGuests(prev => [...prev, data]);
-            // Reset form but keep it open for batch adding
-            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+            const { data, error } = await supabase.from('event_guests').insert([payload]).select().single();
+            if (error) {
+                alert("Eroare la adăugare: " + error.message);
+            } else {
+                setGuests(prev => [...prev, data]);
+                setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+            }
         }
     };
 
@@ -202,7 +245,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Se încarcă...</div>;
 
-    // --- INLINE ADD FORM ---
+    // --- ADD/EDIT FORM ---
     const renderAddForm = (tableId) => {
         if (readOnly || showForm !== tableId) return null;
         return (
@@ -211,7 +254,9 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                 borderRadius: '10px', border: '1px solid #e5e7eb'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>Invitat Nou</span>
+                    <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>
+                        {editingGuestId ? 'Editează Invitat' : 'Invitat Nou'}
+                    </span>
                     <button onClick={closeForm} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af' }}>
                         <X size={18} />
                     </button>
@@ -226,7 +271,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             placeholder="Ex: Ion Popescu"
                             style={inputStyle}
                             autoFocus
-                            onKeyDown={e => { if (e.key === 'Enter') handleAddGuest(tableId); }}
+                            onKeyDown={e => { if (e.key === 'Enter') handleSaveGuest(tableId); }}
                         />
                     </div>
                     <div>
@@ -278,7 +323,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                     <button
-                        onClick={() => handleAddGuest(tableId)}
+                        onClick={() => handleSaveGuest(tableId)}
                         disabled={!formData.full_name.trim()}
                         style={{
                             padding: '8px 16px', borderRadius: '6px', border: 'none',
@@ -287,7 +332,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             fontWeight: '600', fontSize: '0.85rem'
                         }}
                     >
-                        Adaugă
+                        {editingGuestId ? 'Salvează' : 'Adaugă'}
                     </button>
                     <button onClick={closeForm} style={{
                         padding: '8px 16px', borderRadius: '6px',
@@ -339,12 +384,22 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                 )}
             </div>
             {!readOnly && (
-                <button
-                    onClick={() => handleDeleteGuest(guest.id)}
-                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                >
-                    <Trash2 size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => openForm(guest.layout_object_id || 'unassigned', guest)}
+                        style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                        title="Editează"
+                    >
+                        <Edit2 size={16} />
+                    </button>
+                    <button
+                        onClick={() => handleDeleteGuest(guest.id)}
+                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                        title="Șterge"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
             )}
         </div>
     );
