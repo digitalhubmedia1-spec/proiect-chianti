@@ -13,7 +13,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const [expandedTables, setExpandedTables] = useState({});
     const [showForm, setShowForm] = useState(null); // tableId or 'unassigned'
     const [editingGuestId, setEditingGuestId] = useState(null);
-    const [formData, setFormData] = useState({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+    const [formData, setFormData] = useState({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1, phone: '' });
 
     useEffect(() => {
         loadData();
@@ -51,16 +51,17 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
 
     // Consolidated list of everyone at a table (guests + reservations)
     const occupantsForTable = (tableId) => {
-        const manualGuests = guests.filter(g => g.layout_object_id === tableId).map(g => ({ ...g, source: 'manual' }));
+        const manualGuests = guests.filter(g => g.layout_object_id?.toString() === tableId?.toString()).map(g => ({ ...g, source: 'manual' }));
         const onlineReservations = reservations
             .filter(r => r.table_id?.toString() === tableId?.toString() && r.status !== 'cancelled')
             .map(r => ({
                 id: `res-${r.id}`,
                 real_id: r.id,
                 full_name: r.guest_name,
+                phone: r.guest_phone,
                 seat_count: r.seat_count,
                 type: 'adult',
-                menu_preference: r.dietary_preference === 'both' ? 'Post & Frupt' : (r.dietary_preference === 'post' ? 'Post' : (r.dietary_preference === 'frupt' ? 'Frupt' : '')),
+                menu_preference: r.dietary_preference === 'both' ? 'post_frupt' : (r.dietary_preference || ''),
                 notes: r.observations,
                 source: 'online',
                 status: r.status,
@@ -85,20 +86,25 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         }
     };
 
+    const [editingGuest, setEditingGuest] = useState(null); // Full guest object
+
     const openForm = (tableId, guest = null) => {
         if (guest) {
             setFormData({
                 full_name: guest.full_name,
-                type: guest.type,
+                type: guest.type || 'adult',
                 menu_preference: guest.menu_preference || '',
                 notes: guest.notes || '',
-                seat_count: guest.seat_count || 1
+                seat_count: guest.seat_count || 1,
+                phone: guest.phone || ''
             });
             setEditingGuestId(guest.id);
+            setEditingGuest(guest);
             setShowForm(tableId);
         } else {
-            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+            setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1, phone: '' });
             setEditingGuestId(null);
+            setEditingGuest(null);
             setShowForm(tableId);
         }
     };
@@ -106,7 +112,8 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
     const closeForm = () => {
         setShowForm(null);
         setEditingGuestId(null);
-        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1 });
+        setEditingGuest(null);
+        setFormData({ full_name: '', type: 'adult', menu_preference: '', notes: '', seat_count: 1, phone: '' });
     };
 
     const handleSaveGuest = async (tableId) => {
@@ -121,8 +128,11 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             if (table && table.capacity) {
                 const occupants = occupantsForTable(tableId);
                 const currentTotal = occupants.reduce((sum, occ) => {
-                    // If editing a manual guest, don't count their old seat count
-                    if (occ.source === 'manual' && editingGuestId && occ.id === editingGuestId) return sum;
+                    // If editing a guest, don't count their old seat count in the new total
+                    if (editingGuestId) {
+                        if (occ.source === 'manual' && occ.id === editingGuestId) return sum;
+                        if (occ.source === 'online' && editingGuest?.source === 'online' && occ.real_id === editingGuest.real_id) return sum;
+                    }
                     return sum + (occ.seat_count || 1);
                 }, 0);
 
@@ -144,12 +154,35 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         };
 
         if (editingGuestId) {
-            const { data, error } = await supabase.from('event_guests').update(payload).eq('id', editingGuestId).select().single();
-            if (error) {
-                alert("Eroare la actualizare: " + error.message);
+            if (editingGuest?.source === 'online') {
+                // Map menu_preference back to dietary_preference
+                let dietary_preference = 'none';
+                if (formData.menu_preference === 'post_frupt') dietary_preference = 'both';
+                else if (formData.menu_preference) dietary_preference = formData.menu_preference;
+
+                const { data, error } = await supabase.from('event_reservations').update({
+                    guest_name: formData.full_name.trim(),
+                    guest_phone: formData.phone,
+                    seat_count: seatCount,
+                    dietary_preference: dietary_preference,
+                    observations: formData.notes || null,
+                    table_id: tableId === 'unassigned' ? null : tableId
+                }).eq('id', editingGuest.real_id).select().single();
+
+                if (error) {
+                    alert("Eroare la actualizare rezervare: " + error.message);
+                } else {
+                    setReservations(prev => prev.map(r => r.id === editingGuest.real_id ? data : r));
+                    closeForm();
+                }
             } else {
-                setGuests(prev => prev.map(g => g.id === editingGuestId ? data : g));
-                closeForm();
+                const { data, error } = await supabase.from('event_guests').update(payload).eq('id', editingGuestId).select().single();
+                if (error) {
+                    alert("Eroare la actualizare invitat: " + error.message);
+                } else {
+                    setGuests(prev => prev.map(g => g.id === editingGuestId ? data : g));
+                    closeForm();
+                }
             }
         } else {
             const { data, error } = await supabase.from('event_guests').insert([payload]).select().single();
@@ -162,11 +195,25 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         }
     };
 
-    const handleDeleteGuest = async (guestId) => {
+    const handleDeleteGuest = async (guest) => {
         if (readOnly) return;
-        if (!window.confirm("Ștergi acest invitat?")) return;
-        await supabase.from('event_guests').delete().eq('id', guestId);
-        setGuests(prev => prev.filter(g => g.id !== guestId));
+        if (!window.confirm(`Ștergi ${guest.source === 'online' ? 'rezervarea online' : 'invitatul'} "${guest.full_name}"?`)) return;
+
+        if (guest.source === 'online') {
+            const { error } = await supabase.from('event_reservations').delete().eq('id', guest.real_id);
+            if (error) {
+                alert("Eroare la ștergere rezervare: " + error.message);
+            } else {
+                setReservations(prev => prev.filter(r => r.id !== guest.real_id));
+            }
+        } else {
+            const { error } = await supabase.from('event_guests').delete().eq('id', guest.id);
+            if (error) {
+                alert("Eroare la ștergere invitat: " + error.message);
+            } else {
+                setGuests(prev => prev.filter(g => g.id !== guest.id));
+            }
+        }
     };
 
     const handleExportPDF = () => {
@@ -313,6 +360,18 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             onKeyDown={e => { if (e.key === 'Enter') handleSaveGuest(tableId); }}
                         />
                     </div>
+                    {editingGuest?.source === 'online' && (
+                        <div style={{ gridColumn: 'span 2' }}>
+                            <label style={labelStyle}>Telefon</label>
+                            <input
+                                type="text"
+                                value={formData.phone}
+                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                placeholder="07xxxxxxxx"
+                                style={inputStyle}
+                            />
+                        </div>
+                    )}
                     <div>
                         <label style={labelStyle}>Tip</label>
                         <select
@@ -344,6 +403,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                             <option value="">Standard</option>
                             <option value="post">Post</option>
                             <option value="frupt">Frupt</option>
+                            <option value="post_frupt">Post & Frupt</option>
                             <option value="vegetarian">Vegetarian</option>
                             <option value="vegan">Vegan</option>
                             <option value="special">Special</option>
@@ -385,6 +445,19 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
         );
     };
 
+    const getMenuLabel = (pref) => {
+        if (!pref) return '';
+        const labels = {
+            'post': 'Post',
+            'frupt': 'Frupt',
+            'post_frupt': 'Post & Frupt',
+            'vegetarian': 'Vegetarian',
+            'vegan': 'Vegan',
+            'special': 'Special'
+        };
+        return labels[pref] || pref;
+    };
+
     // --- GUEST ROW ---
     const renderGuestRow = (guest) => (
         <div key={guest.id} style={{
@@ -396,9 +469,16 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: '500', color: '#111827', minWidth: '160px' }}>{guest.full_name}</span>
                     {guest.source === 'online' && (
-                        <span style={{ fontSize: '0.7rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Globe size={10} /> Rezervare Online
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Globe size={10} /> Rezervare Online
+                            </span>
+                            {guest.phone && (
+                                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                    Tel: {guest.phone}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -431,7 +511,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                         padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem',
                         background: '#f0fdf4', color: '#166534', fontWeight: '500'
                     }}>
-                        {guest.menu_preference}
+                        {getMenuLabel(guest.menu_preference)}
                     </span>
                 )}
                 {guest.notes && (
@@ -453,7 +533,7 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             {!readOnly && (
                 <div style={{ display: 'flex', gap: '8px' }}>
                     {guest.source === 'online' ? (
-                        <>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {guest.status === 'pending' && (
                                 <button
                                     onClick={() => handleUpdateReservationStatus(guest.real_id, 'confirmed')}
@@ -472,9 +552,27 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                                     <AlertCircle size="14" /> Anulează
                                 </button>
                             )}
-                        </>
+                            
+                            {/* Edit/Delete for online reservations too */}
+                            <div style={{ width: '1px', height: '16px', background: '#e5e7eb', margin: '0 4px' }} />
+                            
+                            <button
+                                onClick={() => openForm(guest.layout_object_id || 'unassigned', guest)}
+                                style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                                title="Editează Rezervare"
+                            >
+                                <Edit2 size={16} />
+                            </button>
+                            <button
+                                onClick={() => handleDeleteGuest(guest)}
+                                style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                title="Șterge Rezervare"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
                     ) : (
-                        <>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 onClick={() => openForm(guest.layout_object_id || 'unassigned', guest)}
                                 style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '4px' }}
@@ -483,13 +581,13 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                                 <Edit2 size={16} />
                             </button>
                             <button
-                                onClick={() => handleDeleteGuest(guest.id)}
+                                onClick={() => handleDeleteGuest(guest)}
                                 style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
                                 title="Șterge"
                             >
                                 <Trash2 size={16} />
                             </button>
-                        </>
+                        </div>
                     )}
                 </div>
             )}

@@ -107,7 +107,7 @@ const ReservationPage = () => {
         
         // Manual guests
         const manualGuests = guests
-            .filter(g => g.layout_object_id === tableId)
+            .filter(g => g.layout_object_id?.toString() === tid)
             .reduce((sum, g) => sum + (g.seat_count || 1), 0);
 
         // Online reservations
