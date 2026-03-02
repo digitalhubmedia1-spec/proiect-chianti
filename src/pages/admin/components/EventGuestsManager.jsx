@@ -57,11 +57,11 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
             .map(r => ({
                 id: `res-${r.id}`,
                 real_id: r.id,
-                full_name: r.customer_name,
+                full_name: r.guest_name,
                 seat_count: r.seat_count,
-                type: 'adult', // Reservations don't explicitly store type yet
-                menu_preference: r.menu_preference,
-                notes: r.notes,
+                type: 'adult',
+                menu_preference: r.dietary_preference === 'both' ? 'Post & Frupt' : (r.dietary_preference === 'post' ? 'Post' : (r.dietary_preference === 'frupt' ? 'Frupt' : '')),
+                notes: r.observations,
                 source: 'online',
                 status: r.status,
                 layout_object_id: tableId
@@ -402,13 +402,22 @@ const EventGuestsManager = ({ eventId, allowMinors, readOnly = false }) => {
                     )}
                 </div>
 
-                {guest.seat_count > 1 && (
+                {guest.source === 'online' ? (
                     <span style={{
                         padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700',
                         background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a'
                     }}>
-                        + {guest.seat_count - 1} pers.
+                        {guest.seat_count} pers.
                     </span>
+                ) : (
+                    guest.seat_count > 1 && (
+                        <span style={{
+                            padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700',
+                            background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a'
+                        }}>
+                            + {guest.seat_count - 1} pers.
+                        </span>
+                    )
                 )}
                 <span style={{
                     padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
