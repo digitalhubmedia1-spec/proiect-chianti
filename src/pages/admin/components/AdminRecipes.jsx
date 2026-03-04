@@ -97,8 +97,7 @@ const AdminRecipes = () => {
 
     // --- CALCULATOR STATE ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState(new Set());
-    const [selectedRecipeId, setSelectedRecipeId] = useState(''); // Singular for Production Tab
-    const [portions, setPortions] = useState(1);
+    const [productionRows, setProductionRows] = useState([{ recipeId: '', portions: 1 }]); // Multiple recipes for production
     const [calculationResult, setCalculationResult] = useState(null);
     const [recipeCostResult, setRecipeCostResult] = useState(null); // For Cost Calculator
     const [refPrices, setRefPrices] = useState({}); // { ingredient_id: price }
@@ -354,29 +353,45 @@ const AdminRecipes = () => {
 
     // --- CALCULATOR HANDLERS (FIFO Logic) ---
     const calculateRequirements = async () => {
-        if (!selectedRecipeId || portions <= 0) return;
-        const recipe = recipes.find(r => r.id === parseInt(selectedRecipeId)); // Ensure ID match
-        if (!recipe) return;
+        const validRows = productionRows.filter(row => row.recipeId && row.portions > 0);
+        if (validRows.length === 0) return;
 
-        // Fetch valid batches for all ingredients involved
-        // We assume recipe.ingredients already contains { ingredient_id } from our Context refactor
+        const combinedIngredients = {}; // { ingredient_id: { needed, itemName, unit, item_id } }
+
+        for (const row of validRows) {
+            const recipe = recipes.find(r => r.id === parseInt(row.recipeId));
+            if (!recipe) continue;
+
+            for (const ing of recipe.ingredients) {
+                if (!ing.ingredient_id) continue;
+
+                const itemDef = inventoryItems.find(i => i.id === ing.ingredient_id);
+                const itemName = itemDef ? itemDef.name : (ing.itemName || 'N/A');
+                const unit = itemDef ? itemDef.unit : (ing.unit || '');
+                const neededForThisRecipe = parseFloat(ing.qty) * row.portions;
+
+                if (!combinedIngredients[ing.ingredient_id]) {
+                    combinedIngredients[ing.ingredient_id] = {
+                        needed: 0,
+                        itemName: itemName,
+                        unit: unit,
+                        item_id: ing.ingredient_id
+                    };
+                }
+                combinedIngredients[ing.ingredient_id].needed += neededForThisRecipe;
+            }
+        }
+
         const results = [];
 
-        for (const ing of recipe.ingredients) {
-            if (!ing.ingredient_id) continue;
-
-            // Find item def just for name/unit fallback
-            const itemDef = inventoryItems.find(i => i.id === ing.ingredient_id);
-            const itemName = itemDef ? itemDef.name : ing.itemName;
-            const unit = itemDef ? itemDef.unit : ing.unit;
-
-            const neededTotal = parseFloat(ing.qty) * portions;
+        for (const ingredientId in combinedIngredients) {
+            const ing = combinedIngredients[ingredientId];
 
             // Fetch batches FIFO
             const { data: batches } = await supabase
                 .from('inventory_batches')
                 .select('*')
-                .eq('item_id', ing.ingredient_id)
+                .eq('item_id', ingredientId)
                 .gt('quantity', 0)
                 .order('expiration_date', { ascending: true }) // FIFO
                 .order('created_at', { ascending: true });
@@ -384,13 +399,13 @@ const AdminRecipes = () => {
             const totalAvailable = batches ? batches.reduce((acc, b) => acc + b.quantity, 0) : 0;
 
             results.push({
-                itemName: itemName,
-                item_id: ing.ingredient_id,
-                needed: neededTotal,
-                unit: unit,
+                itemName: ing.itemName,
+                item_id: parseInt(ingredientId),
+                needed: ing.needed,
+                unit: ing.unit,
                 available: totalAvailable,
                 batches: batches || [],
-                isSufficient: totalAvailable >= neededTotal
+                isSufficient: totalAvailable >= (ing.needed - 0.0001)
             });
         }
 
@@ -398,8 +413,15 @@ const AdminRecipes = () => {
     };
 
     const handleDeductStock = async () => {
-        if (!calculationResult || !selectedRecipeId) return;
-        if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru ${portions} porții din stoc (FIFO)?`)) return;
+        const validRows = productionRows.filter(row => row.recipeId && row.portions > 0);
+        if (!calculationResult || validRows.length === 0) return;
+
+        const recipeNames = validRows.map(row => {
+            const r = recipes.find(rec => rec.id === parseInt(row.recipeId));
+            return `${row.portions} x ${r?.name || 'N/A'}`;
+        }).join(', ');
+
+        if (!window.confirm(`Sigur doriți să scădeți ingredientele pentru următoarele rețete: ${recipeNames}?`)) return;
 
         const adminName = localStorage.getItem('admin_name') || 'Admin';
 
@@ -407,9 +429,8 @@ const AdminRecipes = () => {
             for (const res of calculationResult) {
                 let remainingNeeded = res.needed;
 
-                // Batches are already sorted by expiry (FIFO) from fetch
                 for (const batch of res.batches) {
-                    if (remainingNeeded <= 0.0001) break; // Tolerance
+                    if (remainingNeeded <= 0.0001) break;
 
                     const currentStock = batch.quantity;
                     let take = 0;
@@ -422,7 +443,6 @@ const AdminRecipes = () => {
                         remainingNeeded -= currentStock;
                     }
 
-                    // 1. Update Batch (If reaches 0, it stays 0 and is effectively "deleted" from active view)
                     const { error: batchErr } = await supabase
                         .from('inventory_batches')
                         .update({ quantity: currentStock - take })
@@ -430,32 +450,27 @@ const AdminRecipes = () => {
 
                     if (batchErr) throw batchErr;
 
-                    // 2. Log Transaction (OUT)
-                    // If batch becomes 0, it's logged here as taking the full remainder.
                     await supabase.from('inventory_transactions').insert([{
                         transaction_type: 'OUT',
                         batch_id: batch.id,
                         item_id: res.item_id,
                         quantity: take,
-                        reason: `Producție Rețetă: ${portions} x ${recipes.find(r => r.id === selectedRecipeId)?.name || 'N/A'}`,
+                        reason: `Producție Multi-Rețetă: ${recipeNames}`,
                         operator_name: adminName
                     }]);
                 }
             }
 
-            // 3. Log to Global Admin Logs
-            const recipeName = recipes.find(r => r.id === selectedRecipeId)?.name || 'Rețetă';
             await supabase.from('admin_logs').insert([{
                 admin_name: adminName,
                 action: 'PRODUCTIE',
-                details: `S-au produs ${portions} porții de ${recipeName}. Stocul a fost scăzut (FIFO).`,
+                details: `S-au produs: ${recipeNames}. Stocul a fost scăzut (FIFO).`,
                 created_at: new Date().toISOString()
             }]);
 
             alert("Stocul a fost actualizat cu succes!");
             setCalculationResult(null);
-            setPortions(1);
-            setSelectedRecipeId('');
+            setProductionRows([{ recipeId: '', portions: 1 }]);
         } catch (error) {
             console.error(error);
             alert("Eroare la actualizarea stocului: " + error.message);
@@ -988,58 +1003,109 @@ const AdminRecipes = () => {
                     <div>
                         <div className="calculator-panel" style={{ background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
                             <h3>Calculator Producție (FIFO)</h3>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                                <div style={{ flex: 1, minWidth: '200px' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Alege Produsul / Rețeta</label>
-                                    <select
-                                        className="form-control"
-                                        value={selectedRecipeId}
-                                        onChange={(e) => { setSelectedRecipeId(parseInt(e.target.value)); setCalculationResult(null); }}
-                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    >
-                                        <option value="">-- Selectează --</option>
-                                        {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
+                            
+                            {productionRows.map((row, index) => (
+                                <div key={index} style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', borderBottom: index < productionRows.length - 1 ? '1px solid #f1f5f9' : 'none', paddingBottom: '1rem' }}>
+                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Alege Produsul / Rețeta</label>
+                                        <select
+                                            className="form-control"
+                                            value={row.recipeId}
+                                            onChange={(e) => {
+                                                const newRows = [...productionRows];
+                                                newRows[index].recipeId = e.target.value;
+                                                setProductionRows(newRows);
+                                                setCalculationResult(null);
+                                            }}
+                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                        >
+                                            <option value="">-- Selectează --</option>
+                                            {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ width: '150px' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Nr. Porții</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            value={row.portions}
+                                            onChange={(e) => {
+                                                const newRows = [...productionRows];
+                                                newRows[index].portions = parseInt(e.target.value) || 0;
+                                                setProductionRows(newRows);
+                                                setCalculationResult(null);
+                                            }}
+                                            min="1"
+                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        {productionRows.length > 1 && (
+                                            <button 
+                                                className="btn btn-danger" 
+                                                onClick={() => {
+                                                    const newRows = productionRows.filter((_, i) => i !== index);
+                                                    setProductionRows(newRows);
+                                                    setCalculationResult(null);
+                                                }}
+                                                style={{ padding: '0.6rem', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                                title="Elimină"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                        {index === productionRows.length - 1 && (
+                                            <button 
+                                                className="btn btn-secondary" 
+                                                onClick={() => setProductionRows([...productionRows, { recipeId: '', portions: 1 }])}
+                                                style={{ padding: '0.6rem', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                                title="Adaugă Rețetă"
+                                            >
+                                                <Plus size={18} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div style={{ width: '150px' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Nr. Porții</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={portions}
-                                        onChange={(e) => setPortions(parseInt(e.target.value) || 0)}
-                                        min="1"
-                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                    <button className="btn btn-primary" onClick={calculateRequirements} disabled={!selectedRecipeId}>
-                                        <Calculator size={18} /> Calculează Necesar
-                                    </button>
-                                </div>
+                            ))}
+
+                            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={calculateRequirements} 
+                                    disabled={productionRows.some(row => !row.recipeId || row.portions <= 0)}
+                                    style={{ padding: '0.8rem 2rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#990000', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                >
+                                    <Calculator size={20} /> CALCULEAZĂ NECESAR
+                                </button>
                             </div>
 
                             {calculationResult && (
                                 <div style={{ marginTop: '2rem' }}>
-                                    <h4>Rezultat Calcul pentru {portions} porții:</h4>
-
-                                    {recipes.find(r => r.id === selectedRecipeId)?.preparation_method && (
-                                        <div style={{ background: '#f8fafc', padding: '1rem', borderLeft: '4px solid #990000', marginBottom: '1rem', borderRadius: '4px' }}>
-                                            <h5 style={{ marginTop: 0, color: '#990000', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <BookOpen size={18} /> Mod de preparare:
-                                            </h5>
-                                            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-                                                {recipes.find(r => r.id === selectedRecipeId).preparation_method}
-                                            </p>
-                                        </div>
-                                    )}
+                                    <h4>Rezultat Necesar Agregat:</h4>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                                        {productionRows.filter(row => row.recipeId).map(row => {
+                                            const recipe = recipes.find(r => r.id === parseInt(row.recipeId));
+                                            if (!recipe?.preparation_method) return null;
+                                            return (
+                                                <div key={recipe.id} style={{ background: '#f8fafc', padding: '1rem', borderLeft: '4px solid #990000', borderRadius: '4px' }}>
+                                                    <h5 style={{ marginTop: 0, color: '#990000', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <BookOpen size={18} /> {recipe.name} - Mod de preparare:
+                                                    </h5>
+                                                    <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                                                        {recipe.preparation_method}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
 
                                     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
                                         <thead>
                                             <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
                                                 <th style={{ padding: '1rem' }}>Ingredient</th>
-                                                <th style={{ padding: '1rem' }}>Necesar</th>
-                                                <th style={{ padding: '1rem' }}>Disponibil Total (Toate Loturile)</th>
+                                                <th style={{ padding: '1rem' }}>Necesar Total</th>
+                                                <th style={{ padding: '1rem' }}>Disponibil Total</th>
                                                 <th style={{ padding: '1rem' }}>Status</th>
                                             </tr>
                                         </thead>
@@ -1072,7 +1138,14 @@ const AdminRecipes = () => {
                                         </div>
                                         <button
                                             className="btn"
-                                            style={{ background: calculationResult.every(r => r.isSufficient) ? '#990000' : '#cbd5e1', color: 'white', cursor: calculationResult.every(r => r.isSufficient) ? 'pointer' : 'not-allowed' }}
+                                            style={{ 
+                                                background: calculationResult.every(r => r.isSufficient) ? '#990000' : '#cbd5e1', 
+                                                color: 'white', 
+                                                cursor: calculationResult.every(r => r.isSufficient) ? 'pointer' : 'not-allowed',
+                                                padding: '0.6rem 1.2rem',
+                                                border: 'none',
+                                                borderRadius: '6px'
+                                            }}
                                             disabled={!calculationResult.every(r => r.isSufficient)}
                                             onClick={handleDeductStock}
                                         >
