@@ -544,6 +544,87 @@ const AdminRecipes = () => {
         doc.save(`Preturi_Referinta_${dateStr.replace(/\./g, '-')}.pdf`);
     };
 
+    const exportProductionToPDF = () => {
+        if (!calculationResult) return;
+        const doc = new jsPDF();
+
+        // Title
+        doc.setFontSize(18);
+        doc.setTextColor(153, 0, 0); // #990000
+        doc.text(removeDiacritics("Necesar Productie (FIFO)"), 14, 22);
+
+        // Date
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        const dateStr = new Date().toLocaleDateString('ro-RO');
+        doc.text(removeDiacritics(`Data: ${dateStr}`), 14, 30);
+
+        // Selected Recipes
+        const validRows = productionRows.filter(row => row.recipeId);
+        let yPos = 40;
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(removeDiacritics("Retete de produs:"), 14, yPos);
+        yPos += 7;
+
+        doc.setFontSize(10);
+        validRows.forEach(row => {
+            const recipe = recipes.find(r => r.id === parseInt(row.recipeId));
+            doc.text(removeDiacritics(`- ${row.portions} x ${recipe?.name || 'N/A'}`), 14, yPos);
+            yPos += 6;
+        });
+
+        // Ingredients Table
+        const tableData = calculationResult.map(res => [
+            removeDiacritics(res.itemName || ''),
+            `${res.needed.toFixed(2)} ${removeDiacritics(res.unit || '')}`,
+            `${res.available.toFixed(2)} ${removeDiacritics(res.unit || '')}`,
+            res.isSufficient ? 'OK' : 'INSUFICIENT'
+        ]);
+
+        autoTable(doc, {
+            startY: yPos + 5,
+            head: [['Ingredient', 'Necesar Total', 'Disponibil', 'Status']],
+            body: tableData,
+            headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 40, halign: 'right' },
+                2: { cellWidth: 40, halign: 'right' },
+                3: { cellWidth: 30, halign: 'center' }
+            }
+        });
+
+        // Preparation Methods
+        let finalY = doc.lastAutoTable.finalY + 15;
+        
+        validRows.forEach(row => {
+            const recipe = recipes.find(r => r.id === parseInt(row.recipeId));
+            if (recipe?.preparation_method) {
+                // Check if we need a new page
+                if (finalY > 250) {
+                    doc.addPage();
+                    finalY = 20;
+                }
+
+                doc.setFontSize(12);
+                doc.setTextColor(153, 0, 0);
+                doc.text(removeDiacritics(`Mod de preparare: ${recipe.name}`), 14, finalY);
+                finalY += 7;
+
+                doc.setFontSize(9);
+                doc.setTextColor(0);
+                const splitText = doc.splitTextToSize(removeDiacritics(recipe.preparation_method), 180);
+                doc.text(splitText, 14, finalY);
+                finalY += (splitText.length * 5) + 10;
+            }
+        });
+
+        doc.save(`Necesar_Productie_${dateStr.replace(/\./g, '-')}.pdf`);
+    };
+
     // Helper to check if user is a cook
     const isCook = adminRole === 'bucatar' || adminRole === 'bucătar' || adminRole === 'chef';
 
@@ -1081,7 +1162,16 @@ const AdminRecipes = () => {
 
                             {calculationResult && (
                                 <div style={{ marginTop: '2rem' }}>
-                                    <h4>Rezultat Necesar Agregat:</h4>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h4 style={{ margin: 0 }}>Rezultat Necesar Agregat:</h4>
+                                        <button 
+                                            className="btn btn-secondary" 
+                                            onClick={exportProductionToPDF}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                        >
+                                            <FileDown size={18} /> Export PDF
+                                        </button>
+                                    </div>
                                     
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                                         {productionRows.filter(row => row.recipeId).map(row => {
