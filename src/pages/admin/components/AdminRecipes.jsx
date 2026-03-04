@@ -481,11 +481,21 @@ const AdminRecipes = () => {
     const uniqueInventoryNames = [...new Set(inventoryItems.map(i => i.name))].sort();
 
     const removeDiacritics = (str) => {
-        return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ț/g, "t").replace(/Ț/g, "T").replace(/ș/g, "s").replace(/Ș/g, "S") : "";
+        if (!str) return "";
+        return str.toString()
+            .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+            .replace(/â/g, 'a').replace(/Â/g, 'A')
+            .replace(/î/g, 'i').replace(/Î/g, 'I')
+            .replace(/ș/g, 's').replace(/Ș/g, 'S')
+            .replace(/ț/g, 't').replace(/Ț/g, 'T')
+            .replace(/ş/g, 's').replace(/Ş/g, 'S')
+            .replace(/ţ/g, 't').replace(/Ţ/g, 'T')
+            .replace(/[^\x00-\x7F]/g, ''); // Remove any remaining non-ASCII (emojis, etc.)
     }
 
     const exportToPDF = () => {
         const doc = new jsPDF();
+        doc.setFont('helvetica');
 
         // Title
         doc.setFontSize(18);
@@ -547,6 +557,7 @@ const AdminRecipes = () => {
     const exportProductionToPDF = () => {
         if (!calculationResult) return;
         const doc = new jsPDF();
+        doc.setFont('helvetica');
 
         // Title
         doc.setFontSize(18);
