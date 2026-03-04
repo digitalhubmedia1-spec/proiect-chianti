@@ -1120,10 +1120,11 @@ const AdminRecipes = () => {
                                         <input
                                             type="number"
                                             className="form-control"
-                                            value={row.portions}
+                                            value={row.portions === 0 ? '' : row.portions}
                                             onChange={(e) => {
+                                                const val = e.target.value;
                                                 const newRows = [...productionRows];
-                                                newRows[index].portions = parseInt(e.target.value) || 0;
+                                                newRows[index].portions = val === '' ? 0 : (parseInt(val) || 0);
                                                 setProductionRows(newRows);
                                                 setCalculationResult(null);
                                             }}
