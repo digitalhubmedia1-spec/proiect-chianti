@@ -98,6 +98,7 @@ const AdminRecipes = () => {
     // --- CALCULATOR STATE ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState(new Set());
     const [productionRows, setProductionRows] = useState([{ recipeId: '', portions: 1 }]); // Multiple recipes for production
+    const [costRows, setCostRows] = useState([{ recipeId: '', portions: 1 }]); // Multiple recipes for cost calculation
     const [calculationResult, setCalculationResult] = useState(null);
     const [recipeCostResult, setRecipeCostResult] = useState(null); // For Cost Calculator
     const [refPrices, setRefPrices] = useState({}); // { ingredient_id: price }
@@ -196,27 +197,73 @@ const AdminRecipes = () => {
         return inventoryItems.filter(item => allowedIds.has(item.id));
     };
 
-    const calculateRecipeCost = () => {
-        if (selectedRecipeIds.size === 0) return;
+    const handleCostRowChange = (index, field, value) => {
+        const newRows = [...costRows];
+        if (field === 'recipeId') {
+            newRows[index].recipeId = value;
+        } else if (field === 'portions') {
+            newRows[index].portions = value === '' ? 0 : (parseInt(value) || 0);
+        }
+        setCostRows(newRows);
+        setRecipeCostResult(null);
+    };
 
-        const selectedRecipes = recipes.filter(r => selectedRecipeIds.has(r.id));
+    const addCostRow = () => {
+        setCostRows([...costRows, { recipeId: '', portions: 1 }]);
+    };
+
+    const removeCostRow = (index) => {
+        if (costRows.length > 1) {
+            const newRows = costRows.filter((_, i) => i !== index);
+            setCostRows(newRows);
+            setRecipeCostResult(null);
+        }
+    };
+
+    const calculateRecipeCost = () => {
+        const validRows = costRows.filter(row => row.recipeId && row.portions > 0);
+        if (validRows.length === 0) return;
 
         let grandTotalNoVat = 0;
         let grandTotalWithVat = 0;
+        const combinedIngredients = {}; // For aggregate view
 
-        const recipesResult = selectedRecipes.map(recipe => {
+        const recipesResult = validRows.map(row => {
+            const recipe = recipes.find(r => r.id === parseInt(row.recipeId));
+            if (!recipe) return null;
+
             const ingredientsCost = recipe.ingredients.map(ing => {
                 if (!ing.ingredient_id) return null;
                 const refData = refPrices[ing.ingredient_id] || { price: 0, vat: 0 };
                 const price = parseFloat(refData.price) || 0;
                 const vat = parseInt(refData.vat) || 0;
 
-                const costNoVat = parseFloat(ing.qty) * price;
+                const qtyForPortions = parseFloat(ing.qty) * row.portions;
+                const costNoVat = qtyForPortions * price;
                 const priceWithVat = price * (1 + vat / 100);
-                const costWithVat = parseFloat(ing.qty) * priceWithVat;
+                const costWithVat = qtyForPortions * priceWithVat;
+
+                // Aggregate for the "all ingredients" view
+                if (!combinedIngredients[ing.ingredient_id]) {
+                    const itemDef = inventoryItems.find(i => i.id === ing.ingredient_id);
+                    combinedIngredients[ing.ingredient_id] = {
+                        name: itemDef ? itemDef.name : 'N/A',
+                        unit: itemDef ? itemDef.unit : '',
+                        totalQty: 0,
+                        totalCostNoVat: 0,
+                        totalCostWithVat: 0,
+                        refPrice: price,
+                        refVat: vat
+                    };
+                }
+                combinedIngredients[ing.ingredient_id].totalQty += qtyForPortions;
+                combinedIngredients[ing.ingredient_id].totalCostNoVat += costNoVat;
+                combinedIngredients[ing.ingredient_id].totalCostWithVat += costWithVat;
 
                 return {
                     ...ing,
+                    portions: row.portions,
+                    qtyForPortions,
                     refPrice: price,
                     refVat: vat,
                     totalCostNoVat: costNoVat,
@@ -233,13 +280,20 @@ const AdminRecipes = () => {
             return {
                 id: recipe.id,
                 name: recipe.name,
+                portions: row.portions,
                 ingredients: ingredientsCost,
                 totalNoVat,
                 totalWithVat
             };
-        });
+        }).filter(Boolean);
 
-        setRecipeCostResult({ recipes: recipesResult, grandTotalNoVat, grandTotalWithVat, expandedId: null });
+        setRecipeCostResult({ 
+            recipes: recipesResult, 
+            aggregatedIngredients: Object.values(combinedIngredients),
+            grandTotalNoVat, 
+            grandTotalWithVat, 
+            expandedId: null 
+        });
     };
 
     // --- MANAGE HANDLERS ---
@@ -636,6 +690,69 @@ const AdminRecipes = () => {
         doc.save(`Necesar_Productie_${dateStr.replace(/\./g, '-')}.pdf`);
     };
 
+    const exportCostCalculatorToPDF = () => {
+        if (!recipeCostResult) return;
+        const doc = new jsPDF();
+        doc.setFont('helvetica');
+
+        // Title
+        doc.setFontSize(18);
+        doc.setTextColor(153, 0, 0); // #990000
+        doc.text(removeDiacritics("Necesar Consum si Costuri"), 14, 22);
+
+        // Date
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        const dateStr = new Date().toLocaleDateString('ro-RO');
+        doc.text(removeDiacritics(`Data: ${dateStr}`), 14, 30);
+
+        // Totals
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(removeDiacritics(`TOTAL FARA TVA: ${recipeCostResult.grandTotalNoVat.toFixed(2)} RON`), 14, 40);
+        doc.text(removeDiacritics(`TOTAL CU TVA: ${recipeCostResult.grandTotalWithVat.toFixed(2)} RON`), 14, 47);
+
+        // Selected Recipes
+        let yPos = 57;
+        doc.setFontSize(11);
+        doc.text(removeDiacritics("Rețete incluse:"), 14, yPos);
+        yPos += 6;
+        doc.setFontSize(10);
+        recipeCostResult.recipes.forEach(r => {
+            doc.text(removeDiacritics(`- ${r.portions} x ${r.name}`), 14, yPos);
+            yPos += 5;
+        });
+
+        // Aggregated Table
+        const tableData = recipeCostResult.aggregatedIngredients.map(ing => [
+            removeDiacritics(ing.name),
+            `${ing.totalQty.toFixed(3)} ${removeDiacritics(ing.unit)}`,
+            `${ing.refPrice.toFixed(2)}`,
+            `${ing.refVat}%`,
+            `${ing.totalCostNoVat.toFixed(2)}`,
+            `${ing.totalCostWithVat.toFixed(2)}`
+        ]);
+
+        autoTable(doc, {
+            startY: yPos + 5,
+            head: [['Ingredient', 'Cantitate', 'Pret Unit', 'TVA', 'Total Net', 'Total Brut']],
+            body: tableData,
+            headStyles: { fillColor: [153, 0, 0], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            styles: { fontSize: 9, cellPadding: 2.5 },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 30, halign: 'right' },
+                2: { cellWidth: 25, halign: 'right' },
+                3: { cellWidth: 15, halign: 'center' },
+                4: { cellWidth: 25, halign: 'right' },
+                5: { cellWidth: 25, halign: 'right' }
+            }
+        });
+
+        doc.save(`Calculator_Costuri_${dateStr.replace(/\./g, '-')}.pdf`);
+    };
+
     // Helper to check if user is a cook
     const isCook = adminRole === 'bucatar' || adminRole === 'bucătar' || adminRole === 'chef';
 
@@ -997,37 +1114,121 @@ const AdminRecipes = () => {
                         {/* COST CALCULATOR SECTION (MULTI) - HIDDEN FOR COST_PRODUCTIE */}
                         {adminRole !== 'cost_productie' && (
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                     <div>
-                                        <h3>Calculator Costuri Multi-Rețetă</h3>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Calculează costul total pentru rețetele selectate mai sus.</p>
+                                        <h3 style={{ margin: 0 }}>Calculator Necesar Consum & Costuri</h3>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Selectează rețetele și numărul de porții pentru a calcula necesarul agregat.</p>
                                     </div>
-                                    <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={selectedRecipeIds.size === 0}>
-                                        <Calculator size={18} /> Calculează Costuri
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        {recipeCostResult && (
+                                            <button
+                                                className="btn"
+                                                onClick={exportCostCalculatorToPDF}
+                                                style={{ background: '#990000', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                            >
+                                                <FileDown size={18} /> Export PDF Rezultat
+                                            </button>
+                                        )}
+                                        <button className="btn btn-primary" onClick={calculateRecipeCost} disabled={costRows.every(r => !r.recipeId)}>
+                                            <Calculator size={18} /> Calculează Costuri
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                                    {costRows.map((row, index) => (
+                                        <div key={index} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Alege Rețeta</label>
+                                                <select
+                                                    className="form-control"
+                                                    value={row.recipeId}
+                                                    onChange={(e) => handleCostRowChange(index, 'recipeId', e.target.value)}
+                                                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                                >
+                                                    <option value="">-- Selectează --</option>
+                                                    {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div style={{ width: '120px' }}>
+                                                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Nr. Porții</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control"
+                                                    value={row.portions === 0 ? '' : row.portions}
+                                                    onChange={(e) => handleCostRowChange(index, 'portions', e.target.value)}
+                                                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                                />
+                                            </div>
+                                            <button
+                                                className="btn-icon btn-delete"
+                                                onClick={() => removeCostRow(index)}
+                                                disabled={costRows.length === 1}
+                                                style={{ marginBottom: '5px', padding: '8px' }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={addCostRow}
+                                        style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '5px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', padding: '0.5rem' }}
+                                    >
+                                        <Plus size={16} /> Adaugă o altă rețetă
                                     </button>
                                 </div>
 
                                 {recipeCostResult && (
                                     <div style={{ marginTop: '2rem' }}>
-                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                                            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
-                                                <div style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 'bold' }}>TOTAL GENERAL (FĂRĂ TVA)</div>
+                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                                            <div style={{ background: '#f0fdf4', padding: '1.2rem', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1 }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 'bold', marginBottom: '0.2rem' }}>TOTAL GENERAL (FĂRĂ TVA)</div>
                                                 <div style={{ fontSize: '1.8rem', color: '#16a34a', fontWeight: 'bold' }}>{recipeCostResult.grandTotalNoVat?.toFixed(2)} RON</div>
                                             </div>
-                                            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
-                                                <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 'bold' }}>TOTAL GENERAL (CU TVA)</div>
+                                            <div style={{ background: '#fef2f2', padding: '1.2rem', borderRadius: '8px', border: '1px solid #fecaca', flex: 1 }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#991b1b', fontWeight: 'bold', marginBottom: '0.2rem' }}>TOTAL GENERAL (CU TVA)</div>
                                                 <div style={{ fontSize: '1.8rem', color: '#dc2626', fontWeight: 'bold' }}>{recipeCostResult.grandTotalWithVat?.toFixed(2)} RON</div>
                                             </div>
                                         </div>
 
+                                        <h4 style={{ marginBottom: '1rem', color: '#1e293b' }}>Ingrediente Agregate (Total Consum)</h4>
+                                        <div style={{ overflowX: 'auto', marginBottom: '2.5rem' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                                                <thead>
+                                                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'left' }}>Ingredient</th>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>Cantitate Totală</th>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>Preț Unit. Ref</th>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>TVA</th>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>Total Net</th>
+                                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>Total Brut</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {recipeCostResult.aggregatedIngredients.map((ing, i) => (
+                                                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', background: 'white' }}>
+                                                            <td style={{ padding: '0.8rem', fontWeight: '500' }}>{ing.name}</td>
+                                                            <td style={{ padding: '0.8rem', textAlign: 'right' }}>{ing.totalQty.toFixed(3)} {ing.unit}</td>
+                                                            <td style={{ padding: '0.8rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
+                                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{ing.refVat}%</td>
+                                                            <td style={{ padding: '0.8rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                            <td style={{ padding: '0.8rem', textAlign: 'right', fontWeight: 'bold' }}>{ing.totalCostWithVat.toFixed(2)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <h4 style={{ marginBottom: '1rem', color: '#1e293b' }}>Defalcare pe Rețete</h4>
                                         <div style={{ overflowX: 'auto' }}>
                                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
                                                 <thead>
                                                     <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
                                                         <th style={{ padding: '1rem', textAlign: 'left' }}>Rețetă</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Porții</th>
                                                         <th style={{ padding: '1rem', textAlign: 'right' }}>Nr. Ingrediente</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (FĂRĂ TVA)</th>
-                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost Rețetă (CU TVA)</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost (FĂRĂ TVA)</th>
+                                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Cost (CU TVA)</th>
                                                         <th style={{ padding: '1rem', textAlign: 'right' }}>Acțiuni</th>
                                                     </tr>
                                                 </thead>
@@ -1041,6 +1242,7 @@ const AdminRecipes = () => {
                                                                 <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                                     {recipeCostResult.expandedId === res.id ? '▼' : '▶'} {res.name}
                                                                 </td>
+                                                                <td style={{ padding: '1rem', textAlign: 'right' }}>{res.portions}</td>
                                                                 <td style={{ padding: '1rem', textAlign: 'right' }}>{res.ingredients.length}</td>
                                                                 <td style={{ padding: '1rem', textAlign: 'right' }}>{res.totalNoVat.toFixed(2)} RON</td>
                                                                 <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>{res.totalWithVat.toFixed(2)} RON</td>
@@ -1050,25 +1252,27 @@ const AdminRecipes = () => {
                                                             </tr>
                                                             {recipeCostResult.expandedId === res.id && (
                                                                 <tr style={{ background: '#f8fafc' }}>
-                                                                    <td colSpan="5" style={{ padding: '1rem' }}>
+                                                                    <td colSpan="6" style={{ padding: '1rem' }}>
                                                                         <table style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', background: 'white' }}>
                                                                             <thead>
                                                                                 <tr style={{ background: '#f1f5f9', fontSize: '0.85rem', color: '#64748b' }}>
                                                                                     <th style={{ padding: '0.5rem' }}>Ingredient</th>
-                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cant.</th>
-                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit (FĂRĂ TVA)</th>
-                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (FĂRĂ TVA)</th>
-                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total (CU TVA)</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cantitate / Rețetă</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cantitate x {res.portions} porții</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Preț Unit</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total Net</th>
+                                                                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total Brut</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
                                                                                 {res.ingredients.map((ing, i) => (
                                                                                     <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
                                                                                         <td style={{ padding: '0.5rem' }}>{inventoryItems.find(x => x.id === ing.ingredient_id)?.name}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qty} {ing.unit}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.qtyForPortions.toFixed(3)} {ing.unit}</td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.refPrice.toFixed(2)}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(4)}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(4)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostNoVat.toFixed(2)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{ing.totalCostWithVat.toFixed(2)}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
