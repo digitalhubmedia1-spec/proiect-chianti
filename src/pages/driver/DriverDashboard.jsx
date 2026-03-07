@@ -209,7 +209,7 @@ const DriverDashboard = () => {
                                 border: '1px solid #f0f0f0'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                    <span style={{ fontWeight: '700', color: '#334155' }}>#{order.id.slice(-6).toUpperCase()}</span>
+                                    <span style={{ fontWeight: '700', color: '#334155' }}>#{order.orderNumber || order.id}</span>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         {(order.isCatering || (order.customer.deliveryMethod || '').startsWith('event-')) && (
                                             <span style={{
@@ -310,7 +310,7 @@ const ActiveOrderCard = ({ order }) => {
                 alignItems: 'center'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: '700', fontSize: '1rem', color: '#1e293b' }}>#{order.id.slice(-6).toUpperCase()}</span>
+                    <span style={{ fontWeight: '700', fontSize: '1rem', color: '#1e293b' }}>#{order.orderNumber || order.id}</span>
                     {(order.isCatering || (order.customer.deliveryMethod || '').startsWith('event-')) && (
                         <span style={{
                             background: '#f3e8ff',
