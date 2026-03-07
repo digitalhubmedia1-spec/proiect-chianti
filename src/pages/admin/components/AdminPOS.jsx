@@ -106,7 +106,7 @@ const AdminPOS = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null); // { items, tableName, paymentMethod, total }
     const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
-    const [mixedPaymentAmounts, setMixedPaymentAmounts] = useState({ cash: 0, card: 0 });
+    const [mixedPaymentAmounts, setMixedPaymentAmounts] = useState({ cash: 0, card: '' });
     const [isMixedPayment, setIsMixedPayment] = useState(false);
 
     // Date State for POS
@@ -409,11 +409,14 @@ const AdminPOS = () => {
             content += `T,1,______,_,__;${payCode};${totalAmount.toFixed(2)};;;;;\n`;
         } else {
             // Mixed payment: paymentData = { cash: 5, card: 5 }
-            if (paymentData.cash > 0) {
-                content += `T,1,______,_,__;0;${paymentData.cash.toFixed(2)};;;;;\n`;
+            const cashVal = parseFloat(paymentData.cash) || 0;
+            const cardVal = parseFloat(paymentData.card) || 0;
+            
+            if (cashVal > 0) {
+                content += `T,1,______,_,__;0;${cashVal.toFixed(2)};;;;;\n`;
             }
-            if (paymentData.card > 0) {
-                content += `T,1,______,_,__;1;${paymentData.card.toFixed(2)};;;;;\n`;
+            if (cardVal > 0) {
+                content += `T,1,______,_,__;1;${cardVal.toFixed(2)};;;;;\n`;
             }
         }
 
@@ -476,9 +479,10 @@ const AdminPOS = () => {
 
         // 2. If Mixed, trigger SoftPos for card portion
         if (paymentMethod === 'mixed') {
-            if (mixedPaymentAmounts.card > 0) {
-                if (window.confirm(`Plată MIXTĂ: Card ${mixedPaymentAmounts.card.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
-                    triggerSoftPosPayment(mixedPaymentAmounts.card);
+            const cardVal = parseFloat(mixedPaymentAmounts.card) || 0;
+            if (cardVal > 0) {
+                if (window.confirm(`Plată MIXTĂ: Card ${cardVal.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
+                    triggerSoftPosPayment(cardVal);
                     
                     if (!window.confirm("Plata cu cardul a fost efectuată cu succes pe terminal? Dacă da, apăsați OK pentru a continua.")) {
                         return; // Abort if user says payment failed
@@ -495,7 +499,10 @@ const AdminPOS = () => {
             const finalCart = [...cart];
             const finalTableName = selectedTable.name;
             const finalTotal = total;
-            const finalMixedAmounts = paymentMethod === 'mixed' ? { ...mixedPaymentAmounts } : null;
+            const finalMixedAmounts = paymentMethod === 'mixed' ? { 
+                cash: parseFloat(mixedPaymentAmounts.cash) || 0, 
+                card: parseFloat(mixedPaymentAmounts.card) || 0 
+            } : null;
 
             const orderPayload = {
                 id: Date.now(), 
@@ -547,7 +554,7 @@ const AdminPOS = () => {
 
             // Reset mixed payment state
             setIsMixedPayment(false);
-            setMixedPaymentAmounts({ cash: 0, card: 0 });
+            setMixedPaymentAmounts({ cash: 0, card: '' });
 
             // Clear table items
             updateTableItems(selectedTableId, []);
@@ -844,7 +851,7 @@ const AdminPOS = () => {
                                     onClick={() => {
                                         setIsMixedPayment(!isMixedPayment);
                                         if (!isMixedPayment) {
-                                            setMixedPaymentAmounts({ cash: total, card: 0 });
+                                            setMixedPaymentAmounts({ cash: total, card: '' });
                                         }
                                     }}
                                     disabled={isSaving || cart.length === 0}
@@ -874,9 +881,15 @@ const AdminPOS = () => {
                                                 <input 
                                                     type="number" 
                                                     value={mixedPaymentAmounts.cash}
+                                                    placeholder="0"
                                                     onChange={(e) => {
-                                                        const val = parseFloat(e.target.value) || 0;
-                                                        setMixedPaymentAmounts({ cash: val, card: Math.max(0, total - val) });
+                                                        const valStr = e.target.value;
+                                                        if (valStr === '') {
+                                                            setMixedPaymentAmounts({ cash: '', card: total });
+                                                        } else {
+                                                            const val = parseFloat(valStr);
+                                                            setMixedPaymentAmounts({ cash: val, card: Math.max(0, total - val) });
+                                                        }
                                                     }}
                                                     style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
                                                 />
@@ -886,9 +899,15 @@ const AdminPOS = () => {
                                                 <input 
                                                     type="number" 
                                                     value={mixedPaymentAmounts.card}
+                                                    placeholder="0"
                                                     onChange={(e) => {
-                                                        const val = parseFloat(e.target.value) || 0;
-                                                        setMixedPaymentAmounts({ card: val, cash: Math.max(0, total - val) });
+                                                        const valStr = e.target.value;
+                                                        if (valStr === '') {
+                                                            setMixedPaymentAmounts({ card: '', cash: total });
+                                                        } else {
+                                                            const val = parseFloat(valStr);
+                                                            setMixedPaymentAmounts({ card: val, cash: Math.max(0, total - val) });
+                                                        }
                                                     }}
                                                     style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
                                                 />
