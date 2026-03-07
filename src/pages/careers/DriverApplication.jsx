@@ -96,7 +96,7 @@ const DriverApplication = () => {
             <div className="row justify-content-center">
                 <div className="col-md-8 col-lg-7">
                     {/* Header Section */}
-                    <div className="text-center mb-5">
+                    <div className="text-center" style={{ marginBottom: '60px' }}>
                         <h1 className="fw-bold mb-2">Devino Livrator Chianti</h1>
                         <p className="text-muted lead mx-auto" style={{ maxWidth: '600px' }}>
                             Alătură-te echipei noastre și ajută-ne să livrăm bucurie (și mâncare bună) clienților noștri.
@@ -119,7 +119,7 @@ const DriverApplication = () => {
                         )}
 
                         <form onSubmit={handleSubmit}>
-                            <div className="row g-3">
+                            <div className="row gy-4 gx-3">
                                 <div className="col-md-6">
                                     <label className="form-label fw-semibold text-muted small text-uppercase mb-2">Nume</label>
                                     <input
@@ -190,14 +190,14 @@ const DriverApplication = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-4 mb-4">
+                            <div className="mt-5 mb-4">
                                 <label className="form-label fw-semibold text-muted small text-uppercase mb-2">Verificare Securitate</label>
                                 <div className="p-3 rounded-3 shadow-sm" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                                     <Captcha onValidate={setIsCaptchaValid} />
                                 </div>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-5 mb-5">
                                 <button
                                     type="submit"
                                     className="btn btn-primary py-2 px-4 shadow-sm"
@@ -210,7 +210,7 @@ const DriverApplication = () => {
                         </form>
                     </div>
 
-                    <div className="text-muted small border-top mt-5 pt-4" style={{ marginTop: '80px !important' }}>
+                    <div className="text-muted small border-top pt-4" style={{ marginTop: '40px' }}>
                         Prin trimiterea acestui formular, confirmi că ești de acord cu <a href="/confidentialitate" className="text-decoration-none text-danger fw-bold">Politica de Confidențialitate</a>.
                     </div>
                 </div>
