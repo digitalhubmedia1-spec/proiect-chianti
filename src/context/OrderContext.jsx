@@ -417,11 +417,31 @@ export const OrderProvider = ({ children }) => {
 
     const assignDriverToOrder = async (orderId, driverId) => {
         if (!supabase) return;
-        await supabase.from('orders').update({
+
+        // 1. Optimistic Update in Local State
+        setOrders(prev => prev.map(o => o.id === orderId ? { 
+            ...o, 
+            assignedDriverId: driverId, 
             assigned_driver_id: driverId,
+            driverStatus: 'assigned',
             driver_status: 'assigned'
-        }).eq('id', orderId);
-        logAction('ASIGNARE LIVRATOR', `Livrator #${driverId} -> Comanda #${orderId}`);
+        } : o));
+
+        try {
+            const { error } = await supabase.from('orders').update({
+                assigned_driver_id: driverId,
+                driver_status: 'assigned'
+            }).eq('id', orderId);
+
+            if (error) {
+                console.error("Error assigning driver:", error);
+                // Revert state if necessary? 
+            } else {
+                logAction('ASIGNARE LIVRATOR', `Livrator #${driverId} -> Comanda #${orderId}`);
+            }
+        } catch (err) {
+            console.error("Assign driver failed:", err);
+        }
     };
 
     const getDriverOrders = (driverId) => {
