@@ -466,9 +466,9 @@ const AdminPOS = () => {
         setIsSaving(true);
         try {
             const orderPayload = {
-                id: Date.now(), 
+                id: Date.now().toString(), 
                 user_id: user?.id,
-                status: 'delivered',
+                status: 'completed',
                 total: totalAmount,
                 final_total: totalAmount,
                 delivery_cost: 0,
@@ -488,6 +488,7 @@ const AdminPOS = () => {
                 }),
                 created_at: new Date().toISOString(),
                 customer_data: {
+                    fullName: `Masa ${tableName}`,
                     firstName: `Masa ${tableName}`,
                     lastName: '',
                     phone: '',
@@ -497,7 +498,9 @@ const AdminPOS = () => {
                     deliveryMethod: 'dinein',
                     paymentMethod: paymentMethod,
                     mixed_amounts: mixedAmounts
-                }
+                },
+                archived: false,
+                order_number: `POS-${Date.now().toString().slice(-6)}`
             };
 
             const { error } = await supabase.from('orders').insert([orderPayload]);
