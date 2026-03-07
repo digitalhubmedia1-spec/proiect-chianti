@@ -91,65 +91,44 @@ async function processOrder(orderFragment) {
             return;
         }
 
-        // Generate Content (XML Format for FiscalNet)
-        let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        content += '<BonFiscal>\n';
-        content += '  <Articole>\n';
+        // Generate Content (INP Format for FiscalNet)
+        let content = '';
 
         if (order.items && Array.isArray(order.items)) {
             order.items.forEach(item => {
-                const name = (item.name || 'Produs').replace(/[<>&"']/g, ' ').substring(0, 150); // Increased from 30 to 150
+                let name = (item.name || 'Produs').replace(/[;]/g, ' ').substring(0, 30);
+                // Remove diacritics
+                name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                
                 const price = parseFloat(item.price).toFixed(2);
                 const qty = parseFloat(item.quantity).toFixed(3);
-                const vat = item.vat_code || '1'; // Mapping: 1=9%, etc. (Verify with technician)
+                const vat = item.vat_code || '1'; // Mapping: 1=9%, etc.
                 const dept = '1';
 
-                content += '    <Articol>\n';
-                content += `      <Nume>${name}</Nume>\n`;
-                content += `      <Pret>${price}</Pret>\n`;
-                content += `      <Cantitate>${qty}</Cantitate>\n`;
-                content += `      <CotaTVA>${vat}</CotaTVA>\n`;
-                content += `      <Departament>${dept}</Departament>\n`;
-                content += '    </Articol>\n';
+                // S,1,______,_,__;NAME;PRICE;QTY;VAT_INDEX;DEPT;1;0;0;
+                content += `S,1,______,_,__;${name};${price};${qty};${vat};${dept};1;0;0;\n`;
             });
-        }
-        content += '  </Articole>\n';
-
-        // Tips (Bacsis)
-        const tip = parseFloat(order.tip_amount || 0);
-        if (tip > 0) {
-            content += '  <Bacsis>\n';
-            content += `    <Suma>${tip.toFixed(2)}</Suma>\n`;
-            content += '  </Bacsis>\n';
         }
 
         // Payment
-        const method = (order.paymentMethod || order.payment_method || '').toLowerCase();
+        const method = (order.paymentMethod || order.payment_method || (order.customer_data && order.customer_data.paymentMethod) || '').toLowerCase();
         let payType = '1'; // Default Numerar
-        let payText = 'NUMERAR';
-
+        
         if (method.includes('card')) {
             payType = '2'; // ID for Card as requested
-            payText = 'CARD';
         }
 
-        const totalWithTip = parseFloat(order.final_total || order.total || 0);
+        const total = parseFloat(order.total || 0);
 
-        content += '  <Plati>\n';
-        content += '    <Plata>\n';
-        content += `      <TipPlata>${payType}</TipPlata>\n`;
-        content += `      <Suma>${totalWithTip.toFixed(2)}</Suma>\n`;
-        content += `      <TextPlata>${payText}</TextPlata>\n`;
-        content += '    </Plata>\n';
-        content += '  </Plati>\n';
-        content += '</BonFiscal>';
+        // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
+        content += `T,1,______,_,__;${payType};${total.toFixed(2)};;;;;\n`;
 
         // Generate File
-        const filename = `bon_${order.id}_${Date.now()}.xml`; // Use .xml
+        const filename = `bon_${order.id}_${Date.now()}.inp`;
         const filePath = path.join(FISCAL_OUTPUT_DIR, filename);
 
         fs.writeFileSync(filePath, content, 'utf8');
-        console.log(`[PRINTED] Saved XML to ${filePath}`);
+        console.log(`[PRINTED] Saved INP to ${filePath}`);
 
         // Update DB Status
         await supabase

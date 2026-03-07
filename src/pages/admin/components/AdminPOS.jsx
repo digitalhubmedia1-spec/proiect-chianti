@@ -105,7 +105,6 @@ const AdminPOS = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [isSaving, setIsSaving] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null); // { items, tableName, paymentMethod, total }
-    const [tipAmount, setTipAmount] = useState(0); // For Bacsis (Tips)
     const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
 
     // Date State for POS
@@ -333,7 +332,7 @@ const AdminPOS = () => {
                 delivery_cost: 0,
                 is_pos_order: true,
                 table_number: finalTableName,
-                fiscal_print_status: 'pending',
+                fiscal_print_status: 'none',
                 items: itemsToSend.map(item => {
                     const qtyToSend = item.qty - (item.sent_qty || 0);
                     let cleanName = item.name || '';
@@ -382,11 +381,9 @@ const AdminPOS = () => {
     // Calculate Total
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-    // Generate FiscalNet XML Content
-    const generateFiscalXML = (items, paymentMethod, tip = 0) => {
-        let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        content += '<BonFiscal>\n';
-        content += '  <Articole>\n';
+    // Generate FiscalNet INP Content
+    const generateFiscalINP = (items, paymentMethod) => {
+        let content = '';
         
         items.forEach(item => {
             const price = item.price.toFixed(2);
@@ -395,50 +392,31 @@ const AdminPOS = () => {
             let name = item.name || '';
             name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            name = name.replace(/[<>&"']/g, ' ').replace(/\s+/g, ' ').trim();
+            name = name.replace(/[;]/g, ' ').replace(/\s+/g, ' ').trim();
             
-            if (name.length > 150) name = name.substring(0, 150);
+            if (name.length > 30) name = name.substring(0, 30);
 
-            content += '    <Articol>\n';
-            content += `      <Nume>${name}</Nume>\n`;
-            content += `      <Pret>${price}</Pret>\n`;
-            content += `      <Cantitate>${qty}</Cantitate>\n`;
-            content += `      <CotaTVA>1</CotaTVA>\n`;
-            content += `      <Departament>1</Departament>\n`;
-            content += '    </Articol>\n';
+            // S,1,______,_,__;NAME;PRICE;QTY;VAT_INDEX;DEPT;1;0;0;
+            content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;\n`;
         });
-        content += '  </Articole>\n';
-
-        if (tip > 0) {
-            content += '  <Bacsis>\n';
-            content += `    <Suma>${tip.toFixed(2)}</Suma>\n`;
-            content += '  </Bacsis>\n';
-        }
 
         const payCode = paymentMethod === 'cash' ? '1' : '2';
-        const payText = paymentMethod === 'cash' ? 'NUMERAR' : 'CARD';
-        const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0) + tip;
+        const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-        content += '  <Plati>\n';
-        content += '    <Plata>\n';
-        content += `      <TipPlata>${payCode}</TipPlata>\n`;
-        content += `      <Suma>${totalAmount.toFixed(2)}</Suma>\n`;
-        content += `      <TextPlata>${payText}</TextPlata>\n`;
-        content += '    </Plata>\n';
-        content += '  </Plati>\n';
-        content += '</BonFiscal>';
+        // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
+        content += `T,1,______,_,__;${payCode};${totalAmount.toFixed(2)};;;;;\n`;
 
         return content;
     };
 
-    // Download XML File
-    const downloadXMLFile = (content, tableName) => {
-        const blob = new Blob([content], { type: 'application/xml' });
+    // Download INP File
+    const downloadINPFile = (content, tableName) => {
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.xml`;
+        const timestamp = new Date().getTime();
+        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.inp`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -472,9 +450,8 @@ const AdminPOS = () => {
 
         // 1. If Card, trigger SoftPos first
         if (paymentMethod === 'card') {
-            const totalWithTip = total + parseFloat(tipAmount || 0);
-            if (window.confirm(`Plată CARD: ${totalWithTip.toFixed(2)} Lei (include ${tipAmount} Lei bacșiș). Trimiteți suma către terminal?`)) {
-                triggerSoftPosPayment(totalWithTip);
+            if (window.confirm(`Plată CARD: ${total.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
+                triggerSoftPosPayment(total);
                 
                 // Since this is a web app, we don't get an immediate response.
                 // We'll ask the user to confirm if the payment was successful on the terminal.
@@ -492,15 +469,14 @@ const AdminPOS = () => {
             const finalCart = [...cart];
             const finalTableName = selectedTable.name;
             const finalTotal = total;
-            const finalTip = parseFloat(tipAmount || 0);
 
             const orderPayload = {
                 id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
                 total: finalTotal,
-                final_total: finalTotal + finalTip,
-                tip_amount: finalTip,
+                final_total: finalTotal,
+                tip_amount: 0,
                 delivery_cost: 0,
                 is_pos_order: true,
                 table_number: finalTableName,
@@ -526,7 +502,7 @@ const AdminPOS = () => {
                     email: '',
                     deliveryMethod: 'dinein',
                     paymentMethod: paymentMethod,
-                    tip_amount: finalTip
+                    tip_amount: 0
                 }
             };
 
@@ -538,13 +514,11 @@ const AdminPOS = () => {
             // Save last order data for potential printing
             setLastOrder({
                 items: finalCart,
-                tableName: finalTableName,
-                tipAmount: finalTip
+                tableName: finalTableName
             });
 
-            // Clear table items and tip
+            // Clear table items
             updateTableItems(selectedTableId, []);
-            setTipAmount(0);
             
         } catch (err) {
             console.error(err);
@@ -558,15 +532,15 @@ const AdminPOS = () => {
     const handleGenerateBon = (method = 'cash') => {
         // 1. Prefer current cart if available
         if (cart.length > 0 && selectedTable) {
-            const content = generateFiscalXML(cart, method, tipAmount);
-            downloadXMLFile(content, selectedTable.name);
+            const content = generateFiscalINP(cart, method);
+            downloadINPFile(content, selectedTable.name);
             return;
         }
 
         // 2. Otherwise use last saved order
         if (lastOrder) {
-            const content = generateFiscalXML(lastOrder.items, method, lastOrder.tipAmount);
-            downloadXMLFile(content, lastOrder.tableName);
+            const content = generateFiscalINP(lastOrder.items, method);
+            downloadINPFile(content, lastOrder.tableName);
             return;
         }
 
@@ -759,24 +733,9 @@ const AdminPOS = () => {
 
                         {/* Footer Totals */}
                         <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
-                            {/* Tip/Bacsis Input */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0' }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#64748b' }}>BACȘIȘ (Tip)</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <input 
-                                        type="number" 
-                                        value={tipAmount === 0 ? '' : tipAmount}
-                                        onChange={(e) => setTipAmount(parseFloat(e.target.value) || 0)}
-                                        placeholder="0.00"
-                                        style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right', fontSize: '0.9rem' }}
-                                    />
-                                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Lei</span>
-                                </div>
-                            </div>
-
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>
                                 <span>TOTAL</span>
-                                <span>{(total + parseFloat(tipAmount || 0)).toFixed(2)} Lei</span>
+                                <span>{total.toFixed(2)} Lei</span>
                             </div>
 
                             {/* Action Buttons */}
