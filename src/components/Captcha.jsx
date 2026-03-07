@@ -88,35 +88,36 @@ const Captcha = ({ onValidate }) => {
     };
 
     return (
-        <div className="captcha-container" style={{ margin: '1rem 0' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Verificare de Securitate</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                <canvas
-                    ref={canvasRef}
-                    width="180"
-                    height="50"
-                    style={{ border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
-                    onClick={refreshCaptcha}
-                    title="Click pentru a reîmprospăta"
-                />
+        <div className="captcha-container">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '2px solid white', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                    <canvas
+                        ref={canvasRef}
+                        width="180"
+                        height="50"
+                        style={{ display: 'block', cursor: 'pointer', background: '#f1f5f9' }}
+                        onClick={refreshCaptcha}
+                        title="Click pentru a reîmprospăta"
+                    />
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)' }}></div>
+                </div>
                 <button
                     type="button"
                     onClick={refreshCaptcha}
-                    className="btn-icon"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}
+                    className="btn btn-light shadow-sm p-2 rounded-circle"
+                    style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'white' }}
                     title="Reîmprospătează codul"
                 >
-                    <RefreshCw size={20} />
+                    <RefreshCw size={20} className="text-muted" />
                 </button>
             </div>
             <input
                 type="text"
-                className="form-control"
+                className="form-control bg-white border-0 py-2 shadow-sm"
                 placeholder="Introdu codul din imagine"
                 value={userInput}
                 onChange={handleChange}
-                style={{ width: '100%' }}
-                required
+                style={{ borderRadius: '10px', fontSize: '0.9rem' }}
             />
         </div>
     );

@@ -53,7 +53,10 @@ const AdminPOS = () => {
     const { products, categories, fetchDailyMenu } = useMenu();
     const { recipes } = useRecipes();
     const { user } = useAuth();
-
+    
+    // Auth Check
+    const [isAuthenticated, setIsAuthenticated] = useState(true);
+    
     // State
     const [tables, setTables] = useState([]); // [{ id, name, items: [] }]
     const [selectedTableId, setSelectedTableId] = useState(null);
@@ -62,8 +65,17 @@ const AdminPOS = () => {
     // Auth Role
     const adminRole = localStorage.getItem('admin_role');
 
+    useEffect(() => {
+        const token = localStorage.getItem('admin_token');
+        if (!token || !adminRole) {
+            setIsAuthenticated(false);
+        }
+    }, [adminRole]);
+
     // Fetch Tables from DB
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const fetchTables = async () => {
             const { data, error } = await supabase
                 .from('restaurant_tables')
@@ -689,6 +701,64 @@ const AdminPOS = () => {
     );
 
     const categoriesList = ['all', ...new Set(dailyProducts.map(p => p.category))];
+
+    if (!isAuthenticated) {
+        return (
+            <div style={{ 
+                height: '100vh', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#f8fafc',
+                padding: '2rem',
+                textAlign: 'center'
+            }}>
+                <div style={{ 
+                    background: 'white', 
+                    padding: '3rem', 
+                    borderRadius: '12px', 
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    maxWidth: '400px'
+                }}>
+                    <div style={{ 
+                        width: '64px', 
+                        height: '64px', 
+                        background: '#fee2e2', 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        margin: '0 auto 1.5rem auto'
+                    }}>
+                        <ShoppingCart size={32} color="#dc2626" />
+                    </div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1e293b', marginBottom: '1rem' }}>
+                        Acces Restricționat
+                    </h2>
+                    <p style={{ color: '#64748b', marginBottom: '2rem', lineHeight: '1.5' }}>
+                        Trebuie să fii autentificat în panoul de administrare pentru a accesa interfața POS.
+                    </p>
+                    <button 
+                        onClick={() => window.location.href = '/admin/login'}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            background: '#990000',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s'
+                        }}
+                    >
+                        Mergi la Autentificare
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ display: 'flex', height: 'calc(100vh - 70px)', background: '#f1f5f9', gap: '0.5rem', padding: '0.5rem' }}>
