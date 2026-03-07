@@ -105,6 +105,8 @@ const AdminPOS = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [isSaving, setIsSaving] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null); // { items, tableName, paymentMethod, total }
+    const [tipAmount, setTipAmount] = useState(0); // For Bacsis (Tips)
+    const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
 
     // Date State for POS
     const [posDate, setPosDate] = useState(new Date());
@@ -380,58 +382,87 @@ const AdminPOS = () => {
     // Calculate Total
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-    // Generate FiscalNet INP File Content
-    const generateInpContent = (items, paymentMethod) => {
-        let content = '';
+    // Generate FiscalNet XML Content
+    const generateFiscalXML = (items, paymentMethod, tip = 0) => {
+        let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        content += '<BonFiscal>\n';
+        content += '  <Articole>\n';
         
-        // S,1,______,_,__;NumeProdus;Pret;Cantitate;Tva;Dept;Grupa;TipDisc;ValDisc;UM;
         items.forEach(item => {
-            // FORCE PRICE 0 FOR TESTING AS REQUESTED
-            const price = "0.00"; 
+            const price = item.price.toFixed(2);
             const qty = item.qty.toFixed(3);
             
-            // Remove emojis and semicolons, keep full name (or truncate to safe limit if needed, e.g. 200)
             let name = item.name || '';
-            
-            // Remove emojis using regex range for common emojis
-            // Ranges: Miscellaneous Symbols, Dingbats, Transport/Map, Emoticons, etc.
             name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
-            
-            // Remove diacritics (Romanian characters)
             name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-            // Remove semicolons and trim
-            name = name.replace(/;/g, ' ').replace(/\s+/g, ' ').trim();
+            name = name.replace(/[<>&"']/g, ' ').replace(/\s+/g, ' ').trim();
             
-            // Truncate only if extremely long (e.g. > 150 chars) to avoid driver crash, but user requested full name.
-            if (name.length > 150) name = name.substring(0, 150);
+            if (name.length > 30) name = name.substring(0, 30);
 
-            content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;BUC;\n`;
+            content += '    <Articol>\n';
+            content += `      <Nume>${name}</Nume>\n`;
+            content += `      <Pret>${price}</Pret>\n`;
+            content += `      <Cantitate>${qty}</Cantitate>\n`;
+            content += `      <CotaTVA>1</CotaTVA>\n`;
+            content += `      <Departament>1</Departament>\n`;
+            content += '    </Articol>\n';
         });
+        content += '  </Articole>\n';
 
-        // T,1,______,_,__;TipPlata;Suma;;;;
-        // 0 = Numerar, 1 = Card (Verificați maparea exactă a casei de marcat, de obicei 0-Cash, 1-Card)
-        const payCode = paymentMethod === 'cash' ? '0' : '1';
-        
-        // Suma este goală ;; pentru a achita tot restul (sau 0 pt test cu produse de 0 lei)
-        content += `T,1,______,_,__;${payCode};;;;;\n`;
+        if (tip > 0) {
+            content += '  <Bacsis>\n';
+            content += `    <Suma>${tip.toFixed(2)}</Suma>\n`;
+            content += '  </Bacsis>\n';
+        }
+
+        const payCode = paymentMethod === 'cash' ? '1' : '2';
+        const payText = paymentMethod === 'cash' ? 'NUMERAR' : 'CARD';
+        const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0) + tip;
+
+        content += '  <Plati>\n';
+        content += '    <Plata>\n';
+        content += `      <TipPlata>${payCode}</TipPlata>\n`;
+        content += `      <Suma>${totalAmount.toFixed(2)}</Suma>\n`;
+        content += `      <TextPlata>${payText}</TextPlata>\n`;
+        content += '    </Plata>\n';
+        content += '  </Plati>\n';
+        content += '</BonFiscal>';
 
         return content;
     };
 
-    // Download INP File
-    const downloadInpFile = (content, tableName) => {
-        const blob = new Blob([content], { type: 'text/plain' });
+    // Download XML File
+    const downloadXMLFile = (content, tableName) => {
+        const blob = new Blob([content], { type: 'application/xml' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        // Nume unic: bon_MasaX_timestamp.inp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.inp`;
+        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.xml`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+    };
+
+    // Helper: Trigger SoftPos Payment (Android Intent)
+    const triggerSoftPosPayment = (amount) => {
+        // SoftPos UniCredit Intent structure
+        // This usually triggers a custom scheme that the UniCredit SoftPos app listens for.
+        // We will construct an intent URI.
+        const intentUri = `intent:#Intent;action=com.unicredit.softpos.PAY;S.amount=${amount.toFixed(2)};S.currency=RON;S.transaction_type=SALE;end`;
+        
+        console.log("Triggering SoftPos Payment:", intentUri);
+        
+        // In a web app running in a WebView or browser on Android, 
+        // assigning window.location.href to an 'intent:' URI will trigger the OS to open the app.
+        try {
+            window.location.href = intentUri;
+            return true;
+        } catch (err) {
+            console.error("SoftPos Intent failed:", err);
+            return false;
+        }
     };
 
     // Checkout (Save Only)
@@ -439,24 +470,41 @@ const AdminPOS = () => {
         if (!selectedTable) return;
         if (cart.length === 0) return alert("Coșul este gol!");
 
+        // 1. If Card, trigger SoftPos first
+        if (paymentMethod === 'card') {
+            const totalWithTip = total + parseFloat(tipAmount || 0);
+            if (window.confirm(`Plată CARD: ${totalWithTip.toFixed(2)} Lei (include ${tipAmount} Lei bacșiș). Trimiteți suma către terminal?`)) {
+                triggerSoftPosPayment(totalWithTip);
+                
+                // Since this is a web app, we don't get an immediate response.
+                // We'll ask the user to confirm if the payment was successful on the terminal.
+                if (!window.confirm("Plata a fost efectuată cu succes pe terminal? Dacă da, apăsați OK pentru a genera bonul fiscal.")) {
+                    return; // Abort if user says payment failed
+                }
+            } else {
+                return; // User canceled payment trigger
+            }
+        }
+
         setIsSaving(true);
         try {
             // Save local variables before clearing table
             const finalCart = [...cart];
             const finalTableName = selectedTable.name;
             const finalTotal = total;
+            const finalTip = parseFloat(tipAmount || 0);
 
             const orderPayload = {
-                // ... (rest of payload construction remains same, just need to ensure I don't delete it)
                 id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
                 total: finalTotal,
-                final_total: finalTotal,
+                final_total: finalTotal + finalTip,
+                tip_amount: finalTip,
                 delivery_cost: 0,
                 is_pos_order: true,
                 table_number: finalTableName,
-                fiscal_print_status: 'pending',
+                fiscal_print_status: 'none', // Changed from 'pending' to 'none' to avoid automatic printing
                 items: finalCart.map(item => {
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
@@ -477,17 +525,26 @@ const AdminPOS = () => {
                     city: 'Local',
                     email: '',
                     deliveryMethod: 'dinein',
-                    paymentMethod: paymentMethod
+                    paymentMethod: paymentMethod,
+                    tip_amount: finalTip
                 }
             };
 
             const { error } = await supabase.from('orders').insert([orderPayload]);
             if (error) throw error;
 
-            alert("Comandă salvată cu succes!");
+            alert("Comandă salvată!");
 
-            // Clear table items but KEEP the table
+            // Save last order data for potential printing
+            setLastOrder({
+                items: finalCart,
+                tableName: finalTableName,
+                tipAmount: finalTip
+            });
+
+            // Clear table items and tip
             updateTableItems(selectedTableId, []);
+            setTipAmount(0);
             
         } catch (err) {
             console.error(err);
@@ -498,14 +555,22 @@ const AdminPOS = () => {
     };
 
     // Manual Bon Generation
-    const handleGenerateBon = () => {
-        if (!selectedTable) return alert("Selectează o masă!");
-        if (cart.length === 0) return alert("Coșul este gol!");
-        
-        // Defaulting to 'cash' (0) for manual generation as requested for testing
-        // If needed, we can ask the user, but for now a single button implies a default or current context.
-        const content = generateInpContent(cart, 'cash');
-        downloadInpFile(content, selectedTable.name);
+    const handleGenerateBon = (method = 'cash') => {
+        // 1. Prefer current cart if available
+        if (cart.length > 0 && selectedTable) {
+            const content = generateFiscalXML(cart, method, tipAmount);
+            downloadXMLFile(content, selectedTable.name);
+            return;
+        }
+
+        // 2. Otherwise use last saved order
+        if (lastOrder) {
+            const content = generateFiscalXML(lastOrder.items, method, lastOrder.tipAmount);
+            downloadXMLFile(content, lastOrder.tableName);
+            return;
+        }
+
+        alert("Nu există produse pentru generarea bonului!");
     };
 
     // Derived UI Data
@@ -694,9 +759,24 @@ const AdminPOS = () => {
 
                         {/* Footer Totals */}
                         <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                            {/* Tip/Bacsis Input */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                                <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#64748b' }}>BACȘIȘ (Tip)</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input 
+                                        type="number" 
+                                        value={tipAmount === 0 ? '' : tipAmount}
+                                        onChange={(e) => setTipAmount(parseFloat(e.target.value) || 0)}
+                                        placeholder="0.00"
+                                        style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right', fontSize: '0.9rem' }}
+                                    />
+                                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Lei</span>
+                                </div>
+                            </div>
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>
                                 <span>TOTAL</span>
-                                <span>{total.toFixed(2)} Lei</span>
+                                <span>{(total + parseFloat(tipAmount || 0)).toFixed(2)} Lei</span>
                             </div>
 
                             {/* Action Buttons */}
@@ -767,26 +847,48 @@ const AdminPOS = () => {
                                     </button>
                                 </div>
                                 
-                                <button 
-                                    onClick={handleGenerateBon}
-                                    disabled={cart.length === 0}
-                                    style={{ 
-                                        background: '#64748b', 
-                                        color: 'white', 
-                                        border: 'none', 
-                                        borderRadius: '6px', 
-                                        padding: '8px', 
-                                        fontSize: '0.9rem', 
-                                        fontWeight: '600', 
-                                        cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        opacity: cart.length === 0 ? 0.7 : 1,
-                                        marginTop: '0.25rem'
-                                    }}
-                                >
-                                    <Printer size={16} />
-                                    Generează Bon (Test)
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                     <button 
+                                         onClick={() => handleGenerateBon('cash')}
+                                         disabled={cart.length === 0 && !lastOrder}
+                                         style={{ 
+                                             flex: 1,
+                                             background: '#64748b', 
+                                             color: 'white', 
+                                             border: 'none', 
+                                             borderRadius: '6px', 
+                                             padding: '8px', 
+                                             fontSize: '0.85rem', 
+                                             fontWeight: '600', 
+                                             cursor: (cart.length === 0 && !lastOrder) ? 'not-allowed' : 'pointer',
+                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                             opacity: (cart.length === 0 && !lastOrder) ? 0.7 : 1
+                                         }}
+                                     >
+                                         <Printer size={16} />
+                                         BON NUMERAR
+                                     </button>
+                                     <button 
+                                         onClick={() => handleGenerateBon('card')}
+                                         disabled={cart.length === 0 && !lastOrder}
+                                         style={{ 
+                                             flex: 1,
+                                             background: '#64748b', 
+                                             color: 'white', 
+                                             border: 'none', 
+                                             borderRadius: '6px', 
+                                             padding: '8px', 
+                                             fontSize: '0.85rem', 
+                                             fontWeight: '600', 
+                                             cursor: (cart.length === 0 && !lastOrder) ? 'not-allowed' : 'pointer',
+                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                             opacity: (cart.length === 0 && !lastOrder) ? 0.7 : 1
+                                         }}
+                                     >
+                                         <Printer size={16} />
+                                         BON CARD
+                                     </button>
+                                 </div>
                             </div>
                         </div>
                     </>

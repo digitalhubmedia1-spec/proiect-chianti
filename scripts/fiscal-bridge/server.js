@@ -91,51 +91,65 @@ async function processOrder(orderFragment) {
             return;
         }
 
-        // Generate Content
-        // Format: Datecs Custom Protocol with ^ separator
-        // S^Name^Price^Qty^Unit^Vat^Dept
-        // P^Type^Amount
-
-        let content = '';
+        // Generate Content (XML Format for FiscalNet)
+        let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        content += '<BonFiscal>\n';
+        content += '  <Articole>\n';
 
         if (order.items && Array.isArray(order.items)) {
             order.items.forEach(item => {
-                const name = (item.name || 'Produs').replace(/\^/g, ' ').substring(0, 30); // Sanitize ^
-                const price = parseFloat(item.price).toFixed(2); // 100.00
-                const qty = parseFloat(item.quantity).toFixed(3); // 1.000
-                const unit = item.unit || 'buc';
-                const vat = item.vat_code || '1'; // Default A=1. Adjust as needed.
+                const name = (item.name || 'Produs').replace(/[<>&"']/g, ' ').substring(0, 30); // Sanitize for XML
+                const price = parseFloat(item.price).toFixed(2);
+                const qty = parseFloat(item.quantity).toFixed(3);
+                const vat = item.vat_code || '1'; // Mapping: 1=9%, etc. (Verify with technician)
                 const dept = '1';
 
-                // Command S (Sale)
-                content += `S^${name}^${price}^${qty}^${unit}^${vat}^${dept}\r\n`;
+                content += '    <Articol>\n';
+                content += `      <Nume>${name}</Nume>\n`;
+                content += `      <Pret>${price}</Pret>\n`;
+                content += `      <Cantitate>${qty}</Cantitate>\n`;
+                content += `      <CotaTVA>${vat}</CotaTVA>\n`;
+                content += `      <Departament>${dept}</Departament>\n`;
+                content += '    </Articol>\n';
             });
+        }
+        content += '  </Articole>\n';
+
+        // Tips (Bacsis)
+        const tip = parseFloat(order.tip_amount || 0);
+        if (tip > 0) {
+            content += '  <Bacsis>\n';
+            content += `    <Suma>${tip.toFixed(2)}</Suma>\n`;
+            content += '  </Bacsis>\n';
         }
 
         // Payment
-        // P^Type^Amount
-        // Type: 0=Cash ?, 1=Card ? (Need to verify mapping. User sample was P^1^0 for Card?)
-        // Let's assume user sample: P^1^0 = Card Payment of Total.
-        // If Cash: P^0^Amount?
-
-        let payType = '0'; // Default Cash
         const method = (order.paymentMethod || order.payment_method || '').toLowerCase();
+        let payType = '1'; // Default Numerar
+        let payText = 'NUMERAR';
 
-        if (method.includes('card')) payType = '1';
-        else if (method.includes('cash') || method.includes('numerar')) payType = '0';
+        if (method.includes('card')) {
+            payType = '2'; // ID for Card as requested
+            payText = 'CARD';
+        }
 
-        // Payment Command
-        // P^Type^Amount (0 = full amount)
-        content += `P^${payType}^0\r\n`;
+        const totalWithTip = parseFloat(order.final_total || order.total || 0);
+
+        content += '  <Plati>\n';
+        content += '    <Plata>\n';
+        content += `      <TipPlata>${payType}</TipPlata>\n`;
+        content += `      <Suma>${totalWithTip.toFixed(2)}</Suma>\n`;
+        content += `      <TextPlata>${payText}</TextPlata>\n`;
+        content += '    </Plata>\n';
+        content += '  </Plati>\n';
+        content += '</BonFiscal>';
 
         // Generate File
-        const filename = `bon_${order.id}_${Date.now()}.inp`; // .inp as requested
+        const filename = `bon_${order.id}_${Date.now()}.xml`; // Use .xml
         const filePath = path.join(FISCAL_OUTPUT_DIR, filename);
 
-        // Encoding: usually CP1250 or ANSI. Node writes UTF8 by default.
-        // If driver needs ANSI, we might need iconv-lite. For now try default.
-        fs.writeFileSync(filePath, content);
-        console.log(`[PRINTED] Saved to ${filePath}`);
+        fs.writeFileSync(filePath, content, 'utf8');
+        console.log(`[PRINTED] Saved XML to ${filePath}`);
 
         // Update DB Status
         await supabase
