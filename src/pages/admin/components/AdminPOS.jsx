@@ -499,8 +499,7 @@ const AdminPOS = () => {
                     paymentMethod: paymentMethod,
                     mixed_amounts: mixedAmounts
                 },
-                archived: false,
-                order_number: `POS-${Date.now().toString().slice(-6)}`
+                archived: false
             };
 
             const { error } = await supabase.from('orders').insert([orderPayload]);
