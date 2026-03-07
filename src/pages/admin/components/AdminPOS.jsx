@@ -3,7 +3,7 @@ import { useMenu } from '../../../context/MenuContext';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../supabaseClient';
-import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat } from 'lucide-react';
+import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat, Wallet } from 'lucide-react';
 
 const ProductCard = ({ product, addToCart }) => {
     const [imgError, setImgError] = useState(false);
@@ -106,6 +106,8 @@ const AdminPOS = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null); // { items, tableName, paymentMethod, total }
     const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
+    const [mixedPaymentAmounts, setMixedPaymentAmounts] = useState({ cash: 0, card: 0 });
+    const [isMixedPayment, setIsMixedPayment] = useState(false);
 
     // Date State for POS
     const [posDate, setPosDate] = useState(new Date());
@@ -382,7 +384,7 @@ const AdminPOS = () => {
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
     // Generate FiscalNet INP Content
-    const generateFiscalINP = (items, paymentMethod) => {
+    const generateFiscalINP = (items, paymentData) => {
         let content = '';
         
         items.forEach(item => {
@@ -400,11 +402,20 @@ const AdminPOS = () => {
             content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;\n`;
         });
 
-        const payCode = paymentMethod === 'cash' ? '0' : '1';
-        const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
-        // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
-        content += `T,1,______,_,__;${payCode};${totalAmount.toFixed(2)};;;;;\n`;
+        if (typeof paymentData === 'string') {
+            const payCode = paymentData === 'cash' ? '0' : '1';
+            const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
+            content += `T,1,______,_,__;${payCode};${totalAmount.toFixed(2)};;;;;\n`;
+        } else {
+            // Mixed payment: paymentData = { cash: 5, card: 5 }
+            if (paymentData.cash > 0) {
+                content += `T,1,______,_,__;0;${paymentData.cash.toFixed(2)};;;;;\n`;
+            }
+            if (paymentData.card > 0) {
+                content += `T,1,______,_,__;1;${paymentData.card.toFixed(2)};;;;;\n`;
+            }
+        }
 
         return content;
     };
@@ -463,12 +474,28 @@ const AdminPOS = () => {
             }
         }
 
+        // 2. If Mixed, trigger SoftPos for card portion
+        if (paymentMethod === 'mixed') {
+            if (mixedPaymentAmounts.card > 0) {
+                if (window.confirm(`Plată MIXTĂ: Card ${mixedPaymentAmounts.card.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
+                    triggerSoftPosPayment(mixedPaymentAmounts.card);
+                    
+                    if (!window.confirm("Plata cu cardul a fost efectuată cu succes pe terminal? Dacă da, apăsați OK pentru a continua.")) {
+                        return; // Abort if user says payment failed
+                    }
+                } else {
+                    return; // User canceled payment trigger
+                }
+            }
+        }
+
         setIsSaving(true);
         try {
             // Save local variables before clearing table
             const finalCart = [...cart];
             const finalTableName = selectedTable.name;
             const finalTotal = total;
+            const finalMixedAmounts = paymentMethod === 'mixed' ? { ...mixedPaymentAmounts } : null;
 
             const orderPayload = {
                 id: Date.now(), 
@@ -500,7 +527,8 @@ const AdminPOS = () => {
                     city: 'Local',
                     email: '',
                     deliveryMethod: 'dinein',
-                    paymentMethod: paymentMethod
+                    paymentMethod: paymentMethod,
+                    mixed_amounts: finalMixedAmounts
                 }
             };
 
@@ -512,8 +540,14 @@ const AdminPOS = () => {
             // Save last order data for potential printing
             setLastOrder({
                 items: finalCart,
-                tableName: finalTableName
+                tableName: finalTableName,
+                paymentMethod: paymentMethod,
+                mixedAmounts: finalMixedAmounts
             });
+
+            // Reset mixed payment state
+            setIsMixedPayment(false);
+            setMixedPaymentAmounts({ cash: 0, card: 0 });
 
             // Clear table items
             updateTableItems(selectedTableId, []);
@@ -530,14 +564,16 @@ const AdminPOS = () => {
     const handleGenerateBon = (method = 'cash') => {
         // 1. Prefer current cart if available
         if (cart.length > 0 && selectedTable) {
-            const content = generateFiscalINP(cart, method);
+            const paymentData = method === 'mixed' ? mixedPaymentAmounts : method;
+            const content = generateFiscalINP(cart, paymentData);
             downloadINPFile(content, selectedTable.name);
             return;
         }
 
         // 2. Otherwise use last saved order
         if (lastOrder) {
-            const content = generateFiscalINP(lastOrder.items, method);
+            const paymentData = lastOrder.paymentMethod === 'mixed' ? lastOrder.mixedAmounts : (method || lastOrder.paymentMethod);
+            const content = generateFiscalINP(lastOrder.items, paymentData);
             downloadINPFile(content, lastOrder.tableName);
             return;
         }
@@ -803,6 +839,81 @@ const AdminPOS = () => {
                                         CARD
                                     </button>
                                 </div>
+
+                                <button 
+                                    onClick={() => {
+                                        setIsMixedPayment(!isMixedPayment);
+                                        if (!isMixedPayment) {
+                                            setMixedPaymentAmounts({ cash: total, card: 0 });
+                                        }
+                                    }}
+                                    disabled={isSaving || cart.length === 0}
+                                    style={{ 
+                                        width: '100%', 
+                                        background: isMixedPayment ? '#f59e0b' : '#6366f1', 
+                                        color: 'white', 
+                                        border: 'none', 
+                                        borderRadius: '6px', 
+                                        padding: '12px', 
+                                        fontSize: '1rem', 
+                                        fontWeight: '700', 
+                                        cursor: isSaving || cart.length === 0 ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        marginTop: '0.5rem'
+                                    }}
+                                >
+                                    <Wallet size={20} />
+                                    {isMixedPayment ? 'ANULEAZĂ PLATĂ MIXTĂ' : 'PLATĂ MIXTĂ'}
+                                </button>
+
+                                {isMixedPayment && (
+                                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '1rem', marginTop: '0.5rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>CASH (LEI):</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={mixedPaymentAmounts.cash}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        setMixedPaymentAmounts({ cash: val, card: Math.max(0, total - val) });
+                                                    }}
+                                                    style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>CARD (LEI):</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={mixedPaymentAmounts.card}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        setMixedPaymentAmounts({ card: val, cash: Math.max(0, total - val) });
+                                                    }}
+                                                    style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                                                />
+                                            </div>
+                                            <div style={{ borderTop: '1px solid #fde68a', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: '700' }}>TOTAL: {total.toFixed(2)} Lei</span>
+                                                <button 
+                                                    onClick={() => handleCheckout('mixed')}
+                                                    style={{ 
+                                                        background: '#10b981', 
+                                                        color: 'white', 
+                                                        border: 'none', 
+                                                        borderRadius: '4px', 
+                                                        padding: '8px 16px', 
+                                                        fontSize: '0.9rem', 
+                                                        fontWeight: '700',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    CONFIRMĂ PLATA
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                                      <button 
@@ -829,7 +940,7 @@ const AdminPOS = () => {
                                          onClick={() => handleGenerateBon('card')}
                                          disabled={cart.length === 0 && !lastOrder}
                                          style={{ 
-                                             flex: 1,
+                                             flex: 1, 
                                              background: '#64748b', 
                                              color: 'white', 
                                              border: 'none', 
@@ -845,6 +956,25 @@ const AdminPOS = () => {
                                          <Printer size={16} />
                                          BON CARD
                                      </button>
+                                     {(isMixedPayment || (lastOrder && lastOrder.paymentMethod === 'mixed')) && (
+                                         <button 
+                                             onClick={() => handleGenerateBon('mixed')}
+                                             style={{ 
+                                                 flex: 1,
+                                                 background: '#f59e0b', 
+                                                 color: 'white', 
+                                                 border: 'none', 
+                                                 borderRadius: '6px', 
+                                                 padding: '8px', 
+                                                 fontSize: '0.85rem', 
+                                                 fontWeight: '600', 
+                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                             }}
+                                         >
+                                             <Printer size={16} />
+                                             BON MIXT
+                                         </button>
+                                     )}
                                  </div>
                             </div>
                         </div>

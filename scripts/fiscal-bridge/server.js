@@ -112,16 +112,30 @@ async function processOrder(orderFragment) {
 
         // Payment
         const method = (order.paymentMethod || order.payment_method || (order.customer_data && order.customer_data.paymentMethod) || '').toLowerCase();
-        let payType = '0'; // Default Numerar
         
-        if (method.includes('card')) {
-            payType = '1'; // ID for Card as requested
+        if (method === 'mixed') {
+            const mixed = order.customer_data?.mixed_amounts;
+            if (mixed) {
+                if (parseFloat(mixed.cash) > 0) {
+                    content += `T,1,______,_,__;0;${parseFloat(mixed.cash).toFixed(2)};;;;;\n`;
+                }
+                if (parseFloat(mixed.card) > 0) {
+                    content += `T,1,______,_,__;1;${parseFloat(mixed.card).toFixed(2)};;;;;\n`;
+                }
+            } else {
+                // Fallback if mixed amounts missing
+                const total = parseFloat(order.total || 0);
+                content += `T,1,______,_,__;0;${total.toFixed(2)};;;;;\n`;
+            }
+        } else {
+            let payType = '0'; // Default Numerar
+            if (method.includes('card')) {
+                payType = '1'; // ID for Card as requested
+            }
+            const total = parseFloat(order.total || 0);
+            // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
+            content += `T,1,______,_,__;${payType};${total.toFixed(2)};;;;;\n`;
         }
-
-        const total = parseFloat(order.total || 0);
-
-        // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
-        content += `T,1,______,_,__;${payType};${total.toFixed(2)};;;;;\n`;
 
         // Generate File
         const filename = `bon_${order.id}_${Date.now()}.inp`;
