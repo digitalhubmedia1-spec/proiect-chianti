@@ -112,10 +112,10 @@ async function processOrder(orderFragment) {
 
         // Payment
         const method = (order.paymentMethod || order.payment_method || (order.customer_data && order.customer_data.paymentMethod) || '').toLowerCase();
-        let payType = '1'; // Default Numerar
+        let payType = '0'; // Default Numerar
         
         if (method.includes('card')) {
-            payType = '2'; // ID for Card as requested
+            payType = '1'; // ID for Card as requested
         }
 
         const total = parseFloat(order.total || 0);

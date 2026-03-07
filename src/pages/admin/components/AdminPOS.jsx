@@ -400,7 +400,7 @@ const AdminPOS = () => {
             content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;\n`;
         });
 
-        const payCode = paymentMethod === 'cash' ? '1' : '2';
+        const payCode = paymentMethod === 'cash' ? '0' : '1';
         const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
         // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
