@@ -94,142 +94,124 @@ const DriverApplication = () => {
     return (
         <div className="container" style={{ marginTop: '120px', marginBottom: '100px' }}>
             <div className="row justify-content-center">
-                <div className="col-md-8 col-lg-6">
+                <div className="col-md-8 col-lg-7">
                     <div className="text-center mb-5">
-                        <h1 className="fw-bold">Devino Livrator Chianti</h1>
+                        <h1 className="fw-bold mb-3">Devino Livrator Chianti</h1>
                         <p className="text-muted lead">
                             Alătură-te echipei noastre și ajută-ne să livrăm bucurie (și mâncare bună) clienților noștri.
                         </p>
                     </div>
 
-                    <div 
-                        className="card border-0" 
-                        style={{ 
-                            borderRadius: '20px',
-                            background: 'white',
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
-                            transition: 'all 0.3s ease-in-out',
-                            padding: '20px'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-10px)';
-                            e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)';
-                        }}
-                    >
-                        <div className="card-body p-4 p-md-5">
-                            <h4 className="card-title fw-bold mb-4 text-center">Formular de Aplicare</h4>
+                    <div className="py-2">
+                        <h4 className="fw-bold mb-5">Formular de Aplicare</h4>
 
-                            {status === 'error' && (
-                                <div className="alert alert-danger d-flex align-items-center mb-4">
-                                    <AlertCircle size={20} className="me-2" />
-                                    <div>A apărut o eroare. Te rugăm să verifici datele și să încerci din nou.</div>
+                        {status === 'error' && (
+                            <div className="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm">
+                                <AlertCircle size={20} className="me-2" />
+                                <div>A apărut o eroare. Te rugăm să verifici datele și să încerci din nou.</div>
+                            </div>
+                        )}
+
+                        {status === 'captcha_error' && (
+                            <div className="alert alert-warning d-flex align-items-center mb-4 border-0 shadow-sm">
+                                <AlertCircle size={20} className="me-2" />
+                                <div>Verificarea Captcha a eșuat. Te rugăm să încerci din nou.</div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit}>
+                            <div className="row g-4">
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold text-muted small text-uppercase">Nume</label>
+                                    <input
+                                        type="text"
+                                        className="form-control py-3 px-4 shadow-sm"
+                                        name="nume"
+                                        value={formData.nume}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="Popescu"
+                                        style={{ borderRadius: '12px', border: '1px solid #f1f1f1', background: '#fff' }}
+                                    />
                                 </div>
-                            )}
-
-                            {status === 'captcha_error' && (
-                                <div className="alert alert-warning d-flex align-items-center mb-4">
-                                    <AlertCircle size={20} className="me-2" />
-                                    <div>Verificarea Captcha a eșuat. Te rugăm să încerci din nou.</div>
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSubmit}>
-                                <div className="row g-4">
-                                    <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Nume</label>
-                                        <input
-                                            type="text"
-                                            className="form-control py-2 px-3"
-                                            name="nume"
-                                            value={formData.nume}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="Popescu"
-                                            style={{ borderRadius: '10px', border: '1px solid #eee' }}
-                                        />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Prenume</label>
-                                        <input
-                                            type="text"
-                                            className="form-control py-2 px-3"
-                                            name="prenume"
-                                            value={formData.prenume}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="Ion"
-                                            style={{ borderRadius: '10px', border: '1px solid #eee' }}
-                                        />
-                                    </div>
-
-                                    <div className="col-12">
-                                        <label className="form-label fw-semibold">Email</label>
-                                        <input
-                                            type="email"
-                                            className="form-control py-2 px-3"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="ion.popescu@email.com"
-                                            style={{ borderRadius: '10px', border: '1px solid #eee' }}
-                                        />
-                                    </div>
-
-                                    <div className="col-md-7">
-                                        <label className="form-label fw-semibold">Telefon</label>
-                                        <input
-                                            type="tel"
-                                            className="form-control py-2 px-3"
-                                            name="telefon"
-                                            value={formData.telefon}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="07xx xxx xxx"
-                                            style={{ borderRadius: '10px', border: '1px solid #eee' }}
-                                        />
-                                    </div>
-                                    <div className="col-md-5">
-                                        <label className="form-label fw-semibold">Vârstă</label>
-                                        <input
-                                            type="number"
-                                            className="form-control py-2 px-3"
-                                            name="varsta"
-                                            value={formData.varsta}
-                                            onChange={handleChange}
-                                            required
-                                            min="18"
-                                            placeholder="Ex: 25"
-                                            style={{ borderRadius: '10px', border: '1px solid #eee' }}
-                                        />
-                                    </div>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold text-muted small text-uppercase">Prenume</label>
+                                    <input
+                                        type="text"
+                                        className="form-control py-3 px-4 shadow-sm"
+                                        name="prenume"
+                                        value={formData.prenume}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="Ion"
+                                        style={{ borderRadius: '12px', border: '1px solid #f1f1f1', background: '#fff' }}
+                                    />
                                 </div>
 
-                                <div className="my-5">
-                                    <div className="p-4 rounded-4" style={{ background: '#fcfcfc', border: '1px dashed #ddd' }}>
-                                        <Captcha onValidate={setIsCaptchaValid} />
-                                    </div>
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold text-muted small text-uppercase">Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-control py-3 px-4 shadow-sm"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="ion.popescu@email.com"
+                                        style={{ borderRadius: '12px', border: '1px solid #f1f1f1', background: '#fff' }}
+                                    />
                                 </div>
 
-                                <div className="d-grid">
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary py-3"
-                                        disabled={status === 'submitting'}
-                                        style={{ borderRadius: '12px', fontWeight: 'bold', letterSpacing: '0.5px' }}
-                                    >
-                                        {status === 'submitting' ? 'SE TRIMITE...' : 'TRIMITE APLICAȚIA'}
-                                    </button>
+                                <div className="col-md-8">
+                                    <label className="form-label fw-semibold text-muted small text-uppercase">Telefon</label>
+                                    <input
+                                        type="tel"
+                                        className="form-control py-3 px-4 shadow-sm"
+                                        name="telefon"
+                                        value={formData.telefon}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="07xx xxx xxx"
+                                        style={{ borderRadius: '12px', border: '1px solid #f1f1f1', background: '#fff' }}
+                                    />
                                 </div>
-                            </form>
-                        </div>
+                                <div className="col-md-4">
+                                    <label className="form-label fw-semibold text-muted small text-uppercase">Vârstă</label>
+                                    <input
+                                        type="number"
+                                        className="form-control py-3 px-4 shadow-sm"
+                                        name="varsta"
+                                        value={formData.varsta}
+                                        onChange={handleChange}
+                                        required
+                                        min="18"
+                                        placeholder="Ex: 25"
+                                        style={{ borderRadius: '12px', border: '1px solid #f1f1f1', background: '#fff' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="my-5 pt-2">
+                                <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Verificare Securitate</label>
+                                <div className="p-4 rounded-4 shadow-sm" style={{ background: '#fff', border: '1px solid #f1f1f1' }}>
+                                    <Captcha onValidate={setIsCaptchaValid} />
+                                </div>
+                            </div>
+
+                            <div className="mt-5">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary py-3 px-5 shadow-lg"
+                                    disabled={status === 'submitting'}
+                                    style={{ borderRadius: '12px', fontWeight: 'bold', letterSpacing: '0.5px', minWidth: '200px' }}
+                                >
+                                    {status === 'submitting' ? 'SE TRIMITE...' : 'TRIMITE APLICAȚIA'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <div className="text-center mt-5 text-muted small px-4">
+                    <div className="mt-5 pt-4 text-muted small border-top">
                         Prin trimiterea acestui formular, confirmi că ești de acord cu <a href="/confidentialitate" className="text-decoration-none text-danger fw-bold">Politica de Confidențialitate</a> referitoare la prelucrarea datelor cu caracter personal.
                     </div>
                 </div>
