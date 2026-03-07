@@ -253,23 +253,38 @@ export const AuthProvider = ({ children }) => {
     };
 
     const driverLogin = async (email, password) => {
-        if (!supabase) return null;
-        // Secure RPC Login to avoid public read access to 'drivers' table
-        const { data, error } = await supabase.rpc('login_driver', {
-            p_email: email,
-            p_password: password
-        });
+        if (!supabase) return { success: false, message: 'Conexiune la baza de date indisponibilă.' };
 
-        if (error) {
+        try {
+            // 1. Check if email exists
+            const { data: driver, error: fetchError } = await supabase
+                .from('drivers')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            if (fetchError || !driver) {
+                return { success: false, message: 'Nu există un cont cu acest email.' };
+            }
+
+            // 2. Check password
+            if (driver.password !== password) {
+                return { success: false, message: 'Parolă incorectă.' };
+            }
+
+            // 3. Check status
+            if (driver.status !== 'active') {
+                return { success: false, message: 'Contul tău este inactiv. Contactează administratorul.' };
+            }
+
+            // Success
+            localStorage.setItem('driver_token', JSON.stringify(driver));
+            return { success: true, data: driver };
+
+        } catch (error) {
             console.error("Driver login error:", error);
-            return null;
+            return { success: false, message: 'A apărut o eroare neașteptată la autentificare.' };
         }
-
-        if (data) {
-            localStorage.setItem('driver_token', JSON.stringify(data));
-            return data;
-        }
-        return null;
     };
 
     const getDriverProfile = () => {

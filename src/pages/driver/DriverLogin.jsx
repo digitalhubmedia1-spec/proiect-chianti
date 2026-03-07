@@ -12,19 +12,20 @@ const DriverLogin = () => {
     const { driverLogin } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
 
         if (!isCaptchaValid) {
-            setError('Te rugăm să verifici codul CAPTCHA.');
+            setError('Codul de securitate este incorect.');
             return;
         }
 
-        const driver = driverLogin(email, password);
-        if (driver) {
+        const result = await driverLogin(email, password);
+        if (result.success) {
             navigate('/driver/dashboard');
         } else {
-            setError('Email sau parolă incorectă.');
+            setError(result.message);
         }
     };
 
