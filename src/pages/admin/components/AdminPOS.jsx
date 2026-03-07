@@ -885,10 +885,13 @@ const AdminPOS = () => {
                                                     onChange={(e) => {
                                                         const valStr = e.target.value;
                                                         if (valStr === '') {
-                                                            setMixedPaymentAmounts({ cash: '', card: total });
+                                                            setMixedPaymentAmounts(prev => ({ ...prev, cash: '' }));
                                                         } else {
                                                             const val = parseFloat(valStr);
-                                                            setMixedPaymentAmounts({ cash: val, card: Math.max(0, total - val) });
+                                                            setMixedPaymentAmounts({ 
+                                                                cash: val, 
+                                                                card: Number((total - val).toFixed(2)) 
+                                                            });
                                                         }
                                                     }}
                                                     style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
@@ -903,10 +906,13 @@ const AdminPOS = () => {
                                                     onChange={(e) => {
                                                         const valStr = e.target.value;
                                                         if (valStr === '') {
-                                                            setMixedPaymentAmounts({ card: '', cash: total });
+                                                            setMixedPaymentAmounts(prev => ({ ...prev, card: '' }));
                                                         } else {
                                                             const val = parseFloat(valStr);
-                                                            setMixedPaymentAmounts({ card: val, cash: Math.max(0, total - val) });
+                                                            setMixedPaymentAmounts({ 
+                                                                card: val, 
+                                                                cash: Number((total - val).toFixed(2)) 
+                                                            });
                                                         }
                                                     }}
                                                     style={{ width: '100px', padding: '4px', borderRadius: '4px', border: '1px solid #d1d5db' }}
