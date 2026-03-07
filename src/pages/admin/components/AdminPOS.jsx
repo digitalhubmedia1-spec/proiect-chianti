@@ -262,12 +262,70 @@ const AdminPOS = () => {
 
         const item = table.items.find(i => i.id === id);
         if (item && (item.sent_qty || 0) > 0) {
-            alert("Nu poți șterge un produs care a fost deja trimis la bucătărie! Îl poți doar anula manual dacă e cazul.");
+            handleCancelSentItem(item);
             return;
         }
 
         const newItems = table.items.filter(item => item.id !== id);
         updateTableItems(selectedTableId, newItems);
+    };
+
+    const handleCancelSentItem = async (item) => {
+        const reason = window.prompt(`Anulezi "${item.name}"? Te rugăm să introduci motivul:`);
+        if (reason === null) return; // Cancelled prompt
+
+        if (!window.confirm("Ești sigur că vrei să anulezi acest produs deja trimis la bucătărie? Această acțiune va anula comanda aferentă în Kanban.")) return;
+
+        setIsSaving(true);
+        try {
+            // 1. Find the order(s) for this table that are 'preparing' and contain this item
+            const { data: orders, error: fetchError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('table_number', selectedTable.name)
+                .eq('status', 'preparing');
+
+            if (fetchError) throw fetchError;
+
+            // Find orders containing this item
+            const targetOrders = orders.filter(o => 
+                o.items && o.items.some(oi => oi.id === item.id)
+            );
+
+            if (targetOrders.length === 0) {
+                alert("Nu am găsit nicio comandă activă la bucătărie pentru acest produs.");
+            } else {
+                // 2. Cancel the orders
+                for (const order of targetOrders) {
+                    const updatedCustomerData = {
+                        ...(order.customer_data || {}),
+                        details: `ANULAT DIN POS. Motiv: ${reason || 'Nespecificat'}`
+                    };
+
+                    const { error: updateError } = await supabase
+                        .from('orders')
+                        .update({ 
+                            status: 'cancelled',
+                            customer_data: updatedCustomerData
+                        })
+                        .eq('id', order.id);
+                    
+                    if (updateError) throw updateError;
+                }
+                alert(`Produsul a fost anulat și mutat la "Anulate" în Kanban.`);
+            }
+
+            // 3. Update table state: remove the item completely (or reset sent_qty if you want to keep it in cart with qty 0)
+            const table = tables.find(t => t.id === selectedTableId);
+            const newItems = table.items.filter(i => i.id !== item.id);
+            updateTableItems(selectedTableId, newItems);
+
+        } catch (err) {
+            console.error(err);
+            alert("Eroare la anulare: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Send to Kitchen (Stock Deduction + Kanban)
@@ -842,15 +900,13 @@ const AdminPOS = () => {
                                                 </button>
                                                 <button 
                                                     onClick={() => removeFromCart(item.id)} 
-                                                    disabled={sentQty > 0}
                                                     style={{ 
                                                         marginLeft: '4px', 
                                                         color: '#ef4444', 
                                                         background: 'none', 
                                                         border: 'none', 
-                                                        cursor: sentQty > 0 ? 'not-allowed' : 'pointer', 
-                                                        padding: '2px',
-                                                        opacity: sentQty > 0 ? 0.3 : 1
+                                                        cursor: 'pointer', 
+                                                        padding: '2px'
                                                     }}
                                                 >
                                                     <Trash2 size={14} />
