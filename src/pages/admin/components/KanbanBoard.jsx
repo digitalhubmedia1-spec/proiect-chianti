@@ -84,31 +84,28 @@ const KanbanColumn = ({ title, status, orders, onMove, onDelete, drivers, onAssi
                             border: '1px solid #f0f0f0',
                             borderTop: 'none'
                         }}>
-                            {/* Driver Assignment for Delivering Orders - ONLY for Delivery Methods */}
+                            {/* Driver Assignment Display for Delivering Orders - Automatic Now */}
                             {status === 'delivering' && (order.customer?.deliveryMethod === 'delivery' || order.customer?.deliveryMethod === 'event-location') && (
                                 <div className="mb-3">
                                     <label style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '4px', display: 'block' }}>
-                                        ASIGNEAZĂ LIVRATOR
+                                        LIVRATOR ASIGNAT
                                     </label>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            value={order.assignedDriverId || ""}
-                                            onChange={(e) => onAssignDriver(order.id, e.target.value)}
-                                            style={{
-                                                borderRadius: '8px',
-                                                border: '1px solid #cbd5e1',
-                                                fontSize: '0.9rem',
-                                                padding: '6px'
-                                            }}
-                                        >
-                                            <option value="">-- Alege Livrator --</option>
-                                            {(drivers || []).map(driver => (
-                                                <option key={driver.id} value={driver.id}>
-                                                    {driver.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <div style={{ 
+                                            flex: 1,
+                                            padding: '8px 12px',
+                                            background: order.assignedDriverId ? '#f0f9ff' : '#fff1f2',
+                                            border: '1px solid',
+                                            borderColor: order.assignedDriverId ? '#bae6fd' : '#fecaca',
+                                            borderRadius: '8px',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '600',
+                                            color: order.assignedDriverId ? '#0369a1' : '#991b1b'
+                                        }}>
+                                            {order.assignedDriverId 
+                                                ? (drivers.find(d => d.id == order.assignedDriverId)?.name || 'Încărcare...') 
+                                                : 'Neasignat (Se caută...)'}
+                                        </div>
                                     </div>
                                     {order.driverStatus && (
                                         <div style={{ marginTop: '6px' }}>

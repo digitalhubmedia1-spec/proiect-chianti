@@ -250,6 +250,17 @@ export const OrderProvider = ({ children }) => {
                 console.error("Error updating order status:", error);
             } else {
                 logAction('STATUS COMANDĂ', `Comanda #${orderId} -> ${newStatus}`);
+                
+                // AUTO-ASSIGN LOGIC: If moving to 'delivering' and it's a delivery order
+                if (newStatus === 'delivering') {
+                    const currentOrder = ordersRef.current.find(o => o.id === orderId);
+                    const isDelivery = currentOrder?.customer?.deliveryMethod === 'delivery' || 
+                                     currentOrder?.customer?.deliveryMethod === 'event-location';
+                    
+                    if (isDelivery && !currentOrder.assignedDriverId) {
+                        await autoAssignDriver(orderId);
+                    }
+                }
             }
         } catch (err) {
             console.error("Update failed:", err);
@@ -259,6 +270,55 @@ export const OrderProvider = ({ children }) => {
                 next.delete(orderId);
                 return next;
             });
+        }
+    };
+
+    const autoAssignDriver = async (orderId) => {
+        if (!supabase) return;
+
+        console.log(`[AutoAssign] Starting auto-assignment for order #${orderId}`);
+
+        try {
+            // 1. Fetch all active drivers
+            const { data: drivers, error: driverError } = await supabase
+                .from('drivers')
+                .select('id, name')
+                .eq('status', 'active');
+
+            if (driverError || !drivers || drivers.length === 0) {
+                console.warn("[AutoAssign] No active drivers found or error:", driverError);
+                return;
+            }
+
+            // 2. Calculate current load for each driver from orders in state
+            // "Busy" means they have an order that is 'delivering' and not yet 'delivered' status in driver_status
+            const driverLoads = drivers.map(driver => {
+                const load = ordersRef.current.filter(o => 
+                    o.assignedDriverId == driver.id && 
+                    o.status === 'delivering' && 
+                    o.driverStatus !== 'delivered'
+                ).length;
+                return { ...driver, load };
+            });
+
+            console.log("[AutoAssign] Current driver loads:", driverLoads);
+
+            // 3. Find the minimum load
+            const minLoad = Math.min(...driverLoads.map(d => d.load));
+
+            // 4. Find all drivers with that minimum load
+            const candidates = driverLoads.filter(d => d.load === minLoad);
+
+            // 5. Pick one randomly among candidates
+            const selectedDriver = candidates[Math.floor(Math.random() * candidates.length)];
+
+            console.log(`[AutoAssign] Selected driver: ${selectedDriver.name} (Load: ${selectedDriver.load})`);
+
+            // 6. Assign the driver
+            await assignDriverToOrder(orderId, selectedDriver.id);
+            
+        } catch (err) {
+            console.error("[AutoAssign] Unexpected error:", err);
         }
     };
 
