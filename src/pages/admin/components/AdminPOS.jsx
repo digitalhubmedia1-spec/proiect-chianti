@@ -108,6 +108,8 @@ const AdminPOS = () => {
     const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
     const [mixedPaymentAmounts, setMixedPaymentAmounts] = useState({ cash: 0, card: '' });
     const [isMixedPayment, setIsMixedPayment] = useState(false);
+    const [isPaymentConfirmationPending, setIsPaymentConfirmationPending] = useState(false);
+    const [pendingPaymentMethod, setPendingPaymentMethod] = useState(null);
 
     // Date State for POS
     const [posDate, setPosDate] = useState(new Date());
@@ -440,81 +442,40 @@ const AdminPOS = () => {
     // Helper: Trigger SoftPos Payment (Android Intent)
     const triggerSoftPosPayment = (amount) => {
         // SoftPos UniCredit Intent structure
-        // This usually triggers a custom scheme that the UniCredit SoftPos app listens for.
-        // We will construct an intent URI.
-        const intentUri = `intent:#Intent;action=com.unicredit.softpos.PAY;S.amount=${amount.toFixed(2)};S.currency=RON;S.transaction_type=SALE;end`;
+        // We use a simpler intent to just open the app if possible
+        // The previous one was: intent:#Intent;action=com.unicredit.softpos.PAY;S.amount=${amount.toFixed(2)};S.currency=RON;S.transaction_type=SALE;end
         
-        console.log("Triggering SoftPos Payment:", intentUri);
+        // Let's try to target the package directly to ensure it opens
+        const intentUri = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=eu.unicredit.getandpay.ro;end`;
         
-        // In a web app running in a WebView or browser on Android, 
-        // assigning window.location.href to an 'intent:' URI will trigger the OS to open the app.
+        console.log("Opening SoftPos App:", intentUri);
+        
         try {
             window.location.href = intentUri;
             return true;
         } catch (err) {
-            console.error("SoftPos Intent failed:", err);
+            console.error("SoftPos App open failed:", err);
+            // Fallback for older browsers or specific environments
+            alert("Nu s-a putut deschide aplicația SoftPos. Asigurați-vă că este instalată pe tabletă.");
             return false;
         }
     };
 
-    // Checkout (Save Only)
-    const handleCheckout = async (paymentMethod) => {
-        if (!selectedTable) return;
-        if (cart.length === 0) return alert("Coșul este gol!");
-
-        // 1. If Card, trigger SoftPos first
-        if (paymentMethod === 'card') {
-            if (window.confirm(`Plată CARD: ${total.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
-                triggerSoftPosPayment(total);
-                
-                // Since this is a web app, we don't get an immediate response.
-                // We'll ask the user to confirm if the payment was successful on the terminal.
-                if (!window.confirm("Plata a fost efectuată cu succes pe terminal? Dacă da, apăsați OK pentru a genera bonul fiscal.")) {
-                    return; // Abort if user says payment failed
-                }
-            } else {
-                return; // User canceled payment trigger
-            }
-        }
-
-        // 2. If Mixed, trigger SoftPos for card portion
-        if (paymentMethod === 'mixed') {
-            const cardVal = parseFloat(mixedPaymentAmounts.card) || 0;
-            if (cardVal > 0) {
-                if (window.confirm(`Plată MIXTĂ: Card ${cardVal.toFixed(2)} Lei. Trimiteți suma către terminal?`)) {
-                    triggerSoftPosPayment(cardVal);
-                    
-                    if (!window.confirm("Plata cu cardul a fost efectuată cu succes pe terminal? Dacă da, apăsați OK pentru a continua.")) {
-                        return; // Abort if user says payment failed
-                    }
-                } else {
-                    return; // User canceled payment trigger
-                }
-            }
-        }
-
+    // Finalize Order (Actual DB Save)
+    const finalizeOrder = async (paymentMethod, tableId, tableCart, tableName, totalAmount, mixedAmounts) => {
         setIsSaving(true);
         try {
-            // Save local variables before clearing table
-            const finalCart = [...cart];
-            const finalTableName = selectedTable.name;
-            const finalTotal = total;
-            const finalMixedAmounts = paymentMethod === 'mixed' ? { 
-                cash: parseFloat(mixedPaymentAmounts.cash) || 0, 
-                card: parseFloat(mixedPaymentAmounts.card) || 0 
-            } : null;
-
             const orderPayload = {
                 id: Date.now(), 
                 user_id: user?.id,
                 status: 'delivered',
-                total: finalTotal,
-                final_total: finalTotal,
+                total: totalAmount,
+                final_total: totalAmount,
                 delivery_cost: 0,
                 is_pos_order: true,
-                table_number: finalTableName,
-                fiscal_print_status: 'none', // Changed from 'pending' to 'none' to avoid automatic printing
-                items: finalCart.map(item => {
+                table_number: tableName,
+                fiscal_print_status: 'none', 
+                items: tableCart.map(item => {
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
                     return {
@@ -527,7 +488,7 @@ const AdminPOS = () => {
                 }),
                 created_at: new Date().toISOString(),
                 customer_data: {
-                    firstName: `Masa ${finalTableName}`,
+                    firstName: `Masa ${tableName}`,
                     lastName: '',
                     phone: '',
                     address: 'Restaurant',
@@ -535,7 +496,7 @@ const AdminPOS = () => {
                     email: '',
                     deliveryMethod: 'dinein',
                     paymentMethod: paymentMethod,
-                    mixed_amounts: finalMixedAmounts
+                    mixed_amounts: mixedAmounts
                 }
             };
 
@@ -546,18 +507,20 @@ const AdminPOS = () => {
 
             // Save last order data for potential printing
             setLastOrder({
-                items: finalCart,
-                tableName: finalTableName,
+                items: tableCart,
+                tableName: tableName,
                 paymentMethod: paymentMethod,
-                mixedAmounts: finalMixedAmounts
+                mixedAmounts: mixedAmounts
             });
 
-            // Reset mixed payment state
+            // Reset states
             setIsMixedPayment(false);
             setMixedPaymentAmounts({ cash: 0, card: '' });
+            setIsPaymentConfirmationPending(false);
+            setPendingPaymentMethod(null);
 
             // Clear table items
-            updateTableItems(selectedTableId, []);
+            updateTableItems(tableId, []);
             
         } catch (err) {
             console.error(err);
@@ -565,6 +528,64 @@ const AdminPOS = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Checkout (Logic Split)
+    const handleCheckout = async (paymentMethod) => {
+        if (!selectedTable) return;
+        if (cart.length === 0) return alert("Coșul este gol!");
+
+        const finalCart = [...cart];
+        const finalTableName = selectedTable.name;
+        const finalTotal = total;
+        const finalTableId = selectedTableId;
+        const finalMixedAmounts = paymentMethod === 'mixed' ? { 
+            cash: parseFloat(mixedPaymentAmounts.cash) || 0, 
+            card: parseFloat(mixedPaymentAmounts.card) || 0 
+        } : null;
+
+        // 1. If Card, trigger SoftPos and wait for UI confirmation
+        if (paymentMethod === 'card') {
+            if (window.confirm(`Plată CARD: ${finalTotal.toFixed(2)} Lei. Deschideți aplicația SoftPos pe terminal?`)) {
+                triggerSoftPosPayment(finalTotal);
+                setPendingPaymentMethod({
+                    method: 'card',
+                    tableId: finalTableId,
+                    cart: finalCart,
+                    tableName: finalTableName,
+                    total: finalTotal,
+                    mixedAmounts: null
+                });
+                setIsPaymentConfirmationPending(true);
+            }
+            return;
+        }
+
+        // 2. If Mixed, trigger SoftPos for card portion and wait for UI confirmation
+        if (paymentMethod === 'mixed') {
+            const cardVal = finalMixedAmounts.card;
+            if (cardVal > 0) {
+                if (window.confirm(`Plată MIXTĂ: Card ${cardVal.toFixed(2)} Lei. Deschideți aplicația SoftPos pe terminal?`)) {
+                    triggerSoftPosPayment(cardVal);
+                    setPendingPaymentMethod({
+                        method: 'mixed',
+                        tableId: finalTableId,
+                        cart: finalCart,
+                        tableName: finalTableName,
+                        total: finalTotal,
+                        mixedAmounts: finalMixedAmounts
+                    });
+                    setIsPaymentConfirmationPending(true);
+                }
+            } else {
+                // Only cash in mixed
+                finalizeOrder('mixed', finalTableId, finalCart, finalTableName, finalTotal, finalMixedAmounts);
+            }
+            return;
+        }
+
+        // 3. Cash payment - direct save
+        finalizeOrder('cash', finalTableId, finalCart, finalTableName, finalTotal, null);
     };
 
     // Manual Bon Generation
@@ -1011,6 +1032,103 @@ const AdminPOS = () => {
                     </div>
                 )}
             </div>
+
+            {/* Payment Confirmation Overlay */}
+            {isPaymentConfirmationPending && pendingPaymentMethod && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: '1rem'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '12px',
+                        padding: '2rem',
+                        maxWidth: '400px',
+                        width: '100%',
+                        textAlign: 'center',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                    }}>
+                        <div style={{ 
+                            width: '64px', 
+                            height: '64px', 
+                            background: '#fef3c7', 
+                            borderRadius: '50%', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            margin: '0 auto 1.5rem'
+                        }}>
+                            <Wallet size={32} color="#f59e0b" />
+                        </div>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#1e293b' }}>
+                            Confirmare Plată
+                        </h2>
+                        <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '1.1rem' }}>
+                            A fost efectuată plata cu succes pe terminalul SoftPos pentru 
+                            <span style={{ fontWeight: '700', color: '#1e293b', display: 'block', marginTop: '0.5rem' }}>
+                                {pendingPaymentMethod.method === 'mixed' 
+                                    ? `Card: ${pendingPaymentMethod.mixedAmounts.card.toFixed(2)} Lei`
+                                    : `${pendingPaymentMethod.total.toFixed(2)} Lei`
+                                }
+                            </span>
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button 
+                                onClick={() => {
+                                    finalizeOrder(
+                                        pendingPaymentMethod.method,
+                                        pendingPaymentMethod.tableId,
+                                        pendingPaymentMethod.cart,
+                                        pendingPaymentMethod.tableName,
+                                        pendingPaymentMethod.total,
+                                        pendingPaymentMethod.mixedAmounts
+                                    );
+                                }}
+                                style={{ 
+                                    background: '#10b981', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    borderRadius: '8px', 
+                                    padding: '1rem', 
+                                    fontSize: '1.1rem', 
+                                    fontWeight: '700', 
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                DA, PLATA ESTE OK
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setIsPaymentConfirmationPending(false);
+                                    setPendingPaymentMethod(null);
+                                }}
+                                style={{ 
+                                    background: '#ef4444', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    borderRadius: '8px', 
+                                    padding: '1rem', 
+                                    fontSize: '1.1rem', 
+                                    fontWeight: '700', 
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                NU, ANULEAZĂ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
