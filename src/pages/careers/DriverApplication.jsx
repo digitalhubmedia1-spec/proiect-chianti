@@ -92,37 +92,39 @@ const DriverApplication = () => {
     }
 
     return (
-        <div className="container" style={{ marginTop: '120px', marginBottom: '100px' }}>
+        <div className="container" style={{ marginTop: '140px', marginBottom: '120px' }}>
             <div className="row justify-content-center">
                 <div className="col-md-8 col-lg-7">
-                    <div className="text-center mb-5">
-                        <h1 className="fw-bold mb-3">Devino Livrator Chianti</h1>
-                        <p className="text-muted lead">
+                    {/* Header Section */}
+                    <div className="text-center" style={{ marginBottom: '80px' }}>
+                        <h1 className="fw-bold mb-4" style={{ fontSize: '2.5rem' }}>Devino Livrator Chianti</h1>
+                        <p className="text-muted lead mx-auto" style={{ maxWidth: '600px' }}>
                             Alătură-te echipei noastre și ajută-ne să livrăm bucurie (și mâncare bună) clienților noștri.
                         </p>
                     </div>
 
                     <div className="py-2">
-                        <h4 className="fw-bold mb-5">Formular de Aplicare</h4>
+                        {/* Form Title */}
+                        <h4 className="fw-bold" style={{ marginBottom: '60px' }}>Formular de Aplicare</h4>
 
                         {status === 'error' && (
-                            <div className="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm">
+                            <div className="alert alert-danger d-flex align-items-center mb-5 border-0 shadow-sm">
                                 <AlertCircle size={20} className="me-2" />
                                 <div>A apărut o eroare. Te rugăm să verifici datele și să încerci din nou.</div>
                             </div>
                         )}
 
                         {status === 'captcha_error' && (
-                            <div className="alert alert-warning d-flex align-items-center mb-4 border-0 shadow-sm">
+                            <div className="alert alert-warning d-flex align-items-center mb-5 border-0 shadow-sm">
                                 <AlertCircle size={20} className="me-2" />
                                 <div>Verificarea Captcha a eșuat. Te rugăm să încerci din nou.</div>
                             </div>
                         )}
 
                         <form onSubmit={handleSubmit}>
-                            <div className="row g-4">
+                            <div className="row g-5"> {/* Increased gutter for more space between fields */}
                                 <div className="col-md-6">
-                                    <label className="form-label fw-semibold text-muted small text-uppercase">Nume</label>
+                                    <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Nume</label>
                                     <input
                                         type="text"
                                         className="form-control py-3 px-4 shadow-sm"
@@ -135,7 +137,7 @@ const DriverApplication = () => {
                                     />
                                 </div>
                                 <div className="col-md-6">
-                                    <label className="form-label fw-semibold text-muted small text-uppercase">Prenume</label>
+                                    <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Prenume</label>
                                     <input
                                         type="text"
                                         className="form-control py-3 px-4 shadow-sm"
@@ -149,7 +151,7 @@ const DriverApplication = () => {
                                 </div>
 
                                 <div className="col-12">
-                                    <label className="form-label fw-semibold text-muted small text-uppercase">Email</label>
+                                    <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Email</label>
                                     <input
                                         type="email"
                                         className="form-control py-3 px-4 shadow-sm"
@@ -163,7 +165,7 @@ const DriverApplication = () => {
                                 </div>
 
                                 <div className="col-md-8">
-                                    <label className="form-label fw-semibold text-muted small text-uppercase">Telefon</label>
+                                    <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Telefon</label>
                                     <input
                                         type="tel"
                                         className="form-control py-3 px-4 shadow-sm"
@@ -176,7 +178,7 @@ const DriverApplication = () => {
                                     />
                                 </div>
                                 <div className="col-md-4">
-                                    <label className="form-label fw-semibold text-muted small text-uppercase">Vârstă</label>
+                                    <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Vârstă</label>
                                     <input
                                         type="number"
                                         className="form-control py-3 px-4 shadow-sm"
@@ -191,19 +193,21 @@ const DriverApplication = () => {
                                 </div>
                             </div>
 
-                            <div className="my-5 pt-2">
-                                <label className="form-label fw-semibold text-muted small text-uppercase mb-3">Verificare Securitate</label>
+                            {/* Captcha Section with increased top margin */}
+                            <div style={{ marginTop: '80px', marginBottom: '80px' }}>
+                                <label className="form-label fw-semibold text-muted small text-uppercase mb-4">Verificare Securitate</label>
                                 <div className="p-4 rounded-4 shadow-sm" style={{ background: '#fff', border: '1px solid #f1f1f1' }}>
                                     <Captcha onValidate={setIsCaptchaValid} />
                                 </div>
                             </div>
 
-                            <div className="mt-5">
+                            {/* Submit Button Section with increased top margin */}
+                            <div style={{ marginTop: '60px' }}>
                                 <button
                                     type="submit"
                                     className="btn btn-primary py-3 px-5 shadow-lg"
                                     disabled={status === 'submitting'}
-                                    style={{ borderRadius: '12px', fontWeight: 'bold', letterSpacing: '0.5px', minWidth: '200px' }}
+                                    style={{ borderRadius: '12px', fontWeight: 'bold', letterSpacing: '0.5px', minWidth: '220px' }}
                                 >
                                     {status === 'submitting' ? 'SE TRIMITE...' : 'TRIMITE APLICAȚIA'}
                                 </button>
@@ -211,7 +215,8 @@ const DriverApplication = () => {
                         </form>
                     </div>
 
-                    <div className="mt-5 pt-4 text-muted small border-top">
+                    {/* Footer Section with increased top margin */}
+                    <div className="text-muted small border-top" style={{ marginTop: '100px', paddingTop: '40px' }}>
                         Prin trimiterea acestui formular, confirmi că ești de acord cu <a href="/confidentialitate" className="text-decoration-none text-danger fw-bold">Politica de Confidențialitate</a> referitoare la prelucrarea datelor cu caracter personal.
                     </div>
                 </div>
