@@ -240,7 +240,14 @@ const AdminPOS = () => {
 
         const newItems = table.items.map(item => {
             if (item.id === id) {
-                const newQty = Math.max(1, item.qty + delta);
+                const sentQty = item.sent_qty || 0;
+                const newQty = Math.max(sentQty, item.qty + delta);
+                
+                // Don't allow decreasing below sent quantity
+                if (delta < 0 && item.qty <= sentQty) {
+                    return item;
+                }
+                
                 return { ...item, qty: newQty };
             }
             return item;
@@ -252,6 +259,12 @@ const AdminPOS = () => {
     const removeFromCart = (id) => {
         const table = tables.find(t => t.id === selectedTableId);
         if (!table) return;
+
+        const item = table.items.find(i => i.id === id);
+        if (item && (item.sent_qty || 0) > 0) {
+            alert("Nu poți șterge un produs care a fost deja trimis la bucătărie! Îl poți doar anula manual dacă e cazul.");
+            return;
+        }
 
         const newItems = table.items.filter(item => item.id !== id);
         updateTableItems(selectedTableId, newItems);
@@ -772,26 +785,80 @@ const AdminPOS = () => {
                                     <p style={{ fontSize: '0.8rem' }}>Coș gol</p>
                                 </div>
                             ) : (
-                                cart.map((item, idx) => (
-                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px dashed #f1f5f9' }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: '600', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-                                            <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.price} Lei</div>
+                                cart.map((item, idx) => {
+                                    const sentQty = item.sent_qty || 0;
+                                    const isNew = item.qty > sentQty;
+                                    
+                                    return (
+                                        <div key={item.id} style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center', 
+                                            marginBottom: '0.5rem', 
+                                            paddingBottom: '0.5rem', 
+                                            borderBottom: '1px dashed #f1f5f9',
+                                            opacity: isNew ? 1 : 0.8 // Dim slightly if already sent
+                                        }}>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    {sentQty > 0 && <CheckCircle size={12} style={{ color: '#10b981' }} />}
+                                                    <div style={{ 
+                                                        fontWeight: '600', 
+                                                        fontSize: '0.85rem', 
+                                                        whiteSpace: 'nowrap', 
+                                                        overflow: 'hidden', 
+                                                        textOverflow: 'ellipsis',
+                                                        color: isNew ? '#0f172a' : '#64748b'
+                                                    }}>
+                                                        {item.name}
+                                                    </div>
+                                                </div>
+                                                <div style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                                                    {item.price} Lei {sentQty > 0 && `(Trimis: ${sentQty})`}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '8px' }}>
+                                                <button 
+                                                    onClick={() => updateQty(item.id, -1)} 
+                                                    disabled={item.qty <= sentQty}
+                                                    style={{ 
+                                                        width: '24px', height: '24px', borderRadius: '4px', 
+                                                        border: '1px solid #cbd5e1', background: 'white', 
+                                                        cursor: item.qty <= sentQty ? 'not-allowed' : 'pointer', 
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        opacity: item.qty <= sentQty ? 0.3 : 1
+                                                    }}
+                                                >
+                                                    <Minus size={12} />
+                                                </button>
+                                                <span style={{ 
+                                                    fontWeight: '700', minWidth: '16px', textAlign: 'center', fontSize: '0.85rem',
+                                                    color: isNew ? '#e11d48' : '#0f172a'
+                                                }}>
+                                                    {item.qty}
+                                                </span>
+                                                <button onClick={() => updateQty(item.id, 1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <Plus size={12} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => removeFromCart(item.id)} 
+                                                    disabled={sentQty > 0}
+                                                    style={{ 
+                                                        marginLeft: '4px', 
+                                                        color: '#ef4444', 
+                                                        background: 'none', 
+                                                        border: 'none', 
+                                                        cursor: sentQty > 0 ? 'not-allowed' : 'pointer', 
+                                                        padding: '2px',
+                                                        opacity: sentQty > 0 ? 0.3 : 1
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '8px' }}>
-                                            <button onClick={() => updateQty(item.id, -1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Minus size={12} />
-                                            </button>
-                                            <span style={{ fontWeight: '700', minWidth: '16px', textAlign: 'center', fontSize: '0.85rem' }}>{item.qty}</span>
-                                            <button onClick={() => updateQty(item.id, 1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Plus size={12} />
-                                            </button>
-                                            <button onClick={() => removeFromCart(item.id)} style={{ marginLeft: '4px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}>
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 
