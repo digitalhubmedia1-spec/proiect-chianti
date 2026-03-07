@@ -397,7 +397,7 @@ const AdminPOS = () => {
             name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             name = name.replace(/[<>&"']/g, ' ').replace(/\s+/g, ' ').trim();
             
-            if (name.length > 30) name = name.substring(0, 30);
+            if (name.length > 150) name = name.substring(0, 150);
 
             content += '    <Articol>\n';
             content += `      <Nume>${name}</Nume>\n`;

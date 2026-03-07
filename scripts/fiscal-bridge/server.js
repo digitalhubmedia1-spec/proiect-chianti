@@ -98,7 +98,7 @@ async function processOrder(orderFragment) {
 
         if (order.items && Array.isArray(order.items)) {
             order.items.forEach(item => {
-                const name = (item.name || 'Produs').replace(/[<>&"']/g, ' ').substring(0, 30); // Sanitize for XML
+                const name = (item.name || 'Produs').replace(/[<>&"']/g, ' ').substring(0, 150); // Increased from 30 to 150
                 const price = parseFloat(item.price).toFixed(2);
                 const qty = parseFloat(item.quantity).toFixed(3);
                 const vat = item.vat_code || '1'; // Mapping: 1=9%, etc. (Verify with technician)
