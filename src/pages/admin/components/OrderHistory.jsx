@@ -121,7 +121,7 @@ const OrderHistory = () => {
             <div className="actions-bar">
                 <h3>Istoric Comenzi</h3>
                 <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                    Aici apar comenzile din zilele anterioare sau cele arhivate.
+                    Aici apar comenzile finalizate, arhivate sau din zilele anterioare.
                 </div>
             </div>
 

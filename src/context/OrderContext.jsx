@@ -387,12 +387,13 @@ export const OrderProvider = ({ children }) => {
         today.setHours(0, 0, 0, 0);
 
         return orders.filter(order => {
-            if (order.archived) return true; // Archived always history? Or just separate tab? User said "Historic Orders".
+            if (order.archived) return true;
 
-            // If it's pending, it's ACTIVE, not history (unless archived)
-            if (order.status === 'pending') return false;
+            // Include all completed or cancelled orders in history, including today's
+            if (order.status === 'completed' || order.status === 'cancelled') return true;
 
-            // If created before today, it's history
+            // If it's pending, preparing, or delivering, it's ACTIVE, not history
+            // unless it's from a previous day
             const orderDate = new Date(order.created_at);
             return orderDate < today;
         });
