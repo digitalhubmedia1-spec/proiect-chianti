@@ -476,7 +476,6 @@ const AdminPOS = () => {
                 status: 'delivered',
                 total: finalTotal,
                 final_total: finalTotal,
-                tip_amount: 0,
                 delivery_cost: 0,
                 is_pos_order: true,
                 table_number: finalTableName,
@@ -501,8 +500,7 @@ const AdminPOS = () => {
                     city: 'Local',
                     email: '',
                     deliveryMethod: 'dinein',
-                    paymentMethod: paymentMethod,
-                    tip_amount: 0
+                    paymentMethod: paymentMethod
                 }
             };
 
