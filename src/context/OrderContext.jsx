@@ -35,13 +35,25 @@ export const OrderProvider = ({ children }) => {
     });
 
     const playNotificationSound = () => {
-        try {
-            const audio = new Audio('/ding-bell-right-answer.mp3');
-            audio.volume = 1.0;
-            audio.play().catch(err => console.error("Audio play failed:", err));
-        } catch (err) {
-            console.error("Audio creation failed:", err);
-        }
+        const playNTimes = (n) => {
+            if (n <= 0) return;
+            try {
+                const audio = new Audio('/ding-bell-right-answer.mp3');
+                audio.volume = 1.0;
+                audio.onended = () => {
+                    // Small delay between sounds for clarity
+                    setTimeout(() => playNTimes(n - 1), 500);
+                };
+                audio.play().catch(err => {
+                    console.error("Audio play failed:", err);
+                    // If blocked by browser (no interaction), don't keep trying for all 3
+                });
+            } catch (err) {
+                console.error("Audio creation failed:", err);
+            }
+        };
+
+        playNTimes(3);
     };
 
     useEffect(() => {
