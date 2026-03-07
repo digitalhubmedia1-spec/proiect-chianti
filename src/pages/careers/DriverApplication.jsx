@@ -104,9 +104,6 @@ const DriverApplication = () => {
                     </div>
 
                     <div className="py-2">
-                        {/* Form Title */}
-                        <h5 className="fw-bold mb-4 text-dark opacity-75">Formular de Aplicare</h5>
-
                         {status === 'error' && (
                             <div className="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm small">
                                 <AlertCircle size={18} className="me-2" />
@@ -213,7 +210,7 @@ const DriverApplication = () => {
                         </form>
                     </div>
 
-                    <div className="text-muted small border-top mt-5 pt-3">
+                    <div className="text-muted small border-top mt-5 pt-4" style={{ marginTop: '80px !important' }}>
                         Prin trimiterea acestui formular, confirmi că ești de acord cu <a href="/confidentialitate" className="text-decoration-none text-danger fw-bold">Politica de Confidențialitate</a>.
                     </div>
                 </div>
