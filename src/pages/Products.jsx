@@ -83,18 +83,19 @@ const Products = () => {
         }
     }, [selectedDate, setSearchParams]);
     const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
+    const [activeMode, setActiveMode] = useState('food'); // 'food' or 'bar'
 
     // --- PAGINATION HOOKS HOISTED ---
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 9;
 
-    // Reset page when filters change (category, search, date)
+    // Reset page when filters change (category, search, date, mode)
     // Note: This effect must exist even if we return early, though it might run needlessly. 
     // Ideally, we move the conditional return logic to the END or use a sub-component.
     // But hoisting hooks is the quick fix for Error #310.
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeCategory, searchQuery, sortOrder, selectedDate]);
+    }, [activeCategory, searchQuery, sortOrder, selectedDate, activeMode]);
 
     // Helper to get YYYY-MM-DD in LOCAL time
     const formatDate = (date) => {
@@ -297,6 +298,14 @@ const Products = () => {
         // 0. Active Check (Do not show inactive products)
         if (product.is_active === false) return false;
 
+        // 0.1 Mode Filter (Food vs Bar)
+        // Find the category object for this product
+        const productCategory = categories.find(c => c.name === product.category);
+        const isBarCategory = productCategory?.type === 'bar';
+        
+        if (activeMode === 'food' && isBarCategory) return false;
+        if (activeMode === 'bar' && !isBarCategory) return false;
+
         // 1. Search Filter (Highest Priority)
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
@@ -429,6 +438,63 @@ const Products = () => {
                     </div>
 
                 </div>
+            </div>
+
+            <div className="mode-toggle-container" style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '1rem',
+                marginBottom: '2rem',
+                marginTop: '-1rem'
+            }}>
+                <button
+                    onClick={() => {
+                        setActiveMode('food');
+                        setActiveCategory('Toate');
+                    }}
+                    style={{
+                        padding: '12px 24px',
+                        borderRadius: '30px',
+                        border: 'none',
+                        background: activeMode === 'food' ? '#990000' : '#f1f5f9',
+                        color: activeMode === 'food' ? 'white' : '#64748b',
+                        fontWeight: '700',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: activeMode === 'food' ? '0 4px 12px rgba(153,0,0,0.3)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    <UtensilsCrossed size={18} />
+                    MÂNCARE
+                </button>
+                <button
+                    onClick={() => {
+                        setActiveMode('bar');
+                        setActiveCategory('Toate');
+                    }}
+                    style={{
+                        padding: '12px 24px',
+                        borderRadius: '30px',
+                        border: 'none',
+                        background: activeMode === 'bar' ? '#990000' : '#f1f5f9',
+                        color: activeMode === 'bar' ? 'white' : '#64748b',
+                        fontWeight: '700',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: activeMode === 'bar' ? '0 4px 12px rgba(153,0,0,0.3)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    <Zap size={18} />
+                    BAR
+                </button>
             </div>
 
             <div className="container content-wrapper" style={{ display: 'block', gridTemplateColumns: 'none' }}>
