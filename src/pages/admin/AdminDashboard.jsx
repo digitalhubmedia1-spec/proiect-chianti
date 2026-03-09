@@ -27,7 +27,7 @@ import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
-import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat, Zap } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import './Admin.css';
 import Calendar from 'react-calendar';
@@ -780,11 +780,18 @@ const AdminDashboard = () => {
                                 >
                                     <Users size={16} style={{ marginRight: '8px' }} /> Catering
                                 </button>
+                                <button
+                                    className={`btn ${activeProductTabType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                    onClick={() => setActiveProductTabType('bar')}
+                                    style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                                >
+                                    <Zap size={16} style={{ marginRight: '8px' }} /> Bar
+                                </button>
                             </div>
 
                             <div className="actions-bar">
                                 <button className="btn btn-primary" onClick={() => openProductModal()}>
-                                    <Plus size={18} /> Adaugă Produs ({activeProductTabType === 'delivery' ? 'Livrări' : 'Catering'})
+                                    <Plus size={18} /> Adaugă Produs ({activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering'})
                                 </button>
                             </div>
 
@@ -809,7 +816,7 @@ const AdminDashboard = () => {
                                     >
                                         <option value="">Toate Categoriile</option>
                                         {categories
-                                            .filter(c => (!c.type || c.type === 'delivery') === (activeProductTabType === 'delivery'))
+                                            .filter(c => (c.type || 'delivery') === activeProductTabType)
                                             .map(cat => (
                                                 <option key={cat.id} value={cat.name}>{cat.name}</option>
                                             ))}
@@ -918,11 +925,18 @@ const AdminDashboard = () => {
                                 >
                                     <Users size={16} style={{ marginRight: '8px' }} /> Precomenzi
                                 </button>
+                                <button
+                                    className={`btn ${activeTabType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                    onClick={() => setActiveTabType('bar')}
+                                    style={{ flex: 1, textTransform: 'uppercase', fontWeight: 'bold' }}
+                                >
+                                    <Zap size={16} style={{ marginRight: '8px' }} /> Bar
+                                </button>
                             </div>
 
                             <div className="actions-bar">
                                 <button className="btn btn-primary" onClick={() => openAddCategoryModal(null)}>
-                                    <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Comenzi Rapide' : 'Precomenzi'})
+                                    <Plus size={18} /> Adaugă Categorie ({activeTabType === 'delivery' ? 'Comenzi Rapide' : activeTabType === 'bar' ? 'Bar' : 'Precomenzi'})
                                 </button>
                             </div>
                             <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e2e8f0', borderRadius: '4px', fontWeight: 'bold' }}>
@@ -1300,7 +1314,7 @@ const AdminDashboard = () => {
                                         <select className="form-control" value={prodForm.category} onChange={e => setProdForm({ ...prodForm, category: e.target.value })} required>
                                             <option value="">Alege Categorie</option>
                                             {categories
-                                                .filter(c => (!c.type || c.type === 'delivery') === (activeProductTabType === 'delivery'))
+                                                .filter(c => (c.type || 'delivery') === activeProductTabType)
                                                 .map(c => (
                                                     <option key={c.id} value={c.name}>{c.name}</option>
                                                 ))}
@@ -1702,7 +1716,7 @@ const AdminDashboard = () => {
                     <div className="modal-overlay">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h3>{parentIdForAdd ? 'Adaugă Subcategorie' : `Adaugă Categorie (${activeTabType === 'delivery' ? 'Livrări' : 'Catering'})`}</h3>
+                                <h3>{parentIdForAdd ? 'Adaugă Subcategorie' : `Adaugă Categorie (${activeTabType === 'delivery' ? 'Livrări' : activeTabType === 'bar' ? 'Bar' : 'Catering'})`}</h3>
                                 <button className="close-btn" onClick={() => setIsCategoryModalOpen(false)}><X size={24} /></button>
                             </div>
                             <form onSubmit={handleCategorySubmit}>
