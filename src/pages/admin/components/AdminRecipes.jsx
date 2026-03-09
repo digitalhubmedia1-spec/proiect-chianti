@@ -5,6 +5,7 @@ import { useInventory } from '../../../context/InventoryContext';
 import { useMenu } from '../../../context/MenuContext';
 import { Plus, Trash2, Edit2, Copy, Calculator, Save, CheckCircle, AlertTriangle, BookOpen, X, Settings, Check, FileDown } from 'lucide-react';
 import InventorySearch from '../../../components/common/InventorySearch';
+import RecipeSearch from '../../../components/common/RecipeSearch';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -1140,15 +1141,14 @@ const AdminRecipes = () => {
                                         <div key={index} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                             <div style={{ flex: 1 }}>
                                                 <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Alege Rețeta</label>
-                                                <select
-                                                    className="form-control"
-                                                    value={row.recipeId}
-                                                    onChange={(e) => handleCostRowChange(index, 'recipeId', e.target.value)}
-                                                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                                >
-                                                    <option value="">-- Selectează --</option>
-                                                    {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                                </select>
+                                                <RecipeSearch
+                                                    items={recipes}
+                                                    placeholder="Caută rețetă..."
+                                                    defaultQuery={recipes.find(r => r.id == row.recipeId)?.name || ''}
+                                                    onSelect={(recipe) => {
+                                                        handleCostRowChange(index, 'recipeId', recipe ? recipe.id : '');
+                                                    }}
+                                                />
                                             </div>
                                             <div style={{ width: '120px' }}>
                                                 <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Nr. Porții</label>
@@ -1304,20 +1304,17 @@ const AdminRecipes = () => {
                                 <div key={index} style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', borderBottom: index < productionRows.length - 1 ? '1px solid #f1f5f9' : 'none', paddingBottom: '1rem' }}>
                                     <div style={{ flex: 1, minWidth: '200px' }}>
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Alege Produsul / Rețeta</label>
-                                        <select
-                                            className="form-control"
-                                            value={row.recipeId}
-                                            onChange={(e) => {
+                                        <RecipeSearch
+                                            items={recipes}
+                                            placeholder="Caută produs/rețetă..."
+                                            defaultQuery={recipes.find(r => r.id == row.recipeId)?.name || ''}
+                                            onSelect={(recipe) => {
                                                 const newRows = [...productionRows];
-                                                newRows[index].recipeId = e.target.value;
+                                                newRows[index].recipeId = recipe ? recipe.id : '';
                                                 setProductionRows(newRows);
                                                 setCalculationResult(null);
                                             }}
-                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                        >
-                                            <option value="">-- Selectează --</option>
-                                            {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                        </select>
+                                        />
                                     </div>
                                     <div style={{ width: '150px' }}>
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Nr. Porții</label>
