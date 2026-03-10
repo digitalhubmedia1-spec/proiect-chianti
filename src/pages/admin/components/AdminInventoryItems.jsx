@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Trash2, Edit, Plus, X, Package, Search, Settings, Save } from 'lucide-react';
+import { logAction } from '../../../utils/adminLogger';
 
 const DEFAULT_CATEGORIES = [
     { name: 'Materii Prime', label: 'Materii Prime (Ingrediente)' },
@@ -108,11 +109,15 @@ const AdminInventoryItems = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Ești sigur? Vor fi șterse și stocurile/tranzacțiile asociate!')) return;
+        const itemToDelete = items.find(i => i.id === id);
+        if (!window.confirm(`Ești sigur că vrei să ștergi "${itemToDelete?.name || 'acest articol'}"? Vor fi șterse și stocurile/tranzacțiile asociate!`)) return;
 
         const { error } = await supabase.from('inventory_items').delete().eq('id', id);
         if (error) alert('Eroare: ' + error.message);
-        else fetchItems();
+        else {
+            logAction('ȘTERGERE PRODUS NOMENCLATOR', `Șters: ${itemToDelete?.name || id}`);
+            fetchItems();
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -121,7 +126,7 @@ const AdminInventoryItems = () => {
         // Check for duplicates
         const { data: existing } = await supabase
             .from('inventory_items')
-            .select('id')
+            .select('id, name')
             .ilike('name', formData.name) // Case insensitive check
             .maybeSingle();
 
@@ -142,11 +147,19 @@ const AdminInventoryItems = () => {
         if (currentItem) {
             const { error } = await supabase.from('inventory_items').update(payload).eq('id', currentItem.id);
             if (error) alert('Eroare: ' + error.message);
-            else { setIsEditing(false); fetchItems(); }
+            else {
+                logAction('EDITARE PRODUS NOMENCLATOR', `Modificat: ${formData.name}`);
+                setIsEditing(false);
+                fetchItems();
+            }
         } else {
             const { error } = await supabase.from('inventory_items').insert([payload]);
             if (error) alert('Eroare: ' + error.message);
-            else { setIsEditing(false); fetchItems(); }
+            else {
+                logAction('ADĂUGARE PRODUS NOMENCLATOR', `Adăugat: ${formData.name}`);
+                setIsEditing(false);
+                fetchItems();
+            }
         }
     };
 
@@ -162,11 +175,13 @@ const AdminInventoryItems = () => {
                     .update({ name: catForm.name, label: catForm.label })
                     .eq('id', editingCatId);
                 if (error) throw error;
+                logAction('EDITARE CATEGORIE NOMENCLATOR', `Modificat categoria: ${catForm.label || catForm.name}`);
             } else {
                 const { error } = await supabase
                     .from('inventory_categories')
                     .insert([{ name: catForm.name, label: catForm.label }]);
                 if (error) throw error;
+                logAction('ADĂUGARE CATEGORIE NOMENCLATOR', `Adăugat categoria: ${catForm.label || catForm.name}`);
             }
             fetchCategories();
             setCatForm({ name: '', label: '' });
@@ -177,10 +192,12 @@ const AdminInventoryItems = () => {
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!window.confirm('Sigur ștergi această categorie? Dacă există produse asociate, acestea ar putea deveni invizibile.')) return;
+        const catToDelete = categories.find(c => c.id === id);
+        if (!window.confirm(`Sigur ștergi categoria "${catToDelete?.label || catToDelete?.name}"? Dacă există produse asociate, acestea ar putea deveni invizibile.`)) return;
         try {
             const { error } = await supabase.from('inventory_categories').delete().eq('id', id);
             if (error) throw error;
+            logAction('ȘTERGERE CATEGORIE NOMENCLATOR', `Șters categoria: ${catToDelete?.label || catToDelete?.name}`);
             fetchCategories();
         } catch (err) {
             alert('Eroare la ștergere: ' + err.message);

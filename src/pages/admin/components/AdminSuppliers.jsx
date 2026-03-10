@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Trash2, Edit, Plus, Save, X, Phone, Mail, Building } from 'lucide-react';
+import { logAction } from '../../../utils/adminLogger';
 
 const AdminSuppliers = () => {
     const [suppliers, setSuppliers] = useState([]);
@@ -66,6 +67,8 @@ const AdminSuppliers = () => {
         if (error) {
             alert('Eroare la ștergere: ' + error.message);
         } else {
+            const supplierToDelete = suppliers.find(s => s.id === id);
+            logAction('FURNIZORI', `Șters furnizor: ${supplierToDelete?.name || id}`);
             fetchSuppliers();
         }
     };
@@ -89,6 +92,7 @@ const AdminSuppliers = () => {
 
             if (error) alert('Eroare la actualizare: ' + error.message);
             else {
+                logAction('FURNIZORI', `Actualizat furnizor: ${payload.name}`);
                 setIsEditing(false);
                 fetchSuppliers();
             }
@@ -100,6 +104,7 @@ const AdminSuppliers = () => {
 
             if (error) alert('Eroare la adăugare: ' + error.message);
             else {
+                logAction('FURNIZORI', `Adăugat furnizor: ${payload.name}`);
                 setIsEditing(false);
                 fetchSuppliers();
             }

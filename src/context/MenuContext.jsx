@@ -333,6 +333,7 @@ export const MenuProvider = ({ children }) => {
         });
 
         setCategories(newCategories);
+        logAction('REORDONARE CATEGORII', `Categorie: ${item.name} (${direction})`);
 
         // 6. Persist to DB
         if (supabase) {
@@ -634,6 +635,7 @@ export const MenuProvider = ({ children }) => {
                 if (error.code === '23505') return;
                 throw error;
             }
+            logAction('RECOMANDĂRI', `Adăugare recomandare (Produs ID: ${productId} -> Rec ID: ${recommendedProductId})`);
         } catch (error) {
             console.error("Error adding recommendation:", error);
             alert("Eroare la adăugarea recomandării: " + error.message);
@@ -649,6 +651,7 @@ export const MenuProvider = ({ children }) => {
                 .match({ product_id: productId, recommended_product_id: recommendedProductId });
 
             if (error) throw error;
+            logAction('RECOMANDĂRI', `Eliminare recomandare (Produs ID: ${productId} -> Rec ID: ${recommendedProductId})`);
         } catch (error) {
             console.error("Error removing recommendation:", error);
             alert("Eroare la ștergerea recomandării: " + error.message);
@@ -731,6 +734,7 @@ export const MenuProvider = ({ children }) => {
                     .from('product_extras')
                     .insert([{ parent_product_id: productId, extra_product_id: extraProductId }]);
                 if (error && error.code !== '23505') throw error;
+                logAction('EXTRAS', `Adăugare extra (Produs ID: ${productId} -> Extra ID: ${extraProductId})`);
             } catch (error) {
                 console.error("Error adding extra:", error);
                 alert("Eroare la adăugarea extra: " + error.message);
@@ -744,6 +748,7 @@ export const MenuProvider = ({ children }) => {
                     .delete()
                     .match({ parent_product_id: productId, extra_product_id: extraProductId });
                 if (error) throw error;
+                logAction('EXTRAS', `Eliminare extra (Produs ID: ${productId} -> Extra ID: ${extraProductId})`);
             } catch (error) {
                 console.error("Error removing extra:", error);
                 alert("Eroare la ștergerea extra: " + error.message);

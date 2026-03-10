@@ -201,6 +201,10 @@ const AdminProcurement = () => {
     };
 
     const updateItem = async (itemId, field, value) => {
+        // Find the item name for logging
+        const item = selectedList.items.find(i => i.id === itemId);
+        const itemName = item?.item_name || 'produs';
+
         // Optimistic update
         const updatedItems = selectedList.items.map(i => i.id === itemId ? { ...i, [field]: value } : i);
         setSelectedList({ ...selectedList, items: updatedItems });
@@ -208,15 +212,21 @@ const AdminProcurement = () => {
         // Build update object
         const updateObj = { [field]: value };
 
-        // Auto-calc net price if gross changes (handled by DB generated column usually, but for UI feedback we wait for refresh or calc locally)
-        // Actually DB handles price_net via generated column, so we just send price_gross.
-
         const { error } = await supabase.from('procurement_items').update(updateObj).eq('id', itemId);
-        if (error) console.error("Error updating item:", error);
+        if (error) {
+            console.error("Error updating item:", error);
+        } else {
+            // Log only significant changes to avoid flooding
+            if (field === 'price_gross' || field === 'quantity_bought' || field === 'supplier_id') {
+                logAction('ACHIZIȚII', `Actualizat ${field} pentru ${itemName} în lista ${selectedList.name}: ${value}`);
+            }
+        }
     };
 
     const toggleBought = async (item) => {
-        await updateItem(item.id, 'is_bought', !item.is_bought);
+        const newStatus = !item.is_bought;
+        await updateItem(item.id, 'is_bought', newStatus);
+        logAction('ACHIZIȚII', `${newStatus ? 'Cumpărat' : 'Anulat cumpărare'} ${item.item_name} în lista ${selectedList.name}`);
     };
 
     const finalizeList = async () => {

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
+import { logAction } from '../../../utils/adminLogger';
 import { Save, Plus, RotateCw, ZoomIn, ZoomOut, Move, Trash2, DoorOpen, Download, Users } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -276,20 +277,33 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
         if (data) {
             setObjects(prev => prev.map(o => o.id === tempId ? data : o));
             setSelectedId(data.id);
+            logAction('LAYOUT_EVENIMENT', `Adăugat obiect: ${label} (${type}) în evenimentul #${eventId}`);
         }
     };
 
     const updateObject = async (id, changes) => {
         setObjects(prev => prev.map(o => o.id === id ? { ...o, ...changes } : o));
-        await supabase.from('event_layout_objects').update(changes).eq('id', id);
+        const { error } = await supabase.from('event_layout_objects').update(changes).eq('id', id);
+        if (!error) {
+            const keys = Object.keys(changes);
+            if (keys.includes('label') || keys.includes('capacity') || keys.includes('rotation')) {
+                const obj = objects.find(o => o.id === id);
+                logAction('LAYOUT_EVENIMENT', `Modificat ${obj?.label || 'Obiect'} (${keys.join(', ')}) în evenimentul #${eventId}`);
+            }
+        }
     };
 
     const deleteObject = async () => {
         if (!selectedId) return;
         if (!window.confirm("Ștergi acest element?")) return;
+        const obj = objects.find(o => o.id === selectedId);
+        const label = obj?.label || 'Obiect';
         setObjects(prev => prev.filter(o => o.id !== selectedId));
-        await supabase.from('event_layout_objects').delete().eq('id', selectedId);
-        setSelectedId(null);
+        const { error } = await supabase.from('event_layout_objects').delete().eq('id', selectedId);
+        if (!error) {
+            logAction('LAYOUT_EVENIMENT', `Șters obiect: ${label} din evenimentul #${eventId}`);
+            setSelectedId(null);
+        }
     };
 
     const saveLayout = async () => {
@@ -305,7 +319,10 @@ const VisualHallEditor = ({ eventId, hallId, readOnly = false }) => {
             zone: o.zone || 'center'
         }));
         const { error } = await supabase.from('event_layout_objects').upsert(updates, { onConflict: 'id' });
-        if (!error) alert("Layout salvat!");
+        if (!error) {
+            logAction('LAYOUT_EVENIMENT', `Salvat layout total (${objects.length} obiecte) pentru evenimentul #${eventId}`);
+            alert("Layout salvat!");
+        }
     };
 
     const exportFloorPlanPDF = async () => {

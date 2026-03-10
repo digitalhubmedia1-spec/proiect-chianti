@@ -162,6 +162,7 @@ export const InventoryProvider = ({ children }) => {
             if (data) {
                 const updatedItem = { ...data[0], entryDate: data[0].entry_date };
                 setItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+                logAction('INVENTAR', `Actualizare produs: ${updatedItem.name} (Stoc: ${updatedItem.stock} ${updatedItem.unit})`);
             }
         } catch (error) {
             console.error("Error updating item:", error);
@@ -194,6 +195,7 @@ export const InventoryProvider = ({ children }) => {
             if (data) {
                 const updatedItem = { ...data[0], entryDate: data[0].entry_date };
                 setItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+                logAction('INVENTAR', `Actualizare stoc: ${updatedItem.name} -> ${updatedItem.stock} ${updatedItem.unit}`);
             }
         } catch (error) {
             console.error("Error updating stock:", error);

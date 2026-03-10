@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { Plus, Edit2, Trash2, MapPin, Save, X } from 'lucide-react';
+import { logAction } from '../../../utils/adminLogger';
 import './AdminReception.css'; // Reusing generic admin styles
 
 const AdminLocations = () => {
@@ -72,12 +73,14 @@ const AdminLocations = () => {
                     .update({ name: formData.name, type: formData.type })
                     .eq('id', editingLocation.id);
                 if (error) throw error;
+                logAction('LOCAȚII', `Actualizat locație: ${formData.name}`);
             } else {
                 // Insert
                 const { error } = await supabase
                     .from('locations')
                     .insert([{ name: formData.name, type: formData.type }]);
                 if (error) throw error;
+                logAction('LOCAȚII', `Adăugat locație nouă: ${formData.name}`);
             }
 
             fetchLocations();
@@ -92,12 +95,14 @@ const AdminLocations = () => {
         if (!window.confirm("Sigur dorești să ștergi această gestiune? Atenție: Dacă există stocuri asociate, ștergerea poate eșua sau cauza inconsistențe.")) return;
 
         try {
+            const locToDelete = locations.find(l => l.id === id);
             const { error } = await supabase
                 .from('locations')
                 .delete()
                 .eq('id', id);
 
             if (error) throw error;
+            logAction('LOCAȚII', `Șters locație: ${locToDelete?.name || id}`);
             fetchLocations();
         } catch (error) {
             console.error("Error deleting location:", error);

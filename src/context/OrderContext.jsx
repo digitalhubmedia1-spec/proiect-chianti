@@ -453,7 +453,10 @@ export const OrderProvider = ({ children }) => {
         if (!supabase) return;
         const updatePayload = { driver_status: status };
         // Optional: Auto-complete logic can be handled here or by explicit action
-        await supabase.from('orders').update(updatePayload).eq('id', orderId);
+        const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+        if (!error) {
+            logAction('STARE LIVRATOR', `Comanda #${orderId} -> ${status}`);
+        }
     };
 
     const getActiveOrders = () => {
