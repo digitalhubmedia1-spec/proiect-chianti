@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -282,100 +282,97 @@ const Products = () => {
     // --- VIEW MODE: CATALOG (Existing Logic) ---
 
     // Build map for efficient lookup (moved here to be available for filtering)
-    const dailyMenuMap = {};
-    if (dailyMenuData) {
-        dailyMenuData.forEach(item => {
-            dailyMenuMap[item.id] = {
-                stock: item.stock,
-                specific_extras_ids: item.specific_extras_ids,
-                sort_order: item.sort_order
-            };
-        });
-    }
+    const dailyMenuMap = useMemo(() => {
+        const map = {};
+        if (dailyMenuData) {
+            dailyMenuData.forEach(item => {
+                map[item.id] = {
+                    stock: item.stock,
+                    specific_extras_ids: item.specific_extras_ids,
+                    sort_order: item.sort_order
+                };
+            });
+        }
+        return map;
+    }, [dailyMenuData]);
 
     // Filter logic to show ONLY delivery products
-    const filteredProducts = products.filter(product => {
-        // 0. Active Check (Do not show inactive products)
-        if (product.is_active === false) return false;
+    const filteredProducts = useMemo(() => {
+        return products.filter(product => {
+            // 0. Active Check (Do not show inactive products)
+            if (product.is_active === false) return false;
 
-        // 0.1 Mode Filter (Food vs Bar)
-        // Find the category object for this product
-        const productCategory = categories.find(c => c.name === product.category);
-        const isBarCategory = productCategory?.type === 'bar';
-        
-        if (activeMode === 'food' && isBarCategory) return false;
-        if (activeMode === 'bar' && !isBarCategory) return false;
+            // 0.1 Mode Filter (Food vs Bar)
+            const productCategory = categories.find(c => c.name === product.category);
+            const isBarCategory = productCategory?.type === 'bar';
+            
+            if (activeMode === 'food' && isBarCategory) return false;
+            if (activeMode === 'bar' && !isBarCategory) return false;
 
-        // 1. Search Filter (Highest Priority)
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            if (!product.name.toLowerCase().includes(query) && 
-                !(product.description && product.description.toLowerCase().includes(query))) {
+            // 1. Search Filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                if (!product.name.toLowerCase().includes(query) && 
+                    !(product.description && product.description.toLowerCase().includes(query))) {
+                    return false;
+                }
+            }
+
+            // 2. Category Filter
+            if (activeCategory !== "Toate" && product.category !== activeCategory) {
                 return false;
             }
-        }
 
-        // 2. Category Filter
-        if (activeCategory !== "Toate" && product.category !== activeCategory) {
-            return false;
-        }
+            // 3. Daily Menu Availability Check
+            if (activeMode === 'bar') {
+                return product.is_available !== false;
+            }
 
-        // 3. Daily Menu Availability Check
-        // Strictly enforce daily menu visibility for FOOD.
-        // For BAR, we show all active and available products directly.
-        if (activeMode === 'bar') {
-            // If it's bar mode, we already know it's a bar product from step 0.1
-            // We only show it if it's set as available in the product management
-            return product.is_available !== false;
-        }
+            const menuItem = dailyMenuMap[product.id];
+            if (!menuItem) return false;
 
-        // For food mode, use daily menu logic
-        const menuItem = dailyMenuMap[product.id];
-        if (!menuItem) return false;
-
-        return true;
-    });
+            return true;
+        });
+    }, [products, categories, activeMode, searchQuery, activeCategory, dailyMenuMap]);
 
     // Sort Products
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-        if (sortOrder === "asc") return a.price - b.price;
-        if (sortOrder === "desc") return b.price - a.price;
+    const sortedProducts = useMemo(() => {
+        return [...filteredProducts].sort((a, b) => {
+            if (sortOrder === "asc") return a.price - b.price;
+            if (sortOrder === "desc") return b.price - a.price;
 
-        if (activeMode === 'bar') {
-            // Sort bar products by category sort_order or name
-            const catA = categories.find(c => c.name === a.category);
-            const catB = categories.find(c => c.name === b.category);
-            const orderA = catA?.sort_order ?? 999;
-            const orderB = catB?.sort_order ?? 999;
-            if (orderA !== orderB) return orderA - orderB;
-            return a.name.localeCompare(b.name);
-        }
+            if (activeMode === 'bar') {
+                const catA = categories.find(c => c.name === a.category);
+                const catB = categories.find(c => c.name === b.category);
+                const orderA = catA?.sort_order ?? 999;
+                const orderB = catB?.sort_order ?? 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.name.localeCompare(b.name);
+            }
 
-        if (dailyMenuData && dailyMenuData.length > 0) {
-            const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
-            const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
-            return orderA - orderB;
-        }
-        return 0;
-    });
-
-
+            if (dailyMenuData && dailyMenuData.length > 0) {
+                const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
+                const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
+                return orderA - orderB;
+            }
+            return 0;
+        });
+    }, [filteredProducts, sortOrder, activeMode, categories, dailyMenuData, dailyMenuMap]);
 
     const indexOfLastProduct = currentPage * itemsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
-    const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const currentProducts = useMemo(() => sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct), [sortedProducts, indexOfFirstProduct, indexOfLastProduct]);
     const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
     const truncate = (str, n) => {
         return (str && str.length > n) ? str.substr(0, n - 1) + "..." : str;
     };
 
-    const handleAddToCart = (e, product) => {
-        e.preventDefault(); // Prevent navigation if clicking the button inside a Link wrapper
+    const handleAddToCart = useCallback((e, product) => {
+        e.preventDefault();
         e.stopPropagation();
         addToCart(product);
-        // Optional: toast notification here
-    };
+    }, [addToCart]);
 
     return (
         <div className="products-page">
@@ -628,7 +625,7 @@ const Products = () => {
                                         </div>
                                     )}
                                     <div className="product-image">
-                                        <img src={product.image} alt={product.name} style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
+                                        <img src={product.image} alt={product.name} loading="lazy" style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
                                     </div>
                                     <div className="product-info">
                                         <h3 className="product-name">{product.name}</h3>
