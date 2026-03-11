@@ -377,13 +377,6 @@ const Products = () => {
         // Optional: toast notification here
     };
 
-    // Filter categories based on activeMode
-    const filteredCategories = categories.filter(cat => {
-        if (activeMode === 'food') return cat.type === 'delivery';
-        if (activeMode === 'bar') return cat.type === 'bar';
-        return true;
-    });
-
     return (
         <div className="products-page">
             <SEO
@@ -523,57 +516,6 @@ const Products = () => {
             </div>
 
             <div className="container content-wrapper" style={{ display: 'block', gridTemplateColumns: 'none' }}>
-                <div className="category-tabs" style={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    gap: '0.5rem',
-                    padding: '1rem 0',
-                    marginBottom: '1.5rem',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch'
-                }}>
-                    <button
-                        className={`category-tab ${activeCategory === 'Toate' ? 'active' : ''}`}
-                        onClick={() => setActiveCategory('Toate')}
-                        style={{
-                            padding: '8px 20px',
-                            borderRadius: '20px',
-                            border: '1px solid #e2e8f0',
-                            background: activeCategory === 'Toate' ? '#990000' : 'white',
-                            color: activeCategory === 'Toate' ? 'white' : '#64748b',
-                            fontWeight: '600',
-                            fontSize: '0.9rem',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        Toate
-                    </button>
-                    {filteredCategories.map(cat => (
-                        <button
-                            key={cat.id}
-                            className={`category-tab ${activeCategory === cat.name ? 'active' : ''}`}
-                            onClick={() => setActiveCategory(cat.name)}
-                            style={{
-                                padding: '8px 20px',
-                                borderRadius: '20px',
-                                border: '1px solid #e2e8f0',
-                                background: activeCategory === cat.name ? '#990000' : 'white',
-                                color: activeCategory === cat.name ? 'white' : '#64748b',
-                                fontWeight: '600',
-                                fontSize: '0.9rem',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            {cat.name}
-                        </button>
-                    ))}
-                </div>
-
                 <main className="products-grid-container" style={{ width: '100%' }}>
                     {/* Search & Sort Toolbar */}
                     <div className="products-toolbar" style={{
