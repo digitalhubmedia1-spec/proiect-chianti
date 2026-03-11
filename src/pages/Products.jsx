@@ -321,9 +321,15 @@ const Products = () => {
         }
 
         // 3. Daily Menu Availability Check
-        // Strictly enforce daily menu visibility.
-        // If dailyMenuData is loaded (even if empty), we only show items in it.
-        // If it's null (loading), we show nothing until it loads.
+        // Strictly enforce daily menu visibility for FOOD.
+        // For BAR, we show all active and available products directly.
+        if (activeMode === 'bar') {
+            // If it's bar mode, we already know it's a bar product from step 0.1
+            // We only show it if it's set as available in the product management
+            return product.is_available !== false;
+        }
+
+        // For food mode, use daily menu logic
         const menuItem = dailyMenuMap[product.id];
         if (!menuItem) return false;
 
@@ -334,6 +340,16 @@ const Products = () => {
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         if (sortOrder === "asc") return a.price - b.price;
         if (sortOrder === "desc") return b.price - a.price;
+
+        if (activeMode === 'bar') {
+            // Sort bar products by category sort_order or name
+            const catA = categories.find(c => c.name === a.category);
+            const catB = categories.find(c => c.name === b.category);
+            const orderA = catA?.sort_order ?? 999;
+            const orderB = catB?.sort_order ?? 999;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.name.localeCompare(b.name);
+        }
 
         if (dailyMenuData && dailyMenuData.length > 0) {
             const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
@@ -361,6 +377,13 @@ const Products = () => {
         // Optional: toast notification here
     };
 
+    // Filter categories based on activeMode
+    const filteredCategories = categories.filter(cat => {
+        if (activeMode === 'food') return cat.type === 'delivery';
+        if (activeMode === 'bar') return cat.type === 'bar';
+        return true;
+    });
+
     return (
         <div className="products-page">
             <SEO
@@ -385,57 +408,59 @@ const Products = () => {
                     <p className="page-subtitle">Comandă mâncare delicioasă pentru acasă sau birou</p>
 
                     {/* Date Navigation Dropdown */}
-                    <div className="date-selector-container" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
-                        <select
-                            value={formatDate(selectedDate)}
-                            onChange={(e) => {
-                                // Create date from YYYY-MM-DD string, setting it to noon to avoid timezone rollover
-                                const [y, m, d] = e.target.value.split('-').map(Number);
-                                const newDate = new Date(y, m - 1, d, 12, 0, 0);
-                                setSelectedDate(newDate);
-                            }}
-                            style={{
-                                padding: '16px 24px',
-                                fontSize: '1.3rem',
-                                fontWeight: '700',
-                                borderRadius: '12px',
-                                border: '2px solid #e2e8f0',
-                                background: 'white',
-                                color: '#1e293b',
-                                cursor: 'pointer',
-                                outline: 'none',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                minWidth: '320px',
-                                textAlign: 'center',
-                                transition: 'all 0.2s ease',
-                                height: 'auto',
-                                appearance: 'none', // Remove default arrow to style better if needed, but standard select is safer for now
-                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                                backgroundPosition: 'right 1rem center',
-                                backgroundRepeat: 'no-repeat',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '3.5rem' // Make space for custom arrow
-                            }}
-                        >
-                            {validDates.map((date, i) => {
-                                const dateStr = date.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' });
-                                const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+                    {activeMode === 'food' && (
+                        <div className="date-selector-container" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
+                            <select
+                                value={formatDate(selectedDate)}
+                                onChange={(e) => {
+                                    // Create date from YYYY-MM-DD string, setting it to noon to avoid timezone rollover
+                                    const [y, m, d] = e.target.value.split('-').map(Number);
+                                    const newDate = new Date(y, m - 1, d, 12, 0, 0);
+                                    setSelectedDate(newDate);
+                                }}
+                                style={{
+                                    padding: '16px 24px',
+                                    fontSize: '1.3rem',
+                                    fontWeight: '700',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e2e8f0',
+                                    background: 'white',
+                                    color: '#1e293b',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                    minWidth: '320px',
+                                    textAlign: 'center',
+                                    transition: 'all 0.2s ease',
+                                    height: 'auto',
+                                    appearance: 'none', // Remove default arrow to style better if needed, but standard select is safer for now
+                                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                    backgroundPosition: 'right 1rem center',
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundSize: '1.5em 1.5em',
+                                    paddingRight: '3.5rem' // Make space for custom arrow
+                                }}
+                            >
+                                {validDates.map((date, i) => {
+                                    const dateStr = date.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                    const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' });
+                                    const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
-                                // Proper value formatting
-                                const y = date.getFullYear();
-                                const m = String(date.getMonth() + 1).padStart(2, '0');
-                                const d = String(date.getDate()).padStart(2, '0');
-                                const valueStr = `${y}-${m}-${d}`;
+                                    // Proper value formatting
+                                    const y = date.getFullYear();
+                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                    const d = String(date.getDate()).padStart(2, '0');
+                                    const valueStr = `${y}-${m}-${d}`;
 
-                                return (
-                                    <option key={i} value={valueStr}>
-                                        {dayNameCap} - {dateStr}
-                                    </option>
-                                );
-                            })}
-                        </select>
-                    </div>
+                                    return (
+                                        <option key={i} value={valueStr}>
+                                            {dayNameCap} - {dateStr}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                    )}
 
                 </div>
             </div>
@@ -498,6 +523,57 @@ const Products = () => {
             </div>
 
             <div className="container content-wrapper" style={{ display: 'block', gridTemplateColumns: 'none' }}>
+                <div className="category-tabs" style={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    gap: '0.5rem',
+                    padding: '1rem 0',
+                    marginBottom: '1.5rem',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch'
+                }}>
+                    <button
+                        className={`category-tab ${activeCategory === 'Toate' ? 'active' : ''}`}
+                        onClick={() => setActiveCategory('Toate')}
+                        style={{
+                            padding: '8px 20px',
+                            borderRadius: '20px',
+                            border: '1px solid #e2e8f0',
+                            background: activeCategory === 'Toate' ? '#990000' : 'white',
+                            color: activeCategory === 'Toate' ? 'white' : '#64748b',
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        Toate
+                    </button>
+                    {filteredCategories.map(cat => (
+                        <button
+                            key={cat.id}
+                            className={`category-tab ${activeCategory === cat.name ? 'active' : ''}`}
+                            onClick={() => setActiveCategory(cat.name)}
+                            style={{
+                                padding: '8px 20px',
+                                borderRadius: '20px',
+                                border: '1px solid #e2e8f0',
+                                background: activeCategory === cat.name ? '#990000' : 'white',
+                                color: activeCategory === cat.name ? 'white' : '#64748b',
+                                fontWeight: '600',
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+
                 <main className="products-grid-container" style={{ width: '100%' }}>
                     {/* Search & Sort Toolbar */}
                     <div className="products-toolbar" style={{
@@ -576,67 +652,74 @@ const Products = () => {
 
                     <div className="products-grid">
                         {currentProducts.length > 0 ? (
-                            currentProducts.map(product => {
-                                const menuEntry = dailyMenuMap[product.id];
-                                let stock = menuEntry ? menuEntry.stock : undefined;
-                                if (stock !== null && stock !== undefined) stock = parseInt(stock);
+                        currentProducts.map(product => {
+                            const menuEntry = dailyMenuMap[product.id];
+                            let stock = menuEntry ? menuEntry.stock : undefined;
+                            
+                            // For BAR mode, if no stock is defined in daily menu, treat as unlimited (null)
+                            // or we can just ignore stock display for bar items if they are always available.
+                            if (activeMode === 'bar' && (stock === undefined || stock === null)) {
+                                stock = null; // unlimited
+                            }
+                            
+                            if (stock !== null && stock !== undefined) stock = parseInt(stock);
 
-                                const isOutOfStock = stock === 0;
-                                const isLowStock = stock !== null && stock !== undefined && stock < 10 && stock > 0;
+                            const isOutOfStock = stock === 0;
+                            const isLowStock = stock !== null && stock !== undefined && stock < 10 && stock > 0;
 
-                                return (
-                                    <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}`)} style={{ cursor: 'pointer', position: 'relative' }}>
-                                        {isLowStock && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '10px',
-                                                right: '10px',
-                                                background: '#ef4444',
-                                                color: 'white',
-                                                padding: '4px 8px',
-                                                borderRadius: '12px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 'bold',
-                                                zIndex: 10
-                                            }}>
-                                                Ultimele {stock} porții
-                                            </div>
-                                        )}
-                                        <div className="product-image">
-                                            <img src={product.image} alt={product.name} style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
+                            return (
+                                <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}`)} style={{ cursor: 'pointer', position: 'relative' }}>
+                                    {isLowStock && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '10px',
+                                            right: '10px',
+                                            background: '#ef4444',
+                                            color: 'white',
+                                            padding: '4px 8px',
+                                            borderRadius: '12px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            zIndex: 10
+                                        }}>
+                                            Ultimele {stock} porții
                                         </div>
-                                        <div className="product-info">
-                                            <h3 className="product-name">{product.name}</h3>
-                                            <p className="product-desc" title={product.description}>{truncate(product.description, 80)}</p>
-                                            <div className="product-footer">
-                                                <span className="product-price">{product.price.toFixed(2)} Lei</span>
-                                                <button
-                                                    className="btn btn-sm btn-primary"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAddToCart(e, product);
-                                                    }}
-                                                    disabled={isOutOfStock}
-                                                    title={isOutOfStock ? "Stoc epuizat" : "Adaugă în coș"}
-                                                    style={isOutOfStock ? { background: '#94a3b8', cursor: 'not-allowed' } : {}}
-                                                >
-                                                    {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
-                                                </button>
-                                            </div>
-                                            <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
-                                        </div>
+                                    )}
+                                    <div className="product-image">
+                                        <img src={product.image} alt={product.name} style={isOutOfStock ? { filter: 'grayscale(100%)' } : {}} />
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <div className="no-products" style={{ width: '100%', textAlign: 'center', padding: '2rem' }}>
-                                {dailyMenuData && dailyMenuData.length === 0 ? (
-                                    <p style={{ fontSize: '1.2rem', color: '#64748b' }}>Nu există meniu configurat pentru această dată.</p>
-                                ) : (
-                                    <p>Nu am găsit produse conform criteriilor selectate.</p>
-                                )}
-                            </div>
-                        )}
+                                    <div className="product-info">
+                                        <h3 className="product-name">{product.name}</h3>
+                                        <p className="product-desc" title={product.description}>{truncate(product.description, 80)}</p>
+                                        <div className="product-footer">
+                                            <span className="product-price">{product.price.toFixed(2)} Lei</span>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddToCart(e, product);
+                                                }}
+                                                disabled={isOutOfStock}
+                                                title={isOutOfStock ? "Stoc epuizat" : "Adaugă în coș"}
+                                                style={isOutOfStock ? { background: '#94a3b8', cursor: 'not-allowed' } : {}}
+                                            >
+                                                {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
+                                            </button>
+                                        </div>
+                                        <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="no-products" style={{ width: '100%', textAlign: 'center', padding: '2rem' }}>
+                            {activeMode === 'food' && dailyMenuData && dailyMenuData.length === 0 ? (
+                                <p style={{ fontSize: '1.2rem', color: '#64748b' }}>Nu există meniu configurat pentru această dată.</p>
+                            ) : (
+                                <p>Nu am găsit produse conform criteriilor selectate.</p>
+                            )}
+                        </div>
+                    )}
 
                     </div>
 
