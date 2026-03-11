@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { logAction } from '../../../utils/adminLogger';
-import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List, FileText, Settings, X, Search, Trash2, Plus, Zap } from 'lucide-react';
+import { Calendar, Save, Copy, CheckSquare, Square, Filter, ChevronLeft, ChevronRight, Grid, List, FileText, Settings, X, Search, Trash2, Plus } from 'lucide-react';
 import ConsumptionReportModal from './ConsumptionReportModal';
 import { useMenu } from '../../../context/MenuContext';
 
 const AdminMenuPlanner = () => {
     const { products, categories, loading: menuLoading, fetchExtras, addExtra, removeExtra } = useMenu();
     const [viewMode, setViewMode] = useState('daily'); // 'daily', 'weekly'
-    const [activePlannerMode, setActivePlannerMode] = useState('food'); // 'food' or 'bar'
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
 
@@ -572,12 +571,9 @@ const AdminMenuPlanner = () => {
         // Only show active products (not soft-deleted)
         if (p.is_active === false) return false;
         
-        // 0.1 Mode Filter (Food vs Bar)
+        // 0.1 Filter out Bar Products (they don't need planning)
         const productCategory = categories.find(c => c.name === p.category);
-        const isBarCategory = productCategory?.type === 'bar';
-        
-        if (activePlannerMode === 'food' && isBarCategory) return false;
-        if (activePlannerMode === 'bar' && !isBarCategory) return false;
+        if (productCategory?.type === 'bar') return false;
 
         // Search Filter
         if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -684,52 +680,6 @@ const AdminMenuPlanner = () => {
                 </div>
             </div>
 
-            {/* Planner Mode Switcher (Food vs Bar) */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.5rem', borderRadius: '12px', width: 'fit-content' }}>
-                <button
-                    onClick={() => {
-                        setActivePlannerMode('food');
-                        setFilterCategory('Toate');
-                    }}
-                    style={{
-                        padding: '10px 20px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        background: activePlannerMode === 'food' ? '#990000' : 'transparent',
-                        color: activePlannerMode === 'food' ? 'white' : '#64748b',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    <Plus size={18} /> GASTRO
-                </button>
-                <button
-                    onClick={() => {
-                        setActivePlannerMode('bar');
-                        setFilterCategory('Toate');
-                    }}
-                    style={{
-                        padding: '10px 20px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        background: activePlannerMode === 'bar' ? '#990000' : 'transparent',
-                        color: activePlannerMode === 'bar' ? 'white' : '#64748b',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    <Zap size={18} /> BAR
-                </button>
-            </div>
-
             {/* CONTROLS */}
             <div style={{ background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -753,7 +703,7 @@ const AdminMenuPlanner = () => {
                         onChange={e => setFilterCategory(e.target.value)}
                     >
                         <option value="Toate">Toate Categoriile</option>
-                        {categories.filter(c => c.type !== 'catering').map(c => (
+                        {categories.filter(c => c.type !== 'catering' && c.type !== 'bar').map(c => (
                             <option key={c.id} value={c.name}>{c.name}</option>
                         ))}
                     </select>
