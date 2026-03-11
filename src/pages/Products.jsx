@@ -296,22 +296,32 @@ const Products = () => {
         return map;
     }, [dailyMenuData]);
 
+    // Pre-calculate category type map for faster filtering
+    const categoryTypeMap = useMemo(() => {
+        const map = {};
+        categories.forEach(cat => {
+            map[cat.name] = cat.type;
+        });
+        return map;
+    }, [categories]);
+
     // Filter logic to show ONLY delivery products
     const filteredProducts = useMemo(() => {
+        const query = searchQuery?.toLowerCase() || "";
+        
         return products.filter(product => {
             // 0. Active Check (Do not show inactive products)
             if (product.is_active === false) return false;
 
             // 0.1 Mode Filter (Food vs Bar)
-            const productCategory = categories.find(c => c.name === product.category);
-            const isBarCategory = productCategory?.type === 'bar';
+            const catType = categoryTypeMap[product.category];
+            const isBarCategory = catType === 'bar';
             
             if (activeMode === 'food' && isBarCategory) return false;
             if (activeMode === 'bar' && !isBarCategory) return false;
 
             // 1. Search Filter
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
+            if (query) {
                 if (!product.name.toLowerCase().includes(query) && 
                     !(product.description && product.description.toLowerCase().includes(query))) {
                     return false;
@@ -333,14 +343,16 @@ const Products = () => {
 
             return true;
         });
-    }, [products, categories, activeMode, searchQuery, activeCategory, dailyMenuMap]);
+    }, [products, categoryTypeMap, activeMode, searchQuery, activeCategory, dailyMenuMap]);
 
     // Sort Products
     const sortedProducts = useMemo(() => {
-        return [...filteredProducts].sort((a, b) => {
-            if (sortOrder === "asc") return a.price - b.price;
-            if (sortOrder === "desc") return b.price - a.price;
+        const sorted = [...filteredProducts];
+        
+        if (sortOrder === "asc") return sorted.sort((a, b) => a.price - b.price);
+        if (sortOrder === "desc") return sorted.sort((a, b) => b.price - a.price);
 
+        return sorted.sort((a, b) => {
             if (activeMode === 'bar') {
                 const catA = categories.find(c => c.name === a.category);
                 const catB = categories.find(c => c.name === b.category);
@@ -350,14 +362,11 @@ const Products = () => {
                 return a.name.localeCompare(b.name);
             }
 
-            if (dailyMenuData && dailyMenuData.length > 0) {
-                const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
-                const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
-                return orderA - orderB;
-            }
-            return 0;
+            const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
+            const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
+            return orderA - orderB;
         });
-    }, [filteredProducts, sortOrder, activeMode, categories, dailyMenuData, dailyMenuMap]);
+    }, [filteredProducts, sortOrder, activeMode, categories, dailyMenuMap]);
 
     const indexOfLastProduct = currentPage * itemsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
