@@ -29,11 +29,12 @@ import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
 import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat, Zap, FileDown } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
+import { logAction } from '../../utils/adminLogger';
 import './Admin.css';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminDashboard = () => {
     const {
@@ -413,65 +414,78 @@ const AdminDashboard = () => {
     };
 
     const exportProductsPDF = () => {
-        const doc = new jsPDF();
-        const typeLabel = activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering';
-        const timestamp = new Date().toLocaleString('ro-RO');
+        try {
+            const doc = new jsPDF();
+            const typeLabel = activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering';
+            const timestamp = new Date().toLocaleString('ro-RO');
 
-        // Helper for Romanian diacritics
-        const s = (text) => {
-            if (!text) return '';
-            return String(text)
-                .replace(/ă/g, 'a').replace(/Ă/g, 'A')
-                .replace(/â/g, 'a').replace(/Â/g, 'A')
-                .replace(/î/g, 'i').replace(/Î/g, 'I')
-                .replace(/ș/g, 's').replace(/Ș/g, 'S')
-                .replace(/ț/g, 't').replace(/Ț/g, 'T');
-        };
+            // Helper for Romanian diacritics
+            const s = (text) => {
+                if (!text) return '';
+                return String(text)
+                    .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+                    .replace(/â/g, 'a').replace(/Â/g, 'A')
+                    .replace(/î/g, 'i').replace(/Î/g, 'I')
+                    .replace(/ș/g, 's').replace(/Ș/g, 'S')
+                    .replace(/ț/g, 't').replace(/Ț/g, 'T');
+            };
 
-        // Title
-        doc.setFontSize(18);
-        doc.setTextColor(153, 0, 0); // Chianti Red
-        doc.text(`Lista Produse - ${typeLabel}`, 14, 20);
-        
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Generat la: ${timestamp}`, 14, 28);
+            // Title
+            doc.setFontSize(18);
+            doc.setTextColor(153, 0, 0); // Chianti Red
+            doc.text(`Lista Produse - ${typeLabel}`, 14, 20);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generat la: ${timestamp}`, 14, 28);
 
-        const filteredProducts = products.filter(p => {
-            if (p.is_active === false) return false;
-            const cat = categories.find(c => c.name === p.category);
-            const type = cat ? (cat.type || 'delivery') : 'delivery';
-            return type === activeProductTabType;
-        }).sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+            const filteredProducts = products.filter(p => {
+                if (p.is_active === false) return false;
+                const cat = categories.find(c => c.name === p.category);
+                const type = cat ? (cat.type || 'delivery') : 'delivery';
+                return type === activeProductTabType;
+            }).sort((a, b) => (a.category || '').localeCompare(b.category || ''));
 
-        const tableData = filteredProducts.map(p => [
-            s(p.name),
-            `${p.price} Lei`,
-            s(p.category),
-            s(p.description || '-'),
-            s(p.weight || '-'),
-            p.is_available !== false ? 'Da' : 'Nu'
-        ]);
-
-        doc.autoTable({
-            startY: 35,
-            head: [['Nume', 'Pret', 'Categorie', 'Descriere', 'Gramaj', 'Disponibil']],
-            body: tableData,
-            theme: 'grid',
-            headStyles: { fillStyle: 'f', fillColor: [153, 0, 0], textColor: [255, 255, 255] },
-            styles: { fontSize: 9, cellPadding: 3 },
-            columnStyles: {
-                0: { cellWidth: 40 }, // Nume
-                1: { cellWidth: 20 }, // Pret
-                2: { cellWidth: 30 }, // Categorie
-                3: { cellWidth: 'auto' }, // Descriere
-                4: { cellWidth: 20 }, // Gramaj
-                5: { cellWidth: 20 }  // Disponibil
+            if (filteredProducts.length === 0) {
+                alert(`Nu există produse de tip ${typeLabel} pentru export.`);
+                return;
             }
-        });
 
-        doc.save(`Produse_${activeProductTabType}_${new Date().toISOString().split('T')[0]}.pdf`);
-        logAction('EXPORT', `Export PDF listă produse: ${typeLabel}`);
+            const tableData = filteredProducts.map(p => [
+                s(p.name),
+                `${p.price} Lei`,
+                s(p.category),
+                s(p.description || '-'),
+                s(p.weight || '-'),
+                p.is_available !== false ? 'Da' : 'Nu'
+            ]);
+
+            autoTable(doc, {
+                startY: 35,
+                head: [['Nume', 'Pret', 'Categorie', 'Descriere', 'Gramaj', 'Disponibil']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillStyle: 'f', fillColor: [153, 0, 0], textColor: [255, 255, 255] },
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 40 }, // Nume
+                    1: { cellWidth: 20 }, // Pret
+                    2: { cellWidth: 30 }, // Categorie
+                    3: { cellWidth: 'auto' }, // Descriere
+                    4: { cellWidth: 20 }, // Gramaj
+                    5: { cellWidth: 20 }  // Disponibil
+                }
+            });
+
+            doc.save(`Produse_${activeProductTabType}_${new Date().toISOString().split('T')[0]}.pdf`);
+            
+            if (typeof logAction === 'function') {
+                logAction('EXPORT', `Export PDF listă produse: ${typeLabel}`);
+            }
+        } catch (error) {
+            console.error("PDF Export Error:", error);
+            alert("A apărut o eroare la generarea PDF-ului. Vă rugăm să verificați consola browser-ului pentru detalii.");
+        }
     };
 
     const handleImageUpload = async (e, setFormState) => {
