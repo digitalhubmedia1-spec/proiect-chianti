@@ -445,22 +445,30 @@ const AdminDashboard = () => {
             const typeLabel = activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering';
             const timestamp = new Date().toLocaleString('ro-RO');
 
-            // Helper for Romanian diacritics
+            // Helper for Romanian diacritics and cleaning non-standard characters (emojis, etc.)
             const s = (text) => {
                 if (text === null || text === undefined) return '-';
                 if (typeof text === 'boolean') return text ? 'Da' : 'Nu';
+                
+                // Convert to string and handle special characters
                 return String(text)
                     .replace(/ă/g, 'a').replace(/Ă/g, 'A')
                     .replace(/â/g, 'a').replace(/Â/g, 'A')
                     .replace(/î/g, 'i').replace(/Î/g, 'I')
                     .replace(/ș/g, 's').replace(/Ș/g, 'S')
-                    .replace(/ț/g, 't').replace(/Ț/g, 'T');
+                    .replace(/ț/g, 't').replace(/Ț/g, 'T')
+                    .replace(/ş/g, 's').replace(/Ş/g, 'S')
+                    .replace(/ţ/g, 't').replace(/Ţ/g, 'T')
+                    // Remove emojis and non-ASCII/non-standard characters that break PDF rendering
+                    // This regex removes most symbols and emojis while keeping basic punctuation and letters
+                    .replace(/[^\x00-\x7F\x80-\xFF\u0100-\u017F\u0180-\u024F]/g, '')
+                    .trim();
             };
 
             // Title
             doc.setFontSize(18);
             doc.setTextColor(153, 0, 0); // Chianti Red
-            doc.text(`Lista Produse - ${typeLabel}`, 14, 20);
+            doc.text(s(`Lista Produse - ${typeLabel}`), 14, 20);
             
             doc.setFontSize(10);
             doc.setTextColor(100);
