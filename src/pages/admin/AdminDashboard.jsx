@@ -27,7 +27,7 @@ import AdminReports from './components/AdminReports';
 import AdminLocations from './components/AdminLocations';
 import AdminProcurement from './components/AdminProcurement';
 import AdminInventoryObjects from './components/AdminInventoryObjects';
-import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat, Zap, FileDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, LogOut, X, ArrowUp, ArrowDown, Check, FileText, Truck, Users, Box, BookOpen, UserCog, ClipboardList, History, BarChart2, MapPin, Calendar as CalendarIcon, CheckCircle, XCircle, CornerDownRight, ShoppingCart, Settings, Search, ChefHat, Zap, FileDown, Download } from 'lucide-react';
 import { compressImage } from '../../utils/imageUtils';
 import { logAction } from '../../utils/adminLogger';
 import './Admin.css';
@@ -139,7 +139,8 @@ const AdminDashboard = () => {
         { id: 'operators', label: 'Operatori', icon: Users, permission: 'operators' },
         { id: 'logs', label: 'Loguri', icon: History, permission: 'logs' },
         { id: 'history', label: 'Istoric Comenzi', icon: History, permission: 'history' },
-        { id: 'promocodes', label: 'Coduri Promoționale', icon: Settings, permission: 'promo' }, // Added explicit promo codes if needed
+        { id: 'promocodes', label: 'Coduri Promoționale', icon: Settings, permission: 'promo' },
+        { id: 'manual', label: 'Manual Utilizare', icon: BookOpen, permission: 'orders' }, // Added manual tab
     ];
 
     const canAccess = (tab) => {
@@ -150,25 +151,25 @@ const AdminDashboard = () => {
 
         // Handle Chef/Bucatar Role FIRST to ensure restriction
         if (role === 'chef' || role === 'bucatar' || role === 'bucătar') {
-            return ['orders', 'kitchen', 'recipes'].includes(tab);
+            return ['orders', 'kitchen', 'recipes', 'manual'].includes(tab);
         }
 
         if (role === 'admin_app') return true; // Super admin
 
         if (role === 'contabil') {
             // Allowed: Orders, Reports, Logs, Suppliers, Inventory, Locations
-            const allowed = ['orders', 'pos', 'events', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption'];
+            const allowed = ['orders', 'pos', 'events', 'reports', 'logs', 'inventory', 'suppliers', 'inventory_check', 'locations', 'reception', 'consumption', 'manual'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
         if (role === 'achizitor') {
             // Achizitor needs procurement flow logic
-            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes'];
+            const allowed = ['inventory', 'suppliers', 'inventory_items', 'reception', 'stock_live', 'transfers', 'consumption', 'inventory_check', 'locations', 'procurement', 'inventory_objects', 'recipes', 'manual'];
             return allowed.includes(tab) || tab === 'inventory';
         }
 
         if (role === 'gestionar') {
-            const allowed = ['suppliers', 'locations', 'inventory_items', 'inventory_objects'];
+            const allowed = ['suppliers', 'locations', 'inventory_items', 'inventory_objects', 'manual'];
             return allowed.includes(tab);
         }
 
@@ -178,15 +179,15 @@ const AdminDashboard = () => {
 
         if (role === 'cost_productie') {
             // Explicitly deny procurement if needed, though default is false
-            return ['recipes'].includes(tab);
+            return ['recipes', 'manual'].includes(tab);
         }
 
         if (role === 'ospatar') {
-            return ['pos', 'orders'].includes(tab);
+            return ['pos', 'orders', 'manual'].includes(tab);
         }
 
         if (role === 'manager eveniment' || role === 'sef sala') {
-            return ['events'].includes(tab);
+            return ['events', 'manual'].includes(tab);
         }
 
         return false;
@@ -663,7 +664,7 @@ const AdminDashboard = () => {
                     {NAV_ITEMS.map((item, index) => {
                         // FORCE HIDE FOR CHEF - NUCLEAR OPTION
                         const currentRole = (adminRole || '').toLowerCase().trim();
-                        if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes'].includes(item.id) && !item.header) {
+                        if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes', 'manual'].includes(item.id) && !item.header) {
                             return null;
                         }
 
@@ -676,7 +677,7 @@ const AdminDashboard = () => {
                                 
                                 // ALSO APPLY FORCE HIDE TO HEADER LOGIC
                                 const childId = NAV_ITEMS[i].id;
-                                if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes'].includes(childId)) {
+                                if ((currentRole === 'chef' || currentRole === 'bucatar') && !['orders', 'kitchen', 'recipes', 'manual'].includes(childId)) {
                                     continue;
                                 }
 
@@ -854,6 +855,46 @@ const AdminDashboard = () => {
                     {activeTab === 'history' && (
                         <div className="tab-content">
                             <OrderHistory />
+                        </div>
+                    )}
+
+                    {/* MANUAL TAB */}
+                    {activeTab === 'manual' && (
+                        <div className="tab-content" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', padding: '0 1rem' }}>
+                                <h2 style={{ margin: 0, color: '#990000', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <BookOpen size={24} /> Ghid de Utilizare Admin
+                                </h2>
+                                <a 
+                                    href="/ghid_utilizare.pdf" 
+                                    download="Ghid Utilizare Chianti.pdf"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '10px 20px',
+                                        background: '#990000',
+                                        color: 'white',
+                                        borderRadius: '8px',
+                                        textDecoration: 'none',
+                                        fontWeight: 'bold',
+                                        transition: 'background 0.2s'
+                                    }}
+                                    onMouseOver={(e) => e.target.style.background = '#7a0000'}
+                                    onMouseOut={(e) => e.target.style.background = '#990000'}
+                                >
+                                    <Download size={20} /> Descarcă Manual
+                                </a>
+                            </div>
+                            <div style={{ flex: 1, border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc' }}>
+                                <iframe 
+                                    src="/ghid_utilizare.pdf" 
+                                    title="Ghid Utilizare"
+                                    width="100%" 
+                                    height="100%" 
+                                    style={{ border: 'none' }}
+                                />
+                            </div>
                         </div>
                     )}
                     {/* MESSAGES TAB */}
