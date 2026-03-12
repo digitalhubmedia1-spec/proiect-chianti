@@ -61,7 +61,7 @@ const Header = () => {
                 <p className="price">{item.quantity} x {item.price.toFixed(2)} Lei</p>
                 {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
                     <p className="options" style={{ fontSize: '0.75rem', color: '#666', margin: 0 }}>
-                        {Object.values(item.selectedOptions).join(', ')}
+                        {Object.values(item.selectedOptions).flatMap(val => Array.isArray(val) ? val : [val]).join(', ')}
                     </p>
                 )}
             </div>

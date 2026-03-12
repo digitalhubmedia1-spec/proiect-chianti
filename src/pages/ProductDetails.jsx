@@ -68,8 +68,35 @@ const ProductDetails = () => {
 
     if (loading || !product) return <div className="loading">Se încarcă...</div>;
 
-    const handleOptionSelect = (groupName, choiceName) => {
-        setSelectedOptions(prev => ({ ...prev, [groupName]: choiceName }));
+    const handleOptionSelect = (group, choiceName) => {
+        const groupName = group.name;
+        const maxChoices = group.max_choices || 1;
+
+        setSelectedOptions(prev => {
+            const currentSelection = prev[groupName];
+
+            if (maxChoices === 1) {
+                // Radio-like behavior
+                return { ...prev, [groupName]: choiceName };
+            } else {
+                // Checkbox-like behavior (multi-select)
+                const currentChoices = Array.isArray(currentSelection) ? currentSelection : (currentSelection ? [currentSelection] : []);
+                
+                if (currentChoices.includes(choiceName)) {
+                    // Remove if already selected
+                    const newChoices = currentChoices.filter(c => c !== choiceName);
+                    return { ...prev, [groupName]: newChoices.length > 0 ? newChoices : undefined };
+                } else {
+                    // Add if not exceeding max
+                    if (currentChoices.length < maxChoices) {
+                        return { ...prev, [groupName]: [...currentChoices, choiceName] };
+                    } else {
+                        alert(`Poți alege maxim ${maxChoices} opțiuni pentru "${groupName}".`);
+                        return prev;
+                    }
+                }
+            }
+        });
     };
 
     const handleAddToCart = () => {
@@ -79,11 +106,10 @@ const ProductDetails = () => {
         }
 
         // Validate Mandatory Options
-        // Assuming all defined groups in product_options are mandatory if 'required' isn't explicitly false
-        // Or simply act as if all are required for now based on user request "optiuni obligatorii".
         if (product.product_options && Array.isArray(product.product_options)) {
             for (const group of product.product_options) {
-                if (!selectedOptions[group.name]) {
+                const selection = selectedOptions[group.name];
+                if (!selection || (Array.isArray(selection) && selection.length === 0)) {
                     alert(`Te rog selectează o opțiune pentru: ${group.name}`);
                     return;
                 }
@@ -196,38 +222,46 @@ const ProductDetails = () => {
                     {/* MANDATORY OPTIONS SECTION */}
                     {product.product_options && Array.isArray(product.product_options) && product.product_options.length > 0 && (
                         <div className="product-options-section" style={{ marginTop: '1.5rem', marginBottom: '3rem', padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                            {product.product_options.map((group, idx) => (
-                                <div key={idx} style={{ marginBottom: '1.5rem' }}>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
-                                        {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
-                                    </h3>
-                                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                                        {group.choices && group.choices.map((choice, cIdx) => {
-                                            const isSelected = selectedOptions[group.name] === choice.name;
-                                            return (
-                                                <div
-                                                    key={cIdx}
-                                                    onClick={() => handleOptionSelect(group.name, choice.name)}
-                                                    style={{
-                                                        cursor: 'pointer',
-                                                        border: isSelected ? '2px solid #ef4444' : '1px solid #d1d5db',
-                                                        borderRadius: '30px',
-                                                        padding: '8px 16px',
-                                                        background: isSelected ? '#fff1f2' : 'white',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s ease',
-                                                        minWidth: '80px'
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? '700' : '500', textAlign: 'center' }}>{choice.name}</span>
-                                                </div>
-                                            );
-                                        })}
+                            {product.product_options.map((group, idx) => {
+                                const maxChoices = group.max_choices || 1;
+                                return (
+                                    <div key={idx} style={{ marginBottom: '1.5rem' }}>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                                            {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
+                                            {maxChoices > 1 && <span style={{ fontSize: '0.8rem', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>(Alege până la {maxChoices} opțiuni)</span>}
+                                        </h3>
+                                        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                                            {group.choices && group.choices.map((choice, cIdx) => {
+                                                const currentSelection = selectedOptions[group.name];
+                                                const isSelected = Array.isArray(currentSelection) ? currentSelection.includes(choice.name) : (currentSelection === choice.name);
+                                                return (
+                                                    <div
+                                                        key={cIdx}
+                                                        onClick={() => handleOptionSelect(group, choice.name)}
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            border: isSelected ? '2px solid #ef4444' : '1px solid #d1d5db',
+                                                            borderRadius: '30px',
+                                                            padding: '8px 16px',
+                                                            background: isSelected ? '#fff1f2' : 'white',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s ease',
+                                                            minWidth: '80px',
+                                                            boxShadow: isSelected ? '0 2px 4px rgba(239, 68, 68, 0.1)' : 'none'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? '600' : '500', color: isSelected ? '#ef4444' : '#374151', textAlign: 'center' }}>
+                                                            {choice.name}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 

@@ -528,7 +528,18 @@ const Checkout = () => {
                         <div className="order-items-list">
                             {cartItems.map(item => (
                                 <div key={item.id} className="order-item-row">
-                                    <span>{item.quantity} x {item.name}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span>{item.quantity} x {item.name}</span>
+                                        {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                                            <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                                {Object.entries(item.selectedOptions).map(([group, val]) => (
+                                                    <span key={group} style={{ display: 'block' }}>
+                                                        • {group}: {Array.isArray(val) ? val.join(', ') : val}
+                                                    </span>
+                                                ))}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span>{(item.price * item.quantity).toFixed(2)} Lei</span>
                                 </div>
                             ))}

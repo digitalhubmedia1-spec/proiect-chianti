@@ -549,7 +549,7 @@ const AdminDashboard = () => {
     const addOptionGroup = () => {
         setProdForm(prev => ({
             ...prev,
-            product_options: [...(prev.product_options || []), { name: '', choices: [] }]
+            product_options: [...(prev.product_options || []), { name: '', max_choices: 1, choices: [] }]
         }));
     };
 
@@ -1758,8 +1758,19 @@ const AdminDashboard = () => {
                                                     placeholder="Nume Grup Opțiuni (ex: Alege Dulceață)"
                                                     value={group.name}
                                                     onChange={(e) => updateOptionGroup(gIdx, 'name', e.target.value)}
-                                                    style={{ fontWeight: 'bold' }}
+                                                    style={{ fontWeight: 'bold', flex: 1 }}
                                                 />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    <label style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', color: '#666' }}>Max. selecții:</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        min="1"
+                                                        value={group.max_choices || 1}
+                                                        onChange={(e) => updateOptionGroup(gIdx, 'max_choices', parseInt(e.target.value) || 1)}
+                                                        style={{ width: '60px', padding: '4px 8px', textAlign: 'center' }}
+                                                    />
+                                                </div>
                                                 <button type="button" className="btn-icon delete" onClick={() => removeOptionGroup(gIdx)} title="Șterge Grup">
                                                     <Trash2 size={18} />
                                                 </button>

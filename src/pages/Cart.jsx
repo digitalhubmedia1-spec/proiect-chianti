@@ -63,7 +63,9 @@ const Cart = () => {
                 {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
                     <div className="item-options" style={{ fontSize: '0.85rem', color: '#666', marginTop: '4px' }}>
                         {Object.entries(item.selectedOptions).map(([groupName, choiceName]) => (
-                            <div key={groupName}>• {groupName}: <strong>{choiceName}</strong></div>
+                            <div key={groupName}>
+                                • {groupName}: <strong>{Array.isArray(choiceName) ? choiceName.join(', ') : choiceName}</strong>
+                            </div>
                         ))}
                     </div>
                 )}
