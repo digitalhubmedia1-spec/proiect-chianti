@@ -158,16 +158,33 @@ const AdminPOS = () => {
             
             const dailyItems = await fetchDailyMenu(dateStr);
 
-            // Map daily items to full product details
-            const available = dailyItems.map(di => {
+            // 1. Map daily items to full product details
+            const availableFromDaily = dailyItems.map(di => {
                 const prod = products.find(p => p.id === di.id);
                 return prod ? { ...prod, stock: di.stock } : null;
             }).filter(Boolean);
 
-            setDailyProducts(available);
+            // 2. Add all Bar products regardless of daily menu
+            // Identify bar categories
+            const barCategories = categories
+                .filter(c => c.type === 'bar')
+                .map(c => c.name);
+            
+            // Get products that belong to bar categories
+            const barProducts = products.filter(p => barCategories.includes(p.category));
+
+            // Combine them, ensuring no duplicates
+            const combined = [...availableFromDaily];
+            barProducts.forEach(bp => {
+                if (!combined.some(p => p.id === bp.id)) {
+                    combined.push({ ...bp, stock: 999 }); // Default stock for bar items not in daily menu
+                }
+            });
+
+            setDailyProducts(combined);
         };
         if (products.length > 0) loadMenu();
-    }, [products, fetchDailyMenu, posDate]);
+    }, [products, categories, fetchDailyMenu, posDate]);
 
     // Table Actions
     const handleAddTable = async () => {
