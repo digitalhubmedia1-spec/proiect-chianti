@@ -263,6 +263,22 @@ const AdminDashboard = () => {
     // Image Preview State
     const [previewImage, setPreviewImage] = useState(null);
 
+    // Export PDF State
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [selectedExportFields, setSelectedExportFields] = useState(['name', 'price', 'category', 'is_available']);
+
+    const EXPORT_FIELDS = [
+        { id: 'name', label: 'Nume' },
+        { id: 'price', label: 'Preț' },
+        { id: 'category', label: 'Categorie' },
+        { id: 'description', label: 'Descriere' },
+        { id: 'weight', label: 'Gramaj' },
+        { id: 'allergens', label: 'Alergeni' },
+        { id: 'ingredients', label: 'Ingrediente' },
+        { id: 'is_available', label: 'Disponibil' },
+        { id: 'internal_instructions', label: 'Instrucțiuni Interne' }
+    ];
+
     // Handlers
     const handleProductSubmit = async (e) => {
         e.preventDefault();
@@ -415,13 +431,22 @@ const AdminDashboard = () => {
 
     const exportProductsPDF = () => {
         try {
-            const doc = new jsPDF();
+            if (selectedExportFields.length === 0) {
+                alert("Vă rugăm să selectați cel puțin un câmp pentru export.");
+                return;
+            }
+
+            const doc = new jsPDF({
+                orientation: selectedExportFields.length > 5 ? 'landscape' : 'portrait'
+            });
+
             const typeLabel = activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering';
             const timestamp = new Date().toLocaleString('ro-RO');
 
             // Helper for Romanian diacritics
             const s = (text) => {
-                if (!text) return '';
+                if (text === null || text === undefined) return '-';
+                if (typeof text === 'boolean') return text ? 'Da' : 'Nu';
                 return String(text)
                     .replace(/ă/g, 'a').replace(/Ă/g, 'A')
                     .replace(/â/g, 'a').replace(/Â/g, 'A')
@@ -443,41 +468,50 @@ const AdminDashboard = () => {
                 if (p.is_active === false) return false;
                 const cat = categories.find(c => c.name === p.category);
                 const type = cat ? (cat.type || 'delivery') : 'delivery';
-                return type === activeProductTabType;
+                if (type !== activeProductTabType) return false;
+                if (filterCategory && p.category !== filterCategory) return false;
+                if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                return true;
             }).sort((a, b) => (a.category || '').localeCompare(b.category || ''));
 
             if (filteredProducts.length === 0) {
-                alert(`Nu există produse de tip ${typeLabel} pentru export.`);
+                alert(`Nu există produse care să corespundă filtrelor pentru export.`);
                 return;
             }
 
-            const tableData = filteredProducts.map(p => [
-                s(p.name),
-                `${p.price} Lei`,
-                s(p.category),
-                s(p.description || '-'),
-                s(p.weight || '-'),
-                p.is_available !== false ? 'Da' : 'Nu'
-            ]);
+            // Map selected fields to headers and data
+            const headers = selectedExportFields.map(fieldId => {
+                const field = EXPORT_FIELDS.find(f => f.id === fieldId);
+                return field ? field.label : fieldId;
+            });
+
+            const tableData = filteredProducts.map(p => {
+                return selectedExportFields.map(fieldId => {
+                    switch (fieldId) {
+                        case 'is_available':
+                            return s(p.is_available !== false);
+                        case 'price':
+                            return `${p.price} Lei`;
+                        default:
+                            return s(p[fieldId]);
+                    }
+                });
+            });
 
             autoTable(doc, {
                 startY: 35,
-                head: [['Nume', 'Pret', 'Categorie', 'Descriere', 'Gramaj', 'Disponibil']],
+                head: [headers],
                 body: tableData,
                 theme: 'grid',
                 headStyles: { fillStyle: 'f', fillColor: [153, 0, 0], textColor: [255, 255, 255] },
-                styles: { fontSize: 9, cellPadding: 3 },
+                styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
                 columnStyles: {
-                    0: { cellWidth: 40 }, // Nume
-                    1: { cellWidth: 20 }, // Pret
-                    2: { cellWidth: 30 }, // Categorie
-                    3: { cellWidth: 'auto' }, // Descriere
-                    4: { cellWidth: 20 }, // Gramaj
-                    5: { cellWidth: 20 }  // Disponibil
+                    // Dynamic widths could be complex, let's use auto for now
                 }
             });
 
             doc.save(`Produse_${activeProductTabType}_${new Date().toISOString().split('T')[0]}.pdf`);
+            setIsExportModalOpen(false); // Close modal after export
             
             if (typeof logAction === 'function') {
                 logAction('EXPORT', `Export PDF listă produse: ${typeLabel}`);
@@ -871,7 +905,7 @@ const AdminDashboard = () => {
                                 <button className="btn btn-primary" onClick={() => openProductModal()}>
                                     <Plus size={18} /> Adaugă Produs ({activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering'})
                                 </button>
-                                <button className="btn btn-outline-primary" onClick={exportProductsPDF} title="Export PDF">
+                                <button className="btn btn-outline-primary" onClick={() => setIsExportModalOpen(true)} title="Export PDF">
                                     <FileDown size={18} /> Export Listă PDF
                                 </button>
                             </div>
@@ -1368,6 +1402,56 @@ const AdminDashboard = () => {
                                     {editingConfigProduct ? 'Salvează Modificările' : 'Adaugă Produs'}
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* EXPORT PDF MODAL */}
+                {isExportModalOpen && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '500px' }}>
+                            <div className="modal-header">
+                                <h3>Selectează Câmpurile pentru Export PDF</h3>
+                                <button className="close-btn" onClick={() => setIsExportModalOpen(false)}><X size={24} /></button>
+                            </div>
+                            <div className="modal-body" style={{ padding: '20px' }}>
+                                <p style={{ marginBottom: '15px', color: '#666' }}>Bifează coloanele pe care dorești să le incluzi în documentul PDF:</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    {EXPORT_FIELDS.map(field => (
+                                        <label key={field.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '8px', border: '1px solid #eee', borderRadius: '4px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedExportFields.includes(field.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedExportFields([...selectedExportFields, field.id]);
+                                                    } else {
+                                                        setSelectedExportFields(selectedExportFields.filter(f => f !== field.id));
+                                                    }
+                                                }}
+                                                style={{ width: '18px', height: '18px' }}
+                                            />
+                                            <span>{field.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                                    <button 
+                                        className="btn btn-primary" 
+                                        style={{ flex: 1 }}
+                                        onClick={exportProductsPDF}
+                                    >
+                                        <FileDown size={18} style={{ marginRight: '8px' }} /> Generare PDF
+                                    </button>
+                                    <button 
+                                        className="btn btn-outline-secondary" 
+                                        style={{ flex: 1 }}
+                                        onClick={() => setIsExportModalOpen(false)}
+                                    >
+                                        Anulează
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
