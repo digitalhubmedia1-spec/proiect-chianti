@@ -154,7 +154,104 @@ const Products = () => {
         return () => clearInterval(interval);
     }, []);
 
+    // --- HOOKS HOISTED FOR REACT RULES ---
+    // Build map for efficient lookup
+    const dailyMenuMap = useMemo(() => {
+        const map = {};
+        if (dailyMenuData) {
+            dailyMenuData.forEach(item => {
+                map[item.id] = {
+                    stock: item.stock,
+                    specific_extras_ids: item.specific_extras_ids,
+                    sort_order: item.sort_order
+                };
+            });
+        }
+        return map;
+    }, [dailyMenuData]);
 
+    // Pre-calculate category type map for faster filtering
+    const categoryTypeMap = useMemo(() => {
+        const map = {};
+        categories.forEach(cat => {
+            map[cat.name] = cat.type;
+        });
+        return map;
+    }, [categories]);
+
+    // Filter logic to show ONLY delivery products
+    const filteredProducts = useMemo(() => {
+        const query = searchQuery?.toLowerCase() || "";
+        
+        return products.filter(product => {
+            // 0. Active Check (Do not show inactive products)
+            if (product.is_active === false) return false;
+
+            // 0.1 Mode Filter (Food vs Bar)
+            const catType = categoryTypeMap[product.category];
+            const isBarCategory = catType === 'bar';
+            
+            if (activeMode === 'food' && isBarCategory) return false;
+            if (activeMode === 'bar' && !isBarCategory) return false;
+
+            // 1. Search Filter
+            if (query) {
+                if (!product.name.toLowerCase().includes(query) && 
+                    !(product.description && product.description.toLowerCase().includes(query))) {
+                    return false;
+                }
+            }
+
+            // 2. Category Filter
+            if (activeCategory !== "Toate" && product.category !== activeCategory) {
+                return false;
+            }
+
+            // 3. Daily Menu Availability Check
+            if (activeMode === 'bar') {
+                return product.is_available !== false;
+            }
+
+            const menuItem = dailyMenuMap[product.id];
+            if (!menuItem) return false;
+
+            return true;
+        });
+    }, [products, categoryTypeMap, activeMode, searchQuery, activeCategory, dailyMenuMap]);
+
+    // Sort Products
+    const sortedProducts = useMemo(() => {
+        const sorted = [...filteredProducts];
+        
+        if (sortOrder === "asc") return sorted.sort((a, b) => a.price - b.price);
+        if (sortOrder === "desc") return sorted.sort((a, b) => b.price - a.price);
+
+        return sorted.sort((a, b) => {
+            if (activeMode === 'bar') {
+                const catA = categories.find(c => c.name === a.category);
+                const catB = categories.find(c => c.name === b.category);
+                const orderA = catA?.sort_order ?? 999;
+                const orderB = catB?.sort_order ?? 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.name.localeCompare(b.name);
+            }
+
+            const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
+            const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
+            return orderA - orderB;
+        });
+    }, [filteredProducts, sortOrder, activeMode, categories, dailyMenuMap]);
+
+    const indexOfLastProduct = currentPage * itemsPerPage;
+    const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+    const currentProducts = useMemo(() => sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct), [sortedProducts, indexOfFirstProduct, indexOfLastProduct]);
+    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+
+    const handleAddToCart = useCallback((e, product) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addToCart(product);
+    }, [addToCart]);
 
     // Prevent filtering before data is loaded
     if (loading) return <div className="loading-spinner">Se încarcă meniul...</div>;
@@ -281,107 +378,9 @@ const Products = () => {
 
     // --- VIEW MODE: CATALOG (Existing Logic) ---
 
-    // Build map for efficient lookup (moved here to be available for filtering)
-    const dailyMenuMap = useMemo(() => {
-        const map = {};
-        if (dailyMenuData) {
-            dailyMenuData.forEach(item => {
-                map[item.id] = {
-                    stock: item.stock,
-                    specific_extras_ids: item.specific_extras_ids,
-                    sort_order: item.sort_order
-                };
-            });
-        }
-        return map;
-    }, [dailyMenuData]);
-
-    // Pre-calculate category type map for faster filtering
-    const categoryTypeMap = useMemo(() => {
-        const map = {};
-        categories.forEach(cat => {
-            map[cat.name] = cat.type;
-        });
-        return map;
-    }, [categories]);
-
-    // Filter logic to show ONLY delivery products
-    const filteredProducts = useMemo(() => {
-        const query = searchQuery?.toLowerCase() || "";
-        
-        return products.filter(product => {
-            // 0. Active Check (Do not show inactive products)
-            if (product.is_active === false) return false;
-
-            // 0.1 Mode Filter (Food vs Bar)
-            const catType = categoryTypeMap[product.category];
-            const isBarCategory = catType === 'bar';
-            
-            if (activeMode === 'food' && isBarCategory) return false;
-            if (activeMode === 'bar' && !isBarCategory) return false;
-
-            // 1. Search Filter
-            if (query) {
-                if (!product.name.toLowerCase().includes(query) && 
-                    !(product.description && product.description.toLowerCase().includes(query))) {
-                    return false;
-                }
-            }
-
-            // 2. Category Filter
-            if (activeCategory !== "Toate" && product.category !== activeCategory) {
-                return false;
-            }
-
-            // 3. Daily Menu Availability Check
-            if (activeMode === 'bar') {
-                return product.is_available !== false;
-            }
-
-            const menuItem = dailyMenuMap[product.id];
-            if (!menuItem) return false;
-
-            return true;
-        });
-    }, [products, categoryTypeMap, activeMode, searchQuery, activeCategory, dailyMenuMap]);
-
-    // Sort Products
-    const sortedProducts = useMemo(() => {
-        const sorted = [...filteredProducts];
-        
-        if (sortOrder === "asc") return sorted.sort((a, b) => a.price - b.price);
-        if (sortOrder === "desc") return sorted.sort((a, b) => b.price - a.price);
-
-        return sorted.sort((a, b) => {
-            if (activeMode === 'bar') {
-                const catA = categories.find(c => c.name === a.category);
-                const catB = categories.find(c => c.name === b.category);
-                const orderA = catA?.sort_order ?? 999;
-                const orderB = catB?.sort_order ?? 999;
-                if (orderA !== orderB) return orderA - orderB;
-                return a.name.localeCompare(b.name);
-            }
-
-            const orderA = dailyMenuMap[a.id]?.sort_order ?? 999;
-            const orderB = dailyMenuMap[b.id]?.sort_order ?? 999;
-            return orderA - orderB;
-        });
-    }, [filteredProducts, sortOrder, activeMode, categories, dailyMenuMap]);
-
-    const indexOfLastProduct = currentPage * itemsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
-    const currentProducts = useMemo(() => sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct), [sortedProducts, indexOfFirstProduct, indexOfLastProduct]);
-    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
-
     const truncate = (str, n) => {
         return (str && str.length > n) ? str.substr(0, n - 1) + "..." : str;
     };
-
-    const handleAddToCart = useCallback((e, product) => {
-        e.preventDefault();
-        e.stopPropagation();
-        addToCart(product);
-    }, [addToCart]);
 
     return (
         <div className="products-page">
