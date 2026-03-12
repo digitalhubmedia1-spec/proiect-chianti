@@ -267,6 +267,7 @@ const AdminDashboard = () => {
     // Export PDF State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [selectedExportFields, setSelectedExportFields] = useState(['name', 'price', 'category', 'is_available']);
+    const [pdfOrientation, setPdfOrientation] = useState('portrait');
 
     const EXPORT_FIELDS = [
         { id: 'name', label: 'Nume' },
@@ -438,7 +439,7 @@ const AdminDashboard = () => {
             }
 
             const doc = new jsPDF({
-                orientation: selectedExportFields.length > 5 ? 'landscape' : 'portrait'
+                orientation: pdfOrientation
             });
 
             const typeLabel = activeProductTabType === 'delivery' ? 'Livrări' : activeProductTabType === 'bar' ? 'Bar' : 'Catering';
@@ -1486,6 +1487,35 @@ const AdminDashboard = () => {
                                         </label>
                                     ))}
                                 </div>
+
+                                <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                                    <p style={{ marginBottom: '10px', fontWeight: 'bold', color: '#334155' }}>Orientare Pagină:</p>
+                                    <div style={{ display: 'flex', gap: '15px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                            <input 
+                                                type="radio" 
+                                                name="pdfOrientation" 
+                                                value="portrait" 
+                                                checked={pdfOrientation === 'portrait'} 
+                                                onChange={() => setPdfOrientation('portrait')}
+                                                style={{ width: '18px', height: '18px' }}
+                                            />
+                                            <span>Portret (Vertical)</span>
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                            <input 
+                                                type="radio" 
+                                                name="pdfOrientation" 
+                                                value="landscape" 
+                                                checked={pdfOrientation === 'landscape'} 
+                                                onChange={() => setPdfOrientation('landscape')}
+                                                style={{ width: '18px', height: '18px' }}
+                                            />
+                                            <span>Landscape (Orizontal)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
                                     <button 
                                         className="btn btn-primary" 
