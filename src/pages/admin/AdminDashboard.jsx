@@ -482,7 +482,7 @@ const AdminDashboard = () => {
             // Map selected fields to headers and data
             const headers = selectedExportFields.map(fieldId => {
                 const field = EXPORT_FIELDS.find(f => f.id === fieldId);
-                return field ? field.label : fieldId;
+                return s(field ? field.label : fieldId);
             });
 
             const tableData = filteredProducts.map(p => {
@@ -498,16 +498,26 @@ const AdminDashboard = () => {
                 });
             });
 
+            // Dynamic column styles
+            const columnStyles = {};
+            selectedExportFields.forEach((fieldId, index) => {
+                if (fieldId === 'price') {
+                    columnStyles[index] = { cellWidth: 25, halign: 'center' }; // Center price
+                } else if (fieldId === 'is_available') {
+                    columnStyles[index] = { cellWidth: 20, halign: 'center' }; // Center availability
+                } else if (fieldId === 'weight') {
+                    columnStyles[index] = { cellWidth: 20, halign: 'center' }; // Center weight
+                }
+            });
+
             autoTable(doc, {
                 startY: 35,
                 head: [headers],
                 body: tableData,
                 theme: 'grid',
-                headStyles: { fillStyle: 'f', fillColor: [153, 0, 0], textColor: [255, 255, 255] },
-                styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-                columnStyles: {
-                    // Dynamic widths could be complex, let's use auto for now
-                }
+                headStyles: { fillStyle: 'f', fillColor: [153, 0, 0], textColor: [255, 255, 255], halign: 'center' },
+                styles: { fontSize: selectedExportFields.length > 6 ? 7 : 8, cellPadding: 2, overflow: 'linebreak' },
+                columnStyles: columnStyles
             });
 
             doc.save(`Produse_${activeProductTabType}_${new Date().toISOString().split('T')[0]}.pdf`);
