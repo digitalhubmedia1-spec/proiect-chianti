@@ -17,17 +17,23 @@ export const CartProvider = ({ children }) => {
     }, [cartItems]);
 
     const getItemType = (itemCategory) => {
-        const cat = categories.find(c => c.name === itemCategory);
-        return cat ? (cat.type || 'delivery') : 'delivery';
+        if (!itemCategory) return 'delivery';
+        const cat = categories.find(c => c.name?.toLowerCase().trim() === itemCategory.toLowerCase().trim());
+        const rawType = cat ? (cat.type || 'delivery') : 'delivery';
+        
+        // IMPORTANT: We only have TWO top-level types in the UI/Cart: 'delivery' and 'catering'.
+        // Everything else (bar, food, null, etc.) is treated as 'delivery'.
+        return rawType === 'catering' ? 'catering' : 'delivery';
     };
 
     const addToCart = (product, quantity = 1, selectedOptions = {}) => {
+        const itemType = getItemType(product.category);
+        
         // Prevent mixing types
         if (cartItems.length > 0) {
-            const currentType = getItemType(cartItems[0].category);
-            const newType = getItemType(product.category);
+            const currentType = cartItems[0].type || getItemType(cartItems[0].category);
 
-            if (currentType !== newType) {
+            if (currentType !== itemType) {
                 const confirmClear = window.confirm(
                     `Coșul conține deja produse de tip "${currentType === 'delivery' ? 'Livrări' : 'Catering'}".\n` +
                     `Nu puteți amesteca produsele de Catering cu cele de Livrare.\n\n` +
@@ -35,7 +41,7 @@ export const CartProvider = ({ children }) => {
                 );
 
                 if (confirmClear) {
-                    setCartItems([{ ...product, quantity, selectedOptions, cartId: Date.now() + Math.random() }]);
+                    setCartItems([{ ...product, type: itemType, quantity, selectedOptions, cartId: Date.now() + Math.random() }]);
                 }
                 return;
             }
@@ -55,7 +61,7 @@ export const CartProvider = ({ children }) => {
                 return newItems;
             }
             // Add new line
-            return [...prevItems, { ...product, quantity, selectedOptions, cartId: Date.now() + Math.random() }];
+            return [...prevItems, { ...product, type: itemType, quantity, selectedOptions, cartId: Date.now() + Math.random() }];
         });
     };
 

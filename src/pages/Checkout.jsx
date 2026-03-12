@@ -53,7 +53,12 @@ const Checkout = () => {
 
     // Check for Catering Items
     const hasCateringItems = cartItems.some(item => {
-        const cat = categories.find(c => c.name === item.category);
+        // 1. Use stored type (it's normalized to 'delivery' or 'catering')
+        if (item.type) return item.type === 'catering';
+        
+        // 2. Fallback for older items
+        if (!item.category) return false;
+        const cat = categories.find(c => c.name?.toLowerCase().trim() === item.category.toLowerCase().trim());
         return cat?.type === 'catering';
     });
 

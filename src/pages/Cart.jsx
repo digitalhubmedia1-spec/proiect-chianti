@@ -11,8 +11,21 @@ const Cart = () => {
     const navigate = useNavigate();
 
     const getItemType = (item) => {
-        const cat = categories.find(c => c.name === item.category);
-        return cat ? (cat.type || 'delivery') : 'delivery';
+        // 1. Prefer stored type if available, but normalize it!
+        // (Some items might have 'bar' or 'food' from previous versions)
+        if (item?.type) {
+            return item.type === 'catering' ? 'catering' : 'delivery';
+        }
+        
+        // 2. Fallback to category name matching
+        const itemCategory = item?.category;
+        if (!itemCategory) return 'delivery';
+        
+        const cat = categories.find(c => c.name?.toLowerCase().trim() === itemCategory.toLowerCase().trim());
+        const rawType = cat ? (cat.type || 'delivery') : 'delivery';
+        
+        // Everything except 'catering' maps to 'delivery'
+        return rawType === 'catering' ? 'catering' : 'delivery';
     };
 
     const deliveryItems = cartItems.filter(item => getItemType(item) === 'delivery');
