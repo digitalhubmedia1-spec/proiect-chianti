@@ -83,7 +83,14 @@ const Products = () => {
         }
     }, [selectedDate, setSearchParams]);
     const [dailyMenuData, setDailyMenuData] = useState(null); // Stores {id, stock} objects
-    const [activeMode, setActiveMode] = useState('food'); // 'food' or 'bar'
+    const [activeMode, setActiveMode] = useState(() => {
+        return localStorage.getItem('chianti_active_mode') || 'food';
+    }); // 'food' or 'bar'
+
+    // Persist activeMode to localStorage
+    useEffect(() => {
+        localStorage.setItem('chianti_active_mode', activeMode);
+    }, [activeMode]);
 
     // --- PAGINATION HOOKS HOISTED ---
     const [currentPage, setCurrentPage] = useState(1);
