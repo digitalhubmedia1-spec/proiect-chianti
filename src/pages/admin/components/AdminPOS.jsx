@@ -1235,6 +1235,7 @@ const AdminPOS = () => {
                     </div>
                 )}
             </div>
+        </div>
     );
 };
 
