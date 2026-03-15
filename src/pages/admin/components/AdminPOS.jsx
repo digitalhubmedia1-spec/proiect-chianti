@@ -3,7 +3,7 @@ import { useMenu } from '../../../context/MenuContext';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../supabaseClient';
-import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat, Wallet } from 'lucide-react';
+import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat, Wallet, ExternalLink } from 'lucide-react';
 
 const ProductCard = ({ product, addToCart }) => {
     const [imgError, setImgError] = useState(false);
@@ -120,8 +120,6 @@ const AdminPOS = () => {
     const [lastOrder, setLastOrder] = useState(null); // To allow printing after checkout
     const [mixedPaymentAmounts, setMixedPaymentAmounts] = useState({ cash: 0, card: '' });
     const [isMixedPayment, setIsMixedPayment] = useState(false);
-    const [isPaymentConfirmationPending, setIsPaymentConfirmationPending] = useState(false);
-    const [pendingPaymentMethod, setPendingPaymentMethod] = useState(null);
 
     // Date State for POS
     const [posDate, setPosDate] = useState(new Date());
@@ -618,8 +616,6 @@ const AdminPOS = () => {
             // Reset states
             setIsMixedPayment(false);
             setMixedPaymentAmounts({ cash: 0, card: '' });
-            setIsPaymentConfirmationPending(false);
-            setPendingPaymentMethod(null);
 
             // Clear table items
             updateTableItems(tableId, []);
@@ -646,47 +642,19 @@ const AdminPOS = () => {
             card: parseFloat(mixedPaymentAmounts.card) || 0 
         } : null;
 
-        // 1. If Card, trigger SoftPos and wait for UI confirmation
+        // Simplified flow: Card button now behaves like Cash (just saves and resets)
+        // The SoftPos app is opened separately via a new dedicated button
         if (paymentMethod === 'card') {
-            if (window.confirm(`Plată CARD: ${finalTotal.toFixed(2)} Lei. Deschideți aplicația SoftPos pe terminal?`)) {
-                triggerSoftPosPayment(finalTotal);
-                setPendingPaymentMethod({
-                    method: 'card',
-                    tableId: finalTableId,
-                    cart: finalCart,
-                    tableName: finalTableName,
-                    total: finalTotal,
-                    mixedAmounts: null
-                });
-                setIsPaymentConfirmationPending(true);
-            }
+            finalizeOrder('card', finalTableId, finalCart, finalTableName, finalTotal, null);
             return;
         }
 
-        // 2. If Mixed, trigger SoftPos for card portion and wait for UI confirmation
         if (paymentMethod === 'mixed') {
-            const cardVal = finalMixedAmounts.card;
-            if (cardVal > 0) {
-                if (window.confirm(`Plată MIXTĂ: Card ${cardVal.toFixed(2)} Lei. Deschideți aplicația SoftPos pe terminal?`)) {
-                    triggerSoftPosPayment(cardVal);
-                    setPendingPaymentMethod({
-                        method: 'mixed',
-                        tableId: finalTableId,
-                        cart: finalCart,
-                        tableName: finalTableName,
-                        total: finalTotal,
-                        mixedAmounts: finalMixedAmounts
-                    });
-                    setIsPaymentConfirmationPending(true);
-                }
-            } else {
-                // Only cash in mixed
-                finalizeOrder('mixed', finalTableId, finalCart, finalTableName, finalTotal, finalMixedAmounts);
-            }
+            finalizeOrder('mixed', finalTableId, finalCart, finalTableName, finalTotal, finalMixedAmounts);
             return;
         }
 
-        // 3. Cash payment - direct save
+        // Cash payment - direct save
         finalizeOrder('cash', finalTableId, finalCart, finalTableName, finalTotal, null);
     };
 
@@ -1037,6 +1005,29 @@ const AdminPOS = () => {
                                     TRIMITE LA BUCĂTĂRIE
                                 </button>
 
+                                <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <button 
+                                        onClick={() => triggerSoftPosPayment(total)}
+                                        disabled={isSaving || cart.length === 0}
+                                        style={{ 
+                                            width: '100%', 
+                                            background: '#0052cc', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '6px', 
+                                            padding: '12px', 
+                                            fontSize: '1rem', 
+                                            fontWeight: '700', 
+                                            cursor: isSaving || cart.length === 0 ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                            opacity: isSaving || cart.length === 0 ? 0.7 : 1
+                                        }}
+                                    >
+                                        <ExternalLink size={20} />
+                                        DESCHIDE APLICAȚIA POS UNICREDIT
+                                    </button>
+                                </div>
+
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <button 
                                         onClick={() => handleCheckout('cash')}
@@ -1244,104 +1235,6 @@ const AdminPOS = () => {
                     </div>
                 )}
             </div>
-
-            {/* Payment Confirmation Overlay */}
-            {isPaymentConfirmationPending && pendingPaymentMethod && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.85)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 9999,
-                    padding: '1rem'
-                }}>
-                    <div style={{
-                        background: 'white',
-                        borderRadius: '12px',
-                        padding: '2rem',
-                        maxWidth: '400px',
-                        width: '100%',
-                        textAlign: 'center',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-                    }}>
-                        <div style={{ 
-                            width: '64px', 
-                            height: '64px', 
-                            background: '#fef3c7', 
-                            borderRadius: '50%', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            margin: '0 auto 1.5rem'
-                        }}>
-                            <Wallet size={32} color="#f59e0b" />
-                        </div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#1e293b' }}>
-                            Confirmare Plată
-                        </h2>
-                        <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '1.1rem' }}>
-                            A fost efectuată plata cu succes pe terminalul SoftPos pentru 
-                            <span style={{ fontWeight: '700', color: '#1e293b', display: 'block', marginTop: '0.5rem' }}>
-                                {pendingPaymentMethod.method === 'mixed' 
-                                    ? `Card: ${pendingPaymentMethod.mixedAmounts.card.toFixed(2)} Lei`
-                                    : `${pendingPaymentMethod.total.toFixed(2)} Lei`
-                                }
-                            </span>
-                        </p>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <button 
-                                onClick={() => {
-                                    finalizeOrder(
-                                        pendingPaymentMethod.method,
-                                        pendingPaymentMethod.tableId,
-                                        pendingPaymentMethod.cart,
-                                        pendingPaymentMethod.tableName,
-                                        pendingPaymentMethod.total,
-                                        pendingPaymentMethod.mixedAmounts
-                                    );
-                                }}
-                                style={{ 
-                                    background: '#10b981', 
-                                    color: 'white', 
-                                    border: 'none', 
-                                    borderRadius: '8px', 
-                                    padding: '1rem', 
-                                    fontSize: '1.1rem', 
-                                    fontWeight: '700', 
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                DA, PLATA ESTE OK
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    setIsPaymentConfirmationPending(false);
-                                    setPendingPaymentMethod(null);
-                                }}
-                                style={{ 
-                                    background: '#ef4444', 
-                                    color: 'white', 
-                                    border: 'none', 
-                                    borderRadius: '8px', 
-                                    padding: '1rem', 
-                                    fontSize: '1.1rem', 
-                                    fontWeight: '700', 
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                NU, ANULEAZĂ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
     );
 };
 
