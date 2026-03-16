@@ -56,27 +56,6 @@
     gap: 0.5rem;
 }
 
-.pay-logo {
-    background: white;
-    color: black;
-    padding: 2px 5px;
-    font-weight: bold;
-    font-size: 0.7rem;
-    border-radius: 2px;
-}
-
-.pay-logo.netopia {
-    color: purple;
-}
-
-.pay-logo.mc {
-    color: orangered;
-}
-
-.pay-logo.visa {
-    color: blue;
-}
-
 /* Links Columns */
 .footer-col h3 {
     color: white;

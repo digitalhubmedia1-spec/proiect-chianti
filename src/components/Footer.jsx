@@ -1,6 +1,6 @@
 import React from 'react';
-import { CreditCard, Wallet } from 'lucide-react';
 import logoAlb from '../assets/logo/logoalb.png';
+import acceptarePlati from '../assets/Acceptare-plati.png';
 import './Footer.css';
 
 const Footer = () => {
@@ -26,9 +26,7 @@ const Footer = () => {
                         <div className="payment-methods">
                             <p>Plătește în siguranță prin</p>
                             <div className="payment-logos">
-                                <div className="pay-logo netopia">NETOPIA</div>
-                                <div className="pay-logo mc">Mastercard</div>
-                                <div className="pay-logo visa">VISA</div>
+                                <img src={acceptarePlati} alt="Acceptare plăți" style={{ maxWidth: '200px', height: 'auto' }} />
                             </div>
                         </div>
                     </div>
