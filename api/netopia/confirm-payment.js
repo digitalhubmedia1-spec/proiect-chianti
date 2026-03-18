@@ -7,6 +7,11 @@ const {
     NETOPIA_PRIVATE_KEY
 } = process.env;
 
+const fixKey = (key) => {
+    if (!key) return key;
+    return key.replace(/\\n/g, '\n').replace(/^["']|["']$/g, '');
+};
+
 export default async function handler(req, res) {
     let supabase;
     try {
@@ -29,11 +34,11 @@ export default async function handler(req, res) {
         }
 
         // 1. Decrypt AES Key using Merchant Private Key
-        const encryptedKey = Buffer.from(env_key, 'base64');
+        // 2. Decrypt AES Key using Merchant Private Key
         const aesKey = crypto.privateDecrypt({
-            key: NETOPIA_PRIVATE_KEY,
+            key: fixKey(NETOPIA_PRIVATE_KEY),
             padding: crypto.constants.RSA_PKCS1_PADDING
-        }, encryptedKey);
+        }, Buffer.from(req.body.env_key, 'base64'));
 
         // 2. Decrypt Data using AES Key
         const iv = Buffer.alloc(16, 0); // Fixed zero IV
