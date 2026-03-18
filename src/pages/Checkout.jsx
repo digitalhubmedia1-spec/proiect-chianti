@@ -244,11 +244,11 @@ const Checkout = () => {
                     clearCart(); // Clear cart before leaving
                     form.submit();
                 } else {
-                    alert('Eroare inițializare plată: ' + result.error);
+                    alert('Eroare inițializare plată: ' + (result.error || 'Necunoscută'));
                 }
             } catch (error) {
                 console.error('Payment Error:', error);
-                alert('Eroare la procesarea plății.');
+                alert('Eroare la procesarea plății: ' + error.message);
             }
         } else {
             alert('Comandă plasată cu succes! Factura se va descărca automat.');
