@@ -245,8 +245,7 @@ const Checkout = () => {
                     form.submit();
                 } else {
                     const detailStr = result.details ? ` (${result.details.join(', ')})` : '';
-                    const debugStr = result.debug ? `\nDebug: CertLen=${result.debug.certLen}, KeyLen=${result.debug.keyLen}` : '';
-                    alert('Eroare inițializare plată: ' + (result.error || 'Necunoscută') + detailStr + debugStr);
+                    alert('Eroare inițializare plată: ' + (result.error || 'Necunoscută') + detailStr);
                 }
             } catch (error) {
                 console.error('Payment Error:', error);
