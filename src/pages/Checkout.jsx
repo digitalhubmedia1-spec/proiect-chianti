@@ -234,6 +234,12 @@ const Checkout = () => {
                     envKeyInput.value = result.envKey;
                     form.appendChild(envKeyInput);
 
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = 'payment_method';
+                    methodInput.value = 'card';
+                    form.appendChild(methodInput);
+
                     const dataInput = document.createElement('input');
                     dataInput.type = 'hidden';
                     dataInput.name = 'data';

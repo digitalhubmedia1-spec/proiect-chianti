@@ -108,7 +108,7 @@ export default async function handler(req, res) {
             status: 'success',
             envKey,
             data,
-            url: 'https://sandboxsecure.mobilpay.ro'
+            url: 'https://sandbox.netopia-payments.com/payment/card/start'
         });
 
     } catch (error) {
