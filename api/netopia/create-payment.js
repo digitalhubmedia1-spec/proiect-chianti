@@ -66,24 +66,26 @@ export default async function handler(req, res) {
         const description = `Comanda #${orderId} - Casa Chianti`;
 
         const xml = `<?xml version="1.0" encoding="utf-8"?>
-<order type="card" id="${orderId}" timestamp="${timestamp}">
-    <signature>${NETOPIA_SIGNATURE_KEY}</signature>
-    <url>
-        <return>${returnUrl}</return>
-        <confirm>${confirmUrl}</confirm>
-    </url>
-    <invoice currency="RON" amount="${amount.toFixed(2)}" customer_type="${customer.clientType === 'juridica' ? 'juridica' : 'fizica'}">
-        <details>${description}</details>
-        <contact_info>
-            <first_name>${escapeXml(customer.firstName)}</first_name>
-            <last_name>${escapeXml(customer.lastName)}</last_name>
-            <phone>${escapeXml(customer.phone)}</phone>
-            <email>${escapeXml(customer.email)}</email>
-            <address>${escapeXml(customer.address || '-')}</address>
-            <city>${escapeXml(customer.city || '-')}</city>
-        </contact_info>
-    </invoice>
-</order>`;
+<mobilpay>
+    <order type="card" id="${orderId}" timestamp="${timestamp}">
+        <signature>${NETOPIA_SIGNATURE_KEY}</signature>
+        <url>
+            <return>${returnUrl}</return>
+            <confirm>${confirmUrl}</confirm>
+        </url>
+        <invoice currency="RON" amount="${amount.toFixed(2)}" customer_type="${customer.clientType === 'juridica' ? 'juridica' : 'fizica'}">
+            <details>${description}</details>
+            <contact_info>
+                <first_name>${escapeXml(customer.firstName)}</first_name>
+                <last_name>${escapeXml(customer.lastName)}</last_name>
+                <phone>${escapeXml(customer.phone)}</phone>
+                <email>${escapeXml(customer.email)}</email>
+                <address>${escapeXml(customer.address || '-')}</address>
+                <city>${escapeXml(customer.city || '-')}</city>
+            </contact_info>
+        </invoice>
+    </order>
+</mobilpay>`;
 
         // 2. Encryption Logic
         // Generate random AES key
