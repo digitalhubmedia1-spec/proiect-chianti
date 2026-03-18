@@ -65,26 +65,25 @@ export default async function handler(req, res) {
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
         const description = `Comanda #${orderId} - Casa Chianti`;
 
-        const xml = `<mobilpay>
-    <order type="card" id="${orderId}" timestamp="${timestamp}">
-        <signature>${NETOPIA_SIGNATURE_KEY}</signature>
-        <invoice currency="RON" amount="${amount.toFixed(2)}">
-            <details>${description}</details>
-            <contact_info>
-                <first_name>${escapeXml(customer.firstName)}</first_name>
-                <last_name>${escapeXml(customer.lastName)}</last_name>
-                <phone>${escapeXml(customer.phone)}</phone>
-                <email>${escapeXml(customer.email)}</email>
-                <address>${escapeXml(customer.address || '-')}</address>
-                <city>${escapeXml(customer.city || '-')}</city>
-            </contact_info>
-        </invoice>
-        <url>
-            <return>${returnUrl}</return>
-            <confirm>${confirmUrl}</confirm>
-        </url>
-    </order>
-</mobilpay>`;
+        const xml = `<?xml version="1.0" encoding="utf-8"?>
+<order type="card" id="${orderId}" timestamp="${timestamp}">
+    <signature>${NETOPIA_SIGNATURE_KEY}</signature>
+    <invoice currency="RON" amount="${amount.toFixed(2)}">
+        <details>${description}</details>
+        <contact_info>
+            <first_name>${escapeXml(customer.firstName)}</first_name>
+            <last_name>${escapeXml(customer.lastName)}</last_name>
+            <phone>${escapeXml(customer.phone)}</phone>
+            <email>${escapeXml(customer.email)}</email>
+            <address>${escapeXml(customer.address || '-')}</address>
+            <city>${escapeXml(customer.city || '-')}</city>
+        </contact_info>
+    </invoice>
+    <url>
+        <return>${returnUrl}</return>
+        <confirm>${confirmUrl}</confirm>
+    </url>
+</order>`;
 
         // 2. Encryption Logic
         // Generate random AES key
@@ -109,7 +108,7 @@ export default async function handler(req, res) {
             status: 'success',
             envKey,
             data,
-            url: 'https://sandbox.netopia-payments.com/payment/card/start'
+            url: 'https://sandbox.netopia-payments.com/payment/card/redirect'
         });
 
     } catch (error) {
