@@ -65,15 +65,10 @@ export default async function handler(req, res) {
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
         const description = `Comanda #${orderId} - Casa Chianti`;
 
-        const xml = `<?xml version="1.0" encoding="utf-8"?>
-<mobilpay>
+        const xml = `<mobilpay>
     <order type="card" id="${orderId}" timestamp="${timestamp}">
         <signature>${NETOPIA_SIGNATURE_KEY}</signature>
-        <url>
-            <return>${returnUrl}</return>
-            <confirm>${confirmUrl}</confirm>
-        </url>
-        <invoice currency="RON" amount="${amount.toFixed(2)}" customer_type="${customer.clientType === 'juridica' ? 'juridica' : 'fizica'}">
+        <invoice currency="RON" amount="${amount.toFixed(2)}">
             <details>${description}</details>
             <contact_info>
                 <first_name>${escapeXml(customer.firstName)}</first_name>
@@ -84,6 +79,10 @@ export default async function handler(req, res) {
                 <city>${escapeXml(customer.city || '-')}</city>
             </contact_info>
         </invoice>
+        <url>
+            <return>${returnUrl}</return>
+            <confirm>${confirmUrl}</confirm>
+        </url>
     </order>
 </mobilpay>`;
 
