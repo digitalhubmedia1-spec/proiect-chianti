@@ -37,6 +37,7 @@ import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import GuestPortal from './pages/GuestPortal';
 import ReservationPage from './pages/ReservationPage';
+import PaymentStatus from './pages/PaymentStatus';
 import ScrollToTop from './components/ScrollToTop';
 import PageTitleUpdater from './components/PageTitleUpdater';
 import './index.css';
@@ -73,6 +74,7 @@ function App() {
                   <Route path="/contul-meu" element={<Layout><Account /></Layout>} />
                   <Route path="/cos" element={<Layout><Cart /></Layout>} />
                   <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+                  <Route path="/payment-status" element={<PaymentStatus />} />
                   <Route path="/termeni" element={<Layout><Terms /></Layout>} />
                   <Route path="/siguranta-datelor" element={<Layout><DataSecurity /></Layout>} />
                   <Route path="/confidentialitate" element={<Layout><ConfidentialityPage /></Layout>} />

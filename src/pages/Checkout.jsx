@@ -191,7 +191,7 @@ const Checkout = () => {
         }
 
         // 3. Add Order to Admin System
-        await addOrder({
+        const orderId = await addOrder({
             customer: formData,
             items: cartItems,
             finalTotal: finalTotal,
@@ -199,13 +199,62 @@ const Checkout = () => {
             deliveryCost: deliveryCost,
             isCatering: hasCateringItems,
             discount: discount ? { code: discount.code, amount: discountAmount, percent: discount.percent } : null,
-            userId: user?.id || null
+            userId: user?.id || null,
+            status: formData.paymentMethod === 'card' ? 'pending_payment' : 'pending'
         });
 
-        // 4. Clear Cart & Redirect
-        alert('Comandă plasată cu succes! Factura se va descărca automat.');
-        clearCart();
-        navigate('/');
+        if (!orderId) return;
+
+        // 4. Handle Redirection / Completion
+        if (formData.paymentMethod === 'card') {
+            try {
+                const response = await fetch('/api/netopia/create-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        amount: finalTotal,
+                        customer: formData,
+                        items: cartItems,
+                        returnUrl: `${window.location.origin}/payment-status?orderId=${orderId}`,
+                        confirmUrl: `${window.location.origin}/api/netopia/confirm-payment`
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    // Create a hidden form and submit it to Netopia
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = result.url;
+
+                    const envKeyInput = document.createElement('input');
+                    envKeyInput.type = 'hidden';
+                    envKeyInput.name = 'env_key';
+                    envKeyInput.value = result.envKey;
+                    form.appendChild(envKeyInput);
+
+                    const dataInput = document.createElement('input');
+                    dataInput.type = 'hidden';
+                    dataInput.name = 'data';
+                    dataInput.value = result.data;
+                    form.appendChild(dataInput);
+
+                    document.body.appendChild(form);
+                    clearCart(); // Clear cart before leaving
+                    form.submit();
+                } else {
+                    alert('Eroare inițializare plată: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Payment Error:', error);
+                alert('Eroare la procesarea plății.');
+            }
+        } else {
+            alert('Comandă plasată cu succes! Factura se va descărca automat.');
+            clearCart();
+            navigate('/');
+        }
     };
 
 
@@ -514,9 +563,9 @@ const Checkout = () => {
                                 <input type="radio" name="paymentMethod" value="ramburs" checked={formData.paymentMethod === 'ramburs'} onChange={handleChange} />
                                 <span>Plată Ramburs (Numerar)</span>
                             </label>
-                            <label className="radio-option disabled">
-                                <input type="radio" name="paymentMethod" value="card" disabled />
-                                <span>Card Online (Indisponibil momentan)</span>
+                            <label className="radio-option">
+                                <input type="radio" name="paymentMethod" value="card" checked={formData.paymentMethod === 'card'} onChange={handleChange} />
+                                <span>Card Online (Netopia)</span>
                             </label>
                         </div>
                     </form>
