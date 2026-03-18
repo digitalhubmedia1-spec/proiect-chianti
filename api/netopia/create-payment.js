@@ -65,34 +65,34 @@ export default async function handler(req, res) {
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
         const description = `Comanda #${orderId} - Casa Chianti`;
 
-        const xml = `<?xml version="1.0" encoding="utf-8"?>
-<order type="card" id="${orderId}" timestamp="${timestamp}">
-    <signature>${NETOPIA_SIGNATURE_KEY}</signature>
-    <invoice currency="RON" amount="${amount.toFixed(2)}">
-        <details>${description}</details>
-        <contact_info>
-            <first_name>${escapeXml(customer.firstName)}</first_name>
-            <last_name>${escapeXml(customer.lastName)}</last_name>
-            <phone>${escapeXml(customer.phone)}</phone>
-            <email>${escapeXml(customer.email)}</email>
-            <address>${escapeXml(customer.address || '-')}</address>
-            <city>${escapeXml(customer.city || '-')}</city>
-        </contact_info>
-    </invoice>
-    <url>
-        <return>${returnUrl}</return>
-        <confirm>${confirmUrl}</confirm>
-    </url>
-</order>`;
+        const xml = `<mobilpay>
+    <order type="card" id="${orderId}" timestamp="${timestamp}">
+        <signature>${NETOPIA_SIGNATURE_KEY}</signature>
+        <invoice currency="RON" amount="${amount.toFixed(2)}">
+            <details>${escapeXml(description)}</details>
+            <contact_info>
+                <billing type="person">
+                    <first_name>${escapeXml(customer.firstName)}</first_name>
+                    <last_name>${escapeXml(customer.lastName)}</last_name>
+                    <address>${escapeXml(customer.address || '-')}</address>
+                    <email>${escapeXml(customer.email)}</email>
+                    <mobile_phone>${escapeXml(customer.phone)}</mobile_phone>
+                </billing>
+            </contact_info>
+        </invoice>
+        <url>
+            <return>${returnUrl}</return>
+            <confirm>${confirmUrl}</confirm>
+        </url>
+    </order>
+</mobilpay>`;
 
-        // 2. Encryption Logic
-        // Generate random AES key
-        const aesKey = crypto.randomBytes(16);
-        // Netopia standard uses a fixed 16-byte zero IV
-        const iv = Buffer.alloc(16, 0);
+        // 2. Encryption Logic (UPGRADED TO AES-256-CBC as per latest docs)
+        const aesKey = crypto.randomBytes(32); // 32 bytes for AES-256
+        const iv = Buffer.alloc(16, 0); // Still 16-byte zero IV
 
-        // Encrypt XML with AES-128-CBC
-        const cipher = crypto.createCipheriv('aes-128-cbc', aesKey, iv);
+        // Encrypt XML with AES-256-CBC
+        const cipher = crypto.createCipheriv('aes-256-cbc', aesKey, iv);
         let encryptedData = cipher.update(xml, 'utf8', 'base64');
         encryptedData += cipher.final('base64');
 
