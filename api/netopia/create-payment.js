@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// Load environment variables (Vercel does this automatically)
 const {
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
@@ -10,9 +9,15 @@ const {
     NETOPIA_PUBLIC_CERT
 } = process.env;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
 export default async function handler(req, res) {
+    let supabase;
+    try {
+        if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+            supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        }
+    } catch (e) {
+        console.error("Supabase init error:", e);
+    }
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }

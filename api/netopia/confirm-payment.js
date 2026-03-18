@@ -7,9 +7,15 @@ const {
     NETOPIA_PRIVATE_KEY
 } = process.env;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
 export default async function handler(req, res) {
+    let supabase;
+    try {
+        if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+            supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        }
+    } catch (e) {
+        console.error("Supabase init error:", e);
+    }
     if (req.method !== 'POST') {
         return res.status(405).send('Method not allowed');
     }
