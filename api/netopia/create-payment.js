@@ -12,11 +12,11 @@ const {
 // Helper to fix PEM formatting from env vars (removes garbage and rebuilds standard PEM)
 const fixPEM = (key, type) => {
     if (!key) return key;
-    // Clean all whitespace, literal \n, and existing headers
+    // Clean all whitespace, literal \n, and existing headers/footers
     const base64 = key
         .replace(/\\n/g, '')
         .replace(/---[^-]+---/g, '')
-        .replace(/[\s\r\n]+/g, '')
+        .replace(/[^A-Za-z0-9+/=]/g, '') // Keep ONLY base64 chars
         .replace(/^["']|["']$/g, '');
     
     // Rebuild with standard 64-char lines
@@ -113,7 +113,13 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Netopia Create Payment Error:', error);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ 
+            error: error.message,
+            debug: {
+                certLen: NETOPIA_PUBLIC_CERT?.length,
+                keyLen: NETOPIA_PRIVATE_KEY?.length
+            }
+        });
     }
 }
 
