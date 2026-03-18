@@ -17,6 +17,22 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    // 0. Validate Environment Variables
+    const missingVars = [];
+    if (!SUPABASE_URL) missingVars.push('SUPABASE_URL');
+    if (!SUPABASE_SERVICE_ROLE_KEY) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+    if (!NETOPIA_SIGNATURE_KEY) missingVars.push('NETOPIA_SIGNATURE_KEY');
+    if (!NETOPIA_PRIVATE_KEY) missingVars.push('NETOPIA_PRIVATE_KEY');
+    if (!NETOPIA_PUBLIC_CERT) missingVars.push('NETOPIA_PUBLIC_CERT');
+
+    if (missingVars.length > 0) {
+        console.error('Missing Environment Variables:', missingVars);
+        return res.status(500).json({ 
+            error: 'Server configuration error (missing variables)', 
+            details: missingVars 
+        });
+    }
+
     try {
         const { orderId, amount, customer, items, returnUrl, confirmUrl } = req.body;
 
