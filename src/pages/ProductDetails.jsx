@@ -47,16 +47,25 @@ const ProductDetails = () => {
                     setStock(item.stock);
                 }
 
-                // Random Recommendations logic:
-                // 1. Filter products that are IN the daily menu for this date
-                const todaysProducts = products.filter(p => map[p.id] !== undefined);
-                // 2. Exclude current product
-                const otherProducts = todaysProducts.filter(p => p.id !== foundProduct.id);
-                // 3. Shuffle (Fisher-Yates)
+                // --- New Recommendation Logic ---
+                const currentCat = categories.find(c => c.name === foundProduct.category);
+                let otherProducts = [];
+
+                if (currentCat?.type === 'catering' || currentCat?.type === 'bar' || currentCat?.name?.toLowerCase().includes('bar')) {
+                    // 1. Same category for catering & bar
+                    otherProducts = products.filter(p => p.category === foundProduct.category && p.id !== foundProduct.id);
+                } else {
+                    // 2. Random from daily menu for fast delivery/normal products
+                    const todaysProducts = products.filter(p => map[p.id] !== undefined);
+                    otherProducts = todaysProducts.filter(p => p.id !== foundProduct.id);
+                }
+
+                // 3. Shuffle (Fisher-Yates) for some variety
                 for (let i = otherProducts.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [otherProducts[i], otherProducts[j]] = [otherProducts[j], otherProducts[i]];
                 }
+
                 // 4. Take top 4
                 setRecommendations(otherProducts.slice(0, 4));
             });
