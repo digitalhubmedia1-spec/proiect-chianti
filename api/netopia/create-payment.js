@@ -9,6 +9,21 @@ const {
     NETOPIA_PUBLIC_CERT
 } = process.env;
 
+// Helper to fix PEM formatting from env vars (removes garbage and rebuilds standard PEM)
+const fixPEM = (key, type) => {
+    if (!key) return key;
+    // Clean all whitespace, literal \n, and existing headers
+    const base64 = key
+        .replace(/\\n/g, '')
+        .replace(/---[^-]+---/g, '')
+        .replace(/[\s\r\n]+/g, '')
+        .replace(/^["']|["']$/g, '');
+    
+    // Rebuild with standard 64-char lines
+    const lines = base64.match(/.{1,64}/g) || [];
+    return `-----BEGIN ${type}-----\n${lines.join('\n')}\n-----END ${type}-----`;
+};
+
 export default async function handler(req, res) {
     let supabase;
     try {
@@ -81,13 +96,12 @@ export default async function handler(req, res) {
         let encryptedData = cipher.update(xml, 'utf8', 'base64');
         encryptedData += cipher.final('base64');
 
-        // Encrypt AES key with Netopia Public Certificate (RSA/ECB/PKCS1Padding)
-        const encryptedKey = crypto.publicEncrypt({
-            key: NETOPIA_PUBLIC_CERT,
+        // 4. Encrypt AES Key using Netopia Public Cert
+        const envKey = crypto.publicEncrypt({
+            key: fixPEM(NETOPIA_PUBLIC_CERT, 'CERTIFICATE'),
             padding: crypto.constants.RSA_PKCS1_PADDING
-        }, aesKey);
+        }, aesKey).toString('base64');
 
-        const envKey = encryptedKey.toString('base64');
         const data = encryptedData;
 
         return res.status(200).json({

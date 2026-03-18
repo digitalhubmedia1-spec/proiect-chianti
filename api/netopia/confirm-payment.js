@@ -7,9 +7,16 @@ const {
     NETOPIA_PRIVATE_KEY
 } = process.env;
 
-const fixKey = (key) => {
+const fixPEM = (key, type) => {
     if (!key) return key;
-    return key.replace(/\\n/g, '\n').replace(/^["']|["']$/g, '');
+    const base64 = key
+        .replace(/\\n/g, '')
+        .replace(/---[^-]+---/g, '')
+        .replace(/[\s\r\n]+/g, '')
+        .replace(/^["']|["']$/g, '');
+    
+    const lines = base64.match(/.{1,64}/g) || [];
+    return `-----BEGIN ${type}-----\n${lines.join('\n')}\n-----END ${type}-----`;
 };
 
 export default async function handler(req, res) {
@@ -33,10 +40,9 @@ export default async function handler(req, res) {
             return res.status(400).send('Missing keys');
         }
 
-        // 1. Decrypt AES Key using Merchant Private Key
-        // 2. Decrypt AES Key using Merchant Private Key
+        // 1. Decrypt AES Key using Merchant Private Key (RSA/ECB/PKCS1Padding)
         const aesKey = crypto.privateDecrypt({
-            key: fixKey(NETOPIA_PRIVATE_KEY),
+            key: fixPEM(NETOPIA_PRIVATE_KEY, 'PRIVATE KEY'),
             padding: crypto.constants.RSA_PKCS1_PADDING
         }, Buffer.from(req.body.env_key, 'base64'));
 
