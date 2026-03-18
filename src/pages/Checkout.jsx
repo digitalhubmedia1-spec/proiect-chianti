@@ -244,7 +244,8 @@ const Checkout = () => {
                     clearCart(); // Clear cart before leaving
                     form.submit();
                 } else {
-                    alert('Eroare inițializare plată: ' + (result.error || 'Necunoscută'));
+                    const detailStr = result.details ? ` (${result.details.join(', ')})` : '';
+                    alert('Eroare inițializare plată: ' + (result.error || 'Necunoscută') + detailStr);
                 }
             } catch (error) {
                 console.error('Payment Error:', error);
