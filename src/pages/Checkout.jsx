@@ -390,36 +390,43 @@ const Checkout = () => {
                         </div>
 
                         {/* 3. Date & Time Selection */}
-                        <div className="form-group">
-                            <label>Ora {hasCateringItems ? "Livrare" : "de Livrare / Ridicare"} *</label>
-                            <select name="deliveryTime" required onChange={handleChange} value={formData.deliveryTime}>
-                                <option value="" disabled>Selectează ora...</option>
-                                <option value="11:00">11:00</option>
-                                <option value="11:30">11:30</option>
-                                <option value="12:00">12:00</option>
-                                <option value="12:30">12:30</option>
-                                <option value="13:00">13:00</option>
-                                <option value="13:30">13:30</option>
-                                <option value="14:00">14:00</option>
-                                <option value="14:30">14:30</option>
-                                <option value="15:00">15:00</option>
-                                {hasCateringItems && (
-                                    <>
-                                        {/* Extended hours for events */}
-                                        <option value="16:00">16:00</option>
-                                        <option value="17:00">17:00</option>
-                                        <option value="18:00">18:00</option>
-                                        <option value="19:00">19:00</option>
-                                        <option value="20:00">20:00</option>
-                                    </>
-                                )}
-                            </select>
-                            <small className="form-text text-muted">
-                                {hasCateringItems
-                                    ? "Pentru catering, data exactă va fi confirmată telefonic (minim 48h avans)."
-                                    : "Program livrări: Luni - Vineri, 11:00 - 15:00"}
-                            </small>
-                        </div>
+                        {formData.deliveryMethod !== 'dinein' && (
+                            <div className="form-group">
+                                <label>Ora {hasCateringItems ? "Livrare" : "de Livrare / Ridicare"} *</label>
+                                <select 
+                                    name="deliveryTime" 
+                                    required={formData.deliveryMethod !== 'dinein'} 
+                                    onChange={handleChange} 
+                                    value={formData.deliveryTime}
+                                >
+                                    <option value="" disabled>Selectează ora...</option>
+                                    <option value="11:00">11:00</option>
+                                    <option value="11:30">11:30</option>
+                                    <option value="12:00">12:00</option>
+                                    <option value="12:30">12:30</option>
+                                    <option value="13:00">13:00</option>
+                                    <option value="13:30">13:30</option>
+                                    <option value="14:00">14:00</option>
+                                    <option value="14:30">14:30</option>
+                                    <option value="15:00">15:00</option>
+                                    {hasCateringItems && (
+                                        <>
+                                            {/* Extended hours for events */}
+                                            <option value="16:00">16:00</option>
+                                            <option value="17:00">17:00</option>
+                                            <option value="18:00">18:00</option>
+                                            <option value="19:00">19:00</option>
+                                            <option value="20:00">20:00</option>
+                                        </>
+                                    )}
+                                </select>
+                                <small className="form-text text-muted">
+                                    {hasCateringItems
+                                        ? "Pentru catering, data exactă va fi confirmată telefonic (minim 48h avans)."
+                                        : "Program livrări: Luni - Vineri, 11:00 - 15:00"}
+                                </small>
+                            </div>
+                        )}
 
                         {/* 4. Address Details (Conditional) */}
                         {/* Show if Standard Delivery OR Catering Event at Location */}
