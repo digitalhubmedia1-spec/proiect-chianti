@@ -11,27 +11,6 @@ const Terms = () => {
                 <p>Acest document stabilește termenii de utilizare ai platformei Chianti și condițiile contractuale aplicabile comenzilor, cererilor de ofertă, rezervărilor și proiectelor/evenimentelor organizate sau facilitate de Chianti. Prin accesarea platformei și/sau plasarea unei comenzi/rezervări/cereri, confirmi că ai citit, ai înțeles și accepți prezentul document, împreună cu politicile asociate afișate în site.</p>
             </section>
 
-            <div className="terms-toc">
-                <h4 className="mb-3">Cuprinsul acestuia este următorul:</h4>
-                <ol className="list-unstyled mb-0">
-                    <li>1. Prezentare generală</li>
-                    <li>2. Definiții</li>
-                    <li>3. Scopul site-ului</li>
-                    <li>4. Domeniul de aplicare</li>
-                    <li>5. Acceptarea termenilor și condițiilor</li>
-                    <li>6. Comandă/Rezervare</li>
-                    <li>7. Contractul – Procesul de comercializare...</li>
-                    <li>8. Link-uri pentru site-uri terțe</li>
-                    <li>9. Limitarea răspunderii</li>
-                    <li>10. Utilizarea Platformei</li>
-                    <li>11. Prelucrarea datelor cu caracter personal</li>
-                    <li>12. Folosirea cookie-urilor</li>
-                    <li>13. Revizuiri ale termenilor și condițiilor</li>
-                    <li>14. Legislație aplicabilă și jurisdicție</li>
-                    <li>15. Modalități de contact</li>
-                </ol>
-            </div>
-
             <section className="terms-section">
                 <h3>1. PREZENTARE GENERALĂ</h3>
                 <p><strong>1.1. Identificarea profesionistului</strong><br/>
@@ -115,8 +94,8 @@ const Terms = () => {
                 </ul>
                 <p><strong>B. Comandă rapidă pentru programul Ieftin și Bun</strong><br />
                 Programul Ieftin și Bun este comunicat ca prânz disponibil L–V, 11:00–15:00, cu opțiuni de livrare, ridicare sau servire în restaurant.</p>
-                <p><strong>C. Cerere de ofertă pentru evenimente</strong><br />
-                Cerere de ofertă nu reprezintă automat un contract final. Contractarea se face ulterior, prin documente transmise pe suport durabil (ofertă acceptată, contract, factură/confirmare).</p>
+                <p><strong>C. Cererea de ofertă pentru evenimente</strong><br />
+                Cererea de ofertă nu reprezintă automat un contract final. Contractarea se face ulterior, prin documente transmise pe suport durabil (ofertă acceptată, contract, factură/confirmare).</p>
                 
                 <h4>6.2. Servicii Gift Rezervare valabile pentru rezervarea unei date și a unui salon</h4>
                 <p>Gift Rezervare are rolul de a bloca o dată/un salon. Condițiile concrete (valoare, ce acoperă, reprogramare/anulare, termen, deducere) sunt cele comunicate pe suport durabil (factură/contract/confirmare).<br />
@@ -133,56 +112,88 @@ const Terms = () => {
 
             <section className="mb-5 terms-section">
                 <h3>7. CONTRACTUL – Procesul de comercializare a serviciilor de catering, prețul, livrarea și returul</h3>
-                <p><strong>7.1. Contractul și momentul încheierii contractului</strong><br />
-                Contractul se consideră încheiat în momentul în care Chianti transmite confirmarea acceptării comenzii/rezervării către Client, pe suport durabil (e-mail).</p>
-                <p><strong>7.2. Prețul și plata</strong><br />
-                Prețurile afișate sunt exprimate în RON și includ TVA, conform legii. Plata se poate efectua online (card), prin OP sau numerar la livrare (unde este permis). În cazul plăților online, tranzacția este procesată prin NETOPIA Payments.</p>
+                <p><strong>7.1. Contractul și momentul încheierii contractului</strong></p>
+                <ul>
+                    <li>Comanda transmisă de Client reprezintă o ofertă de a contracta.</li>
+                    <li>Contractul la distanță se consideră încheiat la confirmarea acceptării comenzii de către Chianti pe suport durabil (de regulă e-mail).</li>
+                    <li>Pentru servicii personalizate (evenimente), contractul se consideră încheiat în condițiile documentelor confirmate pe suport durabil (ofertă acceptată/contract/factură/confirmare rezervare).</li>
+                </ul>
+                <p><strong>7.2. Prețul și plata</strong></p>
+                <ul>
+                    <li>Prețurile produselor sunt exprimate în RON și includ TVA acolo unde este indicat în Platformă.</li>
+                    <li>Plata online se poate realiza prin NETOPIA, acolo unde opțiunea este disponibilă.</li>
+                    <li>Chianti nu urmărește să stocheze datele complete ale cardului; acestea sunt procesate de procesatorul de plăți.</li>
+                </ul>
                 <p><strong>7.3. Livrarea</strong><br />
-                Livrarea se face la adresa indicată de Client. Termenul de livrare este cel agreat la momentul confirmării comenzii (regim pre-comandă sau comandă rapidă). Clientul este responsabil pentru furnizarea datelor corecte de contact și adresă.</p>
+                Livrarea este detaliată în Politica de livrare (program, zone, tarife, condiții de recepție).<br />
+                Pentru pre-comenzi (catering) se aplică, în mod uzual:</p>
+                <ul>
+                    <li>Luni: nu se fac livrări</li>
+                    <li>Marți–Duminică: 10:00–16:00</li>
+                </ul>
+                <p>Zone și tarife de livrare sunt cele afișate și aplicate în checkout.</p>
                 <p><strong>7.4. Returul, livrarea neconformă sau parțială</strong><br />
-                Produsele alimentare care sunt preparate la comandă (perisabile) nu se pot returna după începerea procesului de preparare sau după livrare, conform legislației (OUG 34/2014). În cazul produselor neconforme, Clientul trebuie să sesizeze Chianti imediat la recepție.</p>
+                Regulile complete sunt în Politica de anulare și retur.<br />
+                Pentru produse alimentare/preparate la comandă (perisabile), dreptul de retragere este, de regulă, exceptat, însă rămân aplicabile remedii pentru livrare neconformă (refacere, înlocuire, rambursare proporțională etc.), în funcție de situație.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>8. LINK-URI PENTRU SITE-URI TERȚE</h3>
-                <p>Platforma poate conține link-uri către site-uri operate de terți (ex.: procesatori de plăți, rețele sociale). Chianti nu controlează și nu este responsabilă pentru conținutul sau politicile acestor site-uri.</p>
+                <p>Platforma poate conține linkuri către site-uri terțe (ex.: parteneri, procesator plăți, rețele sociale). Chianti nu controlează politicile acestor terți. Utilizarea site-urilor terțe se face conform termenilor și politicilor lor.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>9. LIMITAREA RĂSPUNDERII</h3>
-                <p>Chianti depune eforturi pentru menținerea acurateței informațiilor, însă nu garantează că Platforma va fi fără erori sau neîntreruptă. Răspunderea Chianti este limitată, în măsura maximă permisă de lege, la valoarea comenzii/serviciului achitat.</p>
+                <p>Chianti răspunde în limitele permise de lege.<br />
+                Nicio prevedere din acest document nu limitează sau exclude drepturi imperative ale consumatorilor și nu limitează răspunderea pentru situații în care legea interzice limitarea (de exemplu intenție sau culpă gravă).<br />
+                În caz de întârzieri cauzate de factori neimputabili (trafic, condiții meteo, forță majoră), Chianti va depune eforturi rezonabile pentru informare și soluționare, ținând cont de natura perisabilă a produselor.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>10. UTILIZAREA PLATFORMEI</h3>
-                <p>Este interzisă utilizarea Platformei în scopuri ilegale, frauduloase sau care pot afecta integritatea tehnică a acesteia (hacking, spam, etc.).</p>
+                <p>Este interzisă utilizarea Platformei în scopuri ilegale, inclusiv:</p>
+                <ul>
+                    <li>acces neautorizat, încercări de compromitere;</li>
+                    <li>transmitere de malware sau perturbarea funcționării;</li>
+                    <li>folosirea abuzivă a funcționalităților (de exemplu comenzi fictive repetate).</li>
+                </ul>
+                <p>Chianti poate restricționa accesul în caz de abuz, cu respectarea legii și a drepturilor aplicabile.</p>
             </section>
 
             <section className="mb-5 terms-section">
-                <h3>11. PRELUCRAREA DATELOR CU CARACTER PERSONAL (GDPR)</h3>
-                <p>Prelucrarea datelor se face conform Politicii de Confidențialitate disponibile pe site. Datele sunt colectate în scopul procesării comenzilor, informării clienților și, opțional, pentru marketing (dacă există consimțământ).</p>
+                <h3>11. PRELUCRAREA DATELOR CU CARACTER PERSONAL</h3>
+                <p>Prelucrarea datelor cu caracter personal este descrisă în Politica de confidențialitate. Pentru clarificări privind securitatea, este disponibilă pagina Informații privind siguranța datelor clienților.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>12. FOLOSIREA COOKIE-URILOR</h3>
-                <p>Platforma utilizează cookie-uri pentru funcționare și analiză. Detalii în Politica de Cookie-uri.</p>
+                <p>Platforma poate utiliza cookie-uri și tehnologii similare pentru funcționare și, dacă este cazul, analiză/marketing, conform setărilor și consimțământului utilizatorului.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>13. REVIZUIRI ALE TERMENILOR ȘI CONDIȚIILOR</h3>
-                <p>Chianti poate modifica prezentul document oricând. Versiunea aplicabilă este cea afișată pe site la momentul plasării comenzii/rezervării.</p>
+                <p>Chianti poate actualiza periodic documentele pentru a reflecta schimbări operaționale sau legislative. Versiunea aplicabilă unei comenzi/rezervări este cea publicată la momentul plasării comenzii/rezervării.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>14. LEGISLAȚIE APLICABILĂ ȘI JURISDICȚIE</h3>
-                <p>Prezentul document este guvernat de legea română. Orice litigiu va fi soluționat pe cale amiabilă sau de către instanțele judecătorești competente din Roman/jud. Neamț.</p>
+                <p>Prezentul document este guvernat de legea română. Pentru consumatori se aplică cu prioritate dispozițiile imperative de protecție a consumatorilor.</p>
             </section>
 
             <section className="mb-5 terms-section">
                 <h3>15. MODALITĂȚI DE CONTACT</h3>
-                <p>Pentru orice solicitare, ne puteți contacta la:<br/>
-                E-mail: <a href="mailto:comenzi@chianti.ro" className="terms-link">comenzi@chianti.ro</a><br/>
-                Telefon: 0729 881 854 / 0374 968 884</p>
+                <p><strong>Email:</strong></p>
+                <ul>
+                    <li>comenzi@chianti.ro</li>
+                </ul>
+                <p><strong>Telefon:</strong></p>
+                <ul>
+                    <li>0729 881 854, 0374 968 884</li>
+                </ul>
+                <p><strong>Program orientativ:</strong></p>
+                <ul>
+                    <li>L–V 10:00–17:00, S–D 10:00–14:00</li>
+                </ul>
             </section>
         </div>
     );
