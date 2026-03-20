@@ -69,7 +69,7 @@ const RefundPolicy = () => {
                 <ul>
                     <li><strong>Suma va fi returnată</strong> în termen de maxim 14 zile calendaristice de la data soluționării favorabile a reclamației/anulării.</li>
                     <li><strong>Metoda de rambursare:</strong> Contravaloarea va fi restituită în contul aferent cardului cu care s-a făcut plata online. Pentru comenzile achitate ramburs/numerar, restituirea se va face într-un cont bancar (IBAN) furnizat de tine în scris.</li>
-                    <li><strong>Taxele de livrare:</strong> Dacă reclamația vizează doar o parte din comandă (ex: un sinmgur produs lipsă), taxa de livrare inițială nu se rambursează.</li>
+                    <li><strong>Taxele de livrare:</strong> Dacă reclamația vizează doar o parte din comandă (ex: un singur produs lipsă), taxa de livrare inițială nu se rambursează.</li>
                 </ul>
             </section>
         </div>
