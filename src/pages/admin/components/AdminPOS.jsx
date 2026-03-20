@@ -557,7 +557,7 @@ const AdminPOS = () => {
         // The previous one was: intent:#Intent;action=com.unicredit.softpos.PAY;S.amount=${amount.toFixed(2)};S.currency=RON;S.transaction_type=SALE;end
         
         // Let's try to target the package directly to ensure it opens
-        const intentUri = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=eu.unicredit.getandpay.ro;end`;
+        const intentUri = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.provisionpay.softpos.unicreditro;end`;
         
         console.log("Opening SoftPos App:", intentUri);
         
