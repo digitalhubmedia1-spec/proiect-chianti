@@ -5,25 +5,38 @@ import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../supabaseClient';
 import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat, Wallet, ExternalLink } from 'lucide-react';
 
-const ProductCard = ({ product, addToCart }) => {
+const ProductCard = ({ product, addToCart, remainingPortions }) => {
     const [imgError, setImgError] = useState(false);
+    const isSoldOut = remainingPortions !== undefined && remainingPortions <= 0;
 
     return (
         <div
-            onClick={() => addToCart(product)}
+            onClick={() => !isSoldOut && addToCart(product)}
             style={{
-                border: '1px solid #e2e8f0',
+                border: isSoldOut ? '1px solid #fecaca' : '1px solid #e2e8f0',
                 borderRadius: '6px',
                 overflow: 'hidden',
-                cursor: 'pointer',
+                cursor: isSoldOut ? 'not-allowed' : 'pointer',
                 transition: 'transform 0.1s',
-                background: 'white',
+                background: isSoldOut ? '#fff5f5' : 'white',
                 display: 'flex', flexDirection: 'column',
-                height: '100%' 
+                height: '100%',
+                opacity: isSoldOut ? 0.6 : 1,
+                position: 'relative'
             }}
-            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown={e => !isSoldOut && (e.currentTarget.style.transform = 'scale(0.98)')}
+            onMouseUp={e => !isSoldOut && (e.currentTarget.style.transform = 'scale(1)')}
         >
+            {isSoldOut && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0,
+                    background: '#ef4444', color: 'white', fontSize: '0.65rem',
+                    fontWeight: '800', textAlign: 'center', padding: '2px 0',
+                    zIndex: 1
+                }}>
+                    STOC EPUIZAT
+                </div>
+            )}
             <div style={{ 
                 height: '90px', 
                 background: '#f8fafc', 
@@ -43,7 +56,21 @@ const ProductCard = ({ product, addToCart }) => {
             </div>
             <div style={{ padding: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div style={{ fontWeight: '600', fontSize: '0.85rem', marginBottom: '2px', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{product.name}</div>
-                <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.9rem' }}>{product.price} Lei</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.85rem' }}>{product.price} Lei</div>
+                    {remainingPortions !== undefined && product.category !== 'Bar' && (
+                        <div style={{ 
+                            fontSize: '0.75rem', 
+                            fontWeight: '700', 
+                            color: isSoldOut ? '#ef4444' : '#16a34a',
+                            background: isSoldOut ? '#fee2e2' : '#f0fdf4',
+                            padding: '1px 5px',
+                            borderRadius: '4px'
+                        }}>
+                            {remainingPortions}p
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -183,6 +210,21 @@ const AdminPOS = () => {
         };
         if (products.length > 0) loadMenu();
     }, [products, categories, fetchDailyMenu, posDate]);
+    // Helper: Calculate remaining portions across ALL tables
+    const getRemainingPortions = (productId) => {
+        const product = dailyProducts.find(p => p.id === productId);
+        if (!product || product.stock === undefined || product.stock === 999) return undefined;
+
+        const initialStock = product.stock;
+        
+        // Sum up this product in ALL tables currently being served
+        const totalInCarts = tables.reduce((sum, table) => {
+            const itemInTable = table.items?.find(i => i.id === productId);
+            return sum + (itemInTable ? itemInTable.qty : 0);
+        }, 0);
+
+        return Math.max(0, initialStock - totalInCarts);
+    };
 
     // Table Actions
     const handleAddTable = async () => {
@@ -250,6 +292,12 @@ const AdminPOS = () => {
         const table = tables.find(t => t.id === selectedTableId);
         if (!table) return;
 
+        const remaining = getRemainingPortions(product.id);
+        if (remaining !== undefined && remaining <= 0) {
+            alert(`Stoc epuizat pentru "${product.name}"!`);
+            return;
+        }
+
         const existing = table.items.find(item => item.id === product.id);
         let newItems;
         if (existing) {
@@ -268,6 +316,16 @@ const AdminPOS = () => {
         const newItems = table.items.map(item => {
             if (item.id === id) {
                 const sentQty = item.sent_qty || 0;
+                
+                // If increasing, check remaining portions
+                if (delta > 0) {
+                    const remaining = getRemainingPortions(id);
+                    if (remaining !== undefined && remaining <= 0) {
+                        alert("Nu mai sunt porții disponibile!");
+                        return item;
+                    }
+                }
+
                 const newQty = Math.max(sentQty, item.qty + delta);
                 
                 // Don't allow decreasing below sent quantity
@@ -367,7 +425,7 @@ const AdminPOS = () => {
             return alert("Toate produsele au fost deja trimise la bucătărie!");
         }
 
-        if (!window.confirm(`Trimiteți ${itemsToSend.length} produse noi la bucătărie? Stocul va fi scăzut automat.`)) return;
+        if (!window.confirm(`Trimiteți ${itemsToSend.length} produse noi la bucătărie?`)) return;
 
         setIsSaving(true);
         try {
@@ -379,52 +437,7 @@ const AdminPOS = () => {
                 return sum + (item.price * qtyToSend);
             }, 0);
 
-            // 1. Deduct Stock (FIFO Logic) - ONLY for new quantity
-            for (const item of itemsToSend) {
-                const qtyToSend = item.qty - (item.sent_qty || 0);
-                const recipe = recipes.find(r => r.linked_product_id === item.id);
-                
-                if (recipe && recipe.ingredients) {
-                    for (const ing of recipe.ingredients) {
-                        let needed = parseFloat(ing.qty) * qtyToSend;
-                        
-                        // Fetch batches FIFO
-                        const { data: batches } = await supabase
-                            .from('inventory_batches')
-                            .select('*')
-                            .eq('item_id', ing.ingredient_id)
-                            .gt('quantity', 0)
-                            .order('expiration_date', { ascending: true })
-                            .order('created_at', { ascending: true });
-
-                        if (batches) {
-                            for (const batch of batches) {
-                                if (needed <= 0.0001) break;
-                                const take = Math.min(batch.quantity, needed);
-
-                                // Update batch
-                                await supabase.from('inventory_batches')
-                                    .update({ quantity: batch.quantity - take })
-                                    .eq('id', batch.id);
-
-                                // Log transaction
-                                await supabase.from('inventory_transactions').insert([{
-                                    transaction_type: 'OUT',
-                                    batch_id: batch.id,
-                                    item_id: ing.ingredient_id,
-                                    quantity: take,
-                                    reason: `Comandă Masa ${finalTableName}: ${item.name} (x${qtyToSend})`,
-                                    operator_name: user?.email || 'POS'
-                                }]);
-
-                                needed -= take;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. Create Order (Status: preparing) - ONLY for new items
+            // 1. Create Order (Status: preparing) - ONLY for new items
             const orderPayload = {
                 id: Date.now(),
                 user_id: user?.id,
@@ -603,7 +616,66 @@ const AdminPOS = () => {
             const { error } = await supabase.from('orders').insert([orderPayload]);
             if (error) throw error;
 
-            alert("Comandă salvată!");
+            // --- PORTION & STOCK PERSISTENCE ---
+            const dateStr = formatDateForDB(posDate);
+            
+            for (const item of tableCart) {
+                // 1. Decrement Daily Menu Portions
+                const { data: dailyItem } = await supabase
+                    .from('daily_menu_items')
+                    .select('stock')
+                    .eq('date', dateStr)
+                    .eq('product_id', item.id)
+                    .single();
+                
+                if (dailyItem) {
+                    await supabase
+                        .from('daily_menu_items')
+                        .update({ stock: Math.max(0, dailyItem.stock - item.qty) })
+                        .eq('date', dateStr)
+                        .eq('product_id', item.id);
+                }
+
+                // 2. Deduct Ingredient Stock (FIFO)
+                const recipe = recipes.find(r => r.linked_product_id === item.id);
+                if (recipe && recipe.ingredients) {
+                    for (const ing of recipe.ingredients) {
+                        let needed = parseFloat(ing.qty) * item.qty;
+                        
+                        const { data: batches } = await supabase
+                            .from('inventory_batches')
+                            .select('*')
+                            .eq('item_id', ing.ingredient_id)
+                            .gt('quantity', 0)
+                            .order('expiration_date', { ascending: true })
+                            .order('created_at', { ascending: true });
+
+                        if (batches) {
+                            for (const batch of batches) {
+                                if (needed <= 0.0001) break;
+                                const take = Math.min(batch.quantity, needed);
+
+                                await supabase.from('inventory_batches')
+                                    .update({ quantity: batch.quantity - take })
+                                    .eq('id', batch.id);
+
+                                await supabase.from('inventory_transactions').insert([{
+                                    transaction_type: 'OUT',
+                                    batch_id: batch.id,
+                                    item_id: ing.ingredient_id,
+                                    quantity: take,
+                                    reason: `Vânzare POS Masa ${tableName}: ${item.name} (x${item.qty})`,
+                                    operator_name: user?.email || 'POS'
+                                }]);
+
+                                needed -= take;
+                            }
+                        }
+                    }
+                }
+            }
+
+            alert("Comandă salvată și stoc actualizat!");
 
             // Save last order data for potential printing
             setLastOrder({
@@ -825,7 +897,12 @@ const AdminPOS = () => {
                     flex: 1 // Fill remaining vertical space
                 }}>
                     {filteredProducts.map(product => (
-                        <ProductCard key={product.id} product={product} addToCart={addToCart} />
+                        <ProductCard 
+                            key={product.id} 
+                            product={product} 
+                            addToCart={addToCart} 
+                            remainingPortions={getRemainingPortions(product.id)}
+                        />
                     ))}
                 </div>
                 )}
