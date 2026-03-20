@@ -4,58 +4,53 @@ import './Terms.css';
 const CommercePolicy = () => {
     return (
         <div className="container py-5 terms-container">
-            <h1 className="text-center terms-header-title">Politici de comercializare</h1>
+            <h1 className="text-center terms-header-title">POLITICI DE COMERCIALIZARE</h1>
+            <p className="text-center terms-update-date">Versiune actualizată: 01.03.2026</p>
 
             <section className="mb-5 terms-section">
-                <p>
-                    Procesul de comercializare a `Serviciilor de Catering` implica 7 pasi. Anumiti pasi se vor executa prin intermediul acestui site, altii nu. Hai sa vedem care sunt cei 7 pasi si ce reprezinta fiecare…
-                </p>
+                <p>Modelul de comercializare al Chianti Catering SRL este adaptat în funcție de complexitatea serviciului solicitat. Pe platforma noastră, comercializarea se desfășoară pe două fluxuri operaționale distincte:</p>
+            </section>
 
-                <div className="terms-toc mt-4">
-                    <h4>Cei 7 pași ai procesului de comercializare</h4>
-                    <ol>
-                        <li>
-                            <strong>Cerere client</strong>
-                            <p>Clientul poate cere un serviciu completand un formular. Ex: <a href="https://chianti.ro/contact/" className="terms-link">https://chianti.ro/contact/</a></p>
-                        </li>
-                        <li>
-                            <strong>Chianti Catering ofera consiliere de specialitate gratuita clientului</strong>
-                            <p>Pentru organizarea unui eveniment sau pentru completarea corecta a unui formular de cerere de oferta ce poate include meniurile/serviciile listate pe <a href="https://chianti.ro/meniuri-eveniment/" className="terms-link">https://chianti.ro/meniuri-eveniment/</a> – consilierea se poate asigura prin intermediul serviciului de Chat, pe mail sau telefonic in functie de disponibilitatea partilor;</p>
-                        </li>
-                        <li>
-                            <strong>Chianti Catering inainteaza o prima propunere clientului</strong>
-                            <p>Chianti Catering, prin reprezentantii sai, va raspunde in scris/telefonic cererii clientului care a trecut prin etapele descrise la P.1/P.2 si va inainta/discuta/prezenta acestuia unul sau mai multe pachete predefinite de servicii; Drept urmare, va discuta telefonic cu clientul sau va transmite clientului pe serviciul de Chat sau pe mail (in functie de datele de contact alese de client la momentul cererii de oferta) atat referinte de pret (estimate in lei/euro) pentru fiecare pachet de servicii ofertat/agreat cat si un link cu descrierea explicita a fiecarui serviciu; În urma acestor discutii, clientul poate face diferite ajustari de continut si/sau valoare si va primi din partea Chianti Catering o Oferta/Pachet Standard;</p>
-                        </li>
-                        <li>
-                            <strong>Verifica disponibilitatea datei/salonului</strong>
-                            <p>Clientul cere/primeste informatii legate de disponibilitatea unei date sau a unui salon preferat pentru organizarea unui eveniment – <a href="https://chianti.ro/saloane/" className="terms-link">https://chianti.ro/saloane/</a></p>
-                        </li>
-                        <li>
-                            <strong>Rezervare data</strong>
-                            <p>Clientul poate achita online (sau direct la casieria noastra), pe baza facturii emise, prin intermediul chianti.ro rezervarea unei date/unui salon disponibil/agreat (in urma discutiilor legate de disponibilitatea unei date sau a unui salon purtate cu reprezentantii Chianti Catering, clientul va primi o confirmare de rezervare, o factura si un link pentru a putea face plata online daca asa a optat);</p>
-                        </li>
-                        <li>
-                            <strong>Ajustari finale eveniment</strong>
-                            <p>Cu minim 14 zile inainte de data evenimentului, clientul discuta, ajusteaza si negociaza ultimele cerinte legate de meniurile/serviciile dorite a fi executate/prestate. Aceste discutii conduc la:</p>
-                            <ul>
-                                <li>ajustari de servicii si valoare pe baza pachetului de servicii agreat/ofertat initial – vezi mai sus – P.3 sau, daca se partile convin in acord, se pot produce discutii, negocieri si schimbari de pachet de servicii (meniuri, servicii, valoare);</li>
-                                <li>emiterea/transmiterea din partea Chianti Catering a trei documente: Contract de prestari servicii, Oferta personalizata finala care defineste serviciile si o factura proforma (acest proces/pas nu include direct site-ul chianti.ro);</li>
-                            </ul>
-                        </li>
-                        <li>
-                            <strong>Executie eveniment</strong>
-                            <ul>
-                                <li>Chianti Catering presteaza serviciul promis/ofertat final (executa serviciile personalizate agreate prin pachetul de servicii ofertat/facturat);</li>
-                                <li>Clientul primeste/beneficiaza de serviciul ofertat final si semneaza un Proces Verbal de executie prin care va valida/atesta implementarea serviciilor la calitatea promisa /agreata de parti;</li>
-                                <li>In urma semnarii acestui Proces Verbal, clientul achita contravaloarea serviciilor prestate direct catre reprezentantii Chianti Catering, conform intelegerii si pe baza facturii emise, la fata locului, fara a implica direct site-ul chianti.ro;</li>
-                            </ul>
-                        </li>
-                    </ol>
-                </div>
+            <section className="mb-5 terms-section">
+                <h3>A. Fluxul E-commerce Direct (Comenzi Mâncare)</h3>
+                <p>Acest flux se aplică pentru Comenzile Rapide (meniul zilnic de prânz „Ieftin și Bun”, disponibil L-V) și pentru Pre-comenzi (platouri și preparate de catering solicitate cu minim 48h înainte).</p>
+                <ol>
+                    <li><strong>Selecția și Comanda:</strong> Clientul adaugă produsele dorite în coș direct din platformă.</li>
+                    <li><strong>Plata:</strong> Se realizează online (prin procesatorul securizat NETOPIA), prin ordin de plată sau numerar/card la livrare/ridicare.</li>
+                    <li><strong>Confirmarea și Execuția:</strong> Contractul se consideră încheiat la primirea confirmării pe suport durabil (e-mail). Comanda este livrată la adresa indicată sau ridicată din locația noastră, conform Politicii de Livrare.</li>
+                </ol>
+            </section>
 
-                <div className="alert-info-custom mt-5">
-                    <p><strong>IMPORTANT</strong></p>
-                    <p>Proiectele (vezi Definitii in Termeni si Conditii) organizate de Terti si/sau de Chianti Catering fac exceptie de la regulile de comercializare prezentate mai sus, acestea avand caracter de unicitate, drept urmare, Proiectele pot fi planificate, organizate si executate diferit, conform angajamentelor asumate de parti prin contracte si/sau concept.</p>
+            <hr className="my-5" />
+
+            <section className="mb-5 terms-section">
+                <h3>B. Fluxul Consultativ (Evenimente & Rezervări Saloane)</h3>
+                <p>Procesul de comercializare pentru organizarea evenimentelor în unul din cele trei saloane elegante sau pentru serviciile complexe de catering personalizat implică un parcurs în 7 pași clari. Anumiți pași se execută prin intermediul acestui site, alții offline, direct cu echipa noastră:</p>
+                <ol>
+                    <li><strong>1. Cererea clientului:</strong> Clientul inițiază procesul solicitând un serviciu sau o ofertă personalizată prin completarea unui formular dedicat pe site (ex. secțiunile Contact, Saloane sau Meniuri Eveniment).</li>
+                    <li><strong>2. Consiliere de specialitate gratuită:</strong> Pentru a ne asigura că evenimentul va fi exact așa cum îți dorești, îți oferim consultanță gratuită. Discutăm detaliile meniurilor și serviciilor prin intermediul chat-ului de pe site, prin e-mail sau telefonic, în funcție de disponibilitate.</li>
+                    <li><strong>3. Prima propunere (Oferta Inițială):</strong> Reprezentanții Chianti Catering îți vor prezenta (în scris sau telefonic) unul sau mai multe pachete predefinite de servicii. Vom discuta referințele de preț (estimări) și îți vom oferi link-uri cu descrierea detaliată a fiecărui serviciu. În urma acestor ajustări inițiale, vei primi o Oferta/Pachet Standard.</li>
+                    <li><strong>4. Verificarea disponibilității (Dată / Salon):</strong> Stabilim și verificăm disponibilitatea datei dorite și a salonului preferat pentru organizarea evenimentului (detalii disponibile pe pagina dedicată saloanelor).</li>
+                    <li><strong>5. Rezervarea fermă a datei (Gift Rezervare):</strong> Pentru a bloca data și salonul, clientul achită o taxă de rezervare (mecanismul Gift Rezervare menționat în Termeni și Condiții). Aceasta se poate achita online (pe baza unui link de plată și a facturii emise) sau direct la casieria noastră. În urma plății, vei primi confirmarea oficială a rezervării. Această sumă se va deduce 100% din factura finală a evenimentului.</li>
+                    <li><strong>6. Ajustări finale și Contractare:</strong> Cu minim 14 zile înainte de data evenimentului, au loc discuțiile finale pentru ajustarea meniurilor, numărului de invitați și serviciilor extra. Această etapă se finalizează cu:
+                        <ul>
+                            <li>Ajustarea ofertei și agrearea valorii finale.</li>
+                            <li>Emiterea a trei documente esențiale: Contractul de prestări servicii, Oferta personalizată finală (anexă) și o factură proformă pentru restul de plată. (Acest pas se desfășoară offline/prin e-mail, fără a implica direct platforma web).</li>
+                        </ul>
+                    </li>
+                    <li><strong>7. Execuția evenimentului și Recepția:</strong> Chianti Catering prestează serviciile la standardul calitativ agreat. La finalul evenimentului:
+                        <ul>
+                            <li>Clientul beneficiază de serviciile contractate și semnează un Proces Verbal de execuție, validând conformitatea serviciilor.</li>
+                            <li>În baza acestui Proces Verbal și a facturii fiscale finale, se achită diferența de plată direct către reprezentanții Chianti Catering la fața locului.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </section>
+
+            <section className="mb-5 terms-section">
+                <div className="alert-info-custom">
+                    <p><strong>Excepții Importante (Proiecte Speciale)</strong></p>
+                    <p>Proiectele speciale sau evenimentele de tip unicat organizate de Terți și/sau de Chianti Catering (ex. concepte atipice, festivaluri, colaborări corporate extinse) fac excepție de la fluxul standard în 7 pași prezentat mai sus. Acestea pot fi planificate, organizate și executate diferit, conform angajamentelor specifice asumate de părți prin contracte dedicate.</p>
                 </div>
             </section>
         </div>
