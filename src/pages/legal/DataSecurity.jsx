@@ -1,88 +1,73 @@
 import React from 'react';
-import './Terms.css'; // Reusing the same CSS for consistency
+import './Terms.css';
 
 const DataSecurity = () => {
     return (
         <div className="container py-5 terms-container">
-            <h1 className="text-center terms-header-title">Informații privind siguranța datelor clienților</h1>
+            <h1 className="text-center terms-header-title">INFORMAȚII PRIVIND SIGURANȚA DATELOR CLIENȚILOR</h1>
+            <h2 className="text-center mb-4">POLITICA DE COOKIE-URI</h2>
+            <p className="text-center terms-update-date">Versiune actualizată la data de: 01.03.2026</p>
 
             <section className="mb-5 terms-section">
-                <h3>Politica Cookie</h3>
-                <p>
-                    Pentru a face vizita ta pe site-ul / aplicatia noastra cat mai placuta si pentru a permite utilizarea anumitor functii,
-                    folosim asa-numitele cookie-uri pe diverse pagini. Acestea sunt mici fisiere text care sunt stocate in browser.
-                    Unele dintre cookie-urile pe care le folosim sunt sterse dupa incheierea sesiunii browserului, adica dupa inchiderea browserului.
-                </p>
-                <p>
-                    Alte cookie-uri raman pe browserul tau si permit noua sau afiliatului nostru sa va recunoastem browserul la urmatoarea vizita (cookie-uri persistente).
-                    Poti regla optiunile browserului tau astfel incat sa fi informat cu privire la setarea cookie-urilor si sa decizi in mod individual acceptarea acestora
-                    sau excluderea cookie-urilor pentru anumite cazuri specifice sau in general. Excluderea folosirii anumitor module cookie poate limita functionalitatea site-ului / aplicatiei noastre.
-                </p>
+                <p>Pentru a-ți oferi o experiență de navigare fluidă pe platforma Chianti Catering și pentru a permite funcționarea corectă a serviciilor noastre (de la comanda rapidă a prânzului până la solicitarea ofertelor pentru evenimente), utilizăm module cookie și tehnologii similare.</p>
+                <p>Acestea sunt fișiere text de mici dimensiuni stocate în browserul tău. Unele sunt șterse automat după închiderea sesiunii (cookie-uri de sesiune), în timp ce altele rămân stocate pe dispozitivul tău pentru a te recunoaște la o vizită ulterioară (cookie-uri persistente).</p>
+                <p>În conformitate cu reglementările legale aplicabile (GDPR și Directiva ePrivacy), modulele cookie care nu sunt strict necesare tehnic funcționează doar pe baza consimțământului tău explicit.</p>
+                <p>Pentru o transparență totală, clasificăm cookie-urile pe care le folosim în următoarele categorii:</p>
+            </section>
 
-                <h4 className="mt-4">Clasificam cookie-urile pe care le folosim in trei categorii:</h4>
+            <section className="mb-5 terms-section">
+                <h3>1. Cookie-uri strict necesare (Tehnice)</h3>
+                <p>Aceste module sunt indispensabile pentru navigarea pe site și utilizarea funcțiilor de bază. Fără ele, platforma Chianti nu poate funcționa corect.</p>
                 <ul>
-                    <li>strict necesare</li>
-                    <li>de functionalitate</li>
-                    <li>personalizate</li>
+                    <li><strong>Cum le folosim:</strong> Le utilizăm pentru a-ți păstra active produsele în coș (de exemplu, când selectezi preparate din meniul zilnic „Comenzi Rapide” sau adaugi platouri în “pre-comandă”) chiar dacă navighezi pe alte pagini, pentru a reține stadiul completării unui formular de rezervare pentru saloane sau pentru a stoca opțiunea ta privind consimțământul cookie-urilor.</li>
+                    <li><strong>Temei legal:</strong> Fiind vitale pentru funcționarea platformei și furnizarea serviciului cerut de tine, acestea sunt activate implicit și nu necesită consimțământul tău prealabil. Ele nu stochează informații care te pot identifica personal.</li>
                 </ul>
-                <p>Mai jos vei gasi mai multe informatii cu privire la alegerile tale, precum si o lista detaliata a modulelor cookie pe care le folosim.</p>
             </section>
 
             <section className="mb-5 terms-section">
-                <h3>1. Cookie-urile strict necesare</h3>
-                <p>
-                    Sunt indispensabile pentru a naviga pe site-ul nostru si pentru a utiliza caracteristicile furnizate.
-                    Fara utilizarea unor astfel de module cookie, functionarea corecta a site-ului nostru nu poate fi asigurata (de exemplu, introducerea textului),
-                    in timp ce navigati prin paginile de pe site. In plus, sunt cookie-uri care colecteaza informatii despre modul in care vizitatorii folosesc site-ul nostru web,
-                    de exemplu, paginile pe care le viziteaza cel mai des si daca primesc mesaje de eroare de pe site-uri web.
-                </p>
-                <p>
-                    Aceste cookie-uri colecteaza informatii anonime agregate, care nu identifica un vizitator.
-                    De asemenea, permit site-ului nostru sa-si aminteasca alegerile tale, cum ar fi limba sau regiunea, pentru a oferi functii imbunatatite.
-                    Conform reglementarilor legale, nu este necesara nicio actiune a ta pentru a le accepta.
-                    De asemenea, folosim aceste cookie-uri pentru a stoca daca ne-ati dat consimtamantul de a utiliza cookie-uri sau pentru a stoca temporar informatiile introduse.
-                </p>
+                <h3>2. Cookie-uri de preferințe și funcționalitate</h3>
+                <p>Aceste cookie-uri permit site-ului să rețină alegerile pe care le faci (cum ar fi datele de conectare pentru a te autentifica automat la următoarea vizită sau preferințele de afișare).</p>
+                <ul>
+                    <li><strong>Cum le folosim:</strong> Scopul lor este să îți ofere o experiență personalizată și mai rapidă, scutindu-te de reintroducerea datelor de fiecare dată când plasezi o nouă comandă de catering.</li>
+                    <li><strong>Temei legal:</strong> Aceste cookie-uri sunt activate doar cu acordul tău.</li>
+                </ul>
             </section>
 
             <section className="mb-5 terms-section">
-                <h3>2. Cookie-urile de functionalitate</h3>
-                <p>
-                    Colecteaza informatii anonime si nu va pot urmari miscarile pe alte site-uri web.
-                    In plus, acestea ar putea fi utilizate pentru a trimite reclame / oferte sau pentru a masura eficienta unei campanii publicitare.
-                    Ele ar putea fi utilizate pentru a determina care canale de marketing online sunt cele mai eficiente.
-                    Cu aceste cookie-uri, vom stoca si datele de conectare in browserul tau astfel incat sa te poti autentifica automat data viitoare cand vizitati site-ul nostru web.
-                    Deoarece dorim sa iti oferim un site web conceput pentru o utilizare optima, cookie-urile functionale sunt de obicei activate atunci cand vizitezi site-ul nostru web.
-                </p>
-                <p>
-                    Pentru a activa aceste masuri, folosim si cookie-uri de la terti din aceasta categorie.
-                    Analizand modul tau de utilizare a site-ului/aplicatiei, in mod anonimizat, putem identifica zonele in care ne putem imbunatati site-ul.
-                </p>
+                <h3>3. Cookie-uri de statistică și analiză</h3>
+                <p>Aceste module colectează informații agregate, anonimizate, despre modul în care vizitatorii interacționează cu site-ul nostru.</p>
+                <ul>
+                    <li><strong>Cum le folosim:</strong> Ne ajută să înțelegem ce pagini sunt cele mai vizitate (ex. dacă utilizatorii preferă secțiunea de "Rezervare Salon" sau pe cea de "Comandă Mâncare"), dacă întâmpină erori și cum putem optimiza structura platformei pentru a face plasarea comenzilor mai intuitivă.</li>
+                    <li><strong>Temei legal:</strong> Aceste cookie-uri sunt activate doar cu acordul tău.</li>
+                </ul>
             </section>
 
             <section className="mb-5 terms-section">
-                <h3>3. Cookie-urile personalizate</h3>
-                <p>
-                    Sunt folosite pentru a efectua o publicitate directionata, relevanta pentru utilizator si adaptata intereselor sale.
-                    Aceste cookie-uri ne ajuta sa furnizam liste de audiente de marketing personalizate partenerilor nostri de marketing.
-                    Avem nevoie de acordul tau pentru a le activa.
-                </p>
+                <h3>4. Cookie-uri de marketing și personalizare</h3>
+                <p>Aceste module sunt setate de noi sau de partenerii noștri de publicitate pentru a-ți construi un profil de interese și a-ți afișa reclame relevante pe alte site-uri.</p>
+                <ul>
+                    <li><strong>Cum le folosim:</strong> De exemplu, dacă ai adăugat un platou pentru petreceri în coș dar nu ai finalizat pre-comanda, aceste cookie-uri ne permit să te re-țintim (retargeting) cu un memento vizual pe alte platforme (ex. rețele sociale) pentru a nu rata planificarea evenimentului.</li>
+                    <li><strong>Temei legal:</strong> Aceste cookie-uri sunt activate doar cu acordul tău.</li>
+                </ul>
             </section>
+
+            <hr className="my-5" />
 
             <section className="mb-5 terms-section">
-                <h3>Opozitia la utilizarea modulelor cookie</h3>
-                <p>
-                    Daca nu doresti ca noi sa colectam si sa analizam informatii despre vizita ta, te poti opune in orice moment pentru viitor (renuntare/opt-out).
-                </p>
-                <p>
-                    Pentru implementarea tehnica a acestei opozitii, in browserul tau va fi setat un modul cookie de renuntare.
-                    Acest cookie este exclusiv in scopul maparii opozitiei tale. Te rugam sa retii ca, din motive tehnice,
-                    un cookie de excludere poate fi utilizat doar pentru browserul de la care a fost setat.
-                    Daca stergi cookie-urile sau utilizezi un browser sau dispozitiv diferit, va trebui sa renunti din nou,
-                    adica sa iti exerciti din nou dreptul de opozitie.
-                </p>
+                <h3>Gestionarea preferințelor și Opoziția la utilizarea cookie-urilor</h3>
+                <p>Ai control total asupra datelor tale. Dacă dorești să modifici preferințele sau să retragi consimțământul (opt-out) pentru cookie-urile care nu sunt strict necesare, o poți face în orice moment:</p>
+                <ol>
+                    <li><strong>Din platforma noastră:</strong> Accesând panoul de setări cookie-uri (widget-ul dedicat aflat în subsolul site-ului), poți activa sau dezactiva modulele de Statistică, Preferințe sau Marketing cu un simplu click.</li>
+                    <li><strong>Din setările browserului:</strong> Poți regla opțiunile browserului tău pentru a bloca, a fi informat sau a șterge cookie-urile stocate. Reține că blocarea din browser a cookie-urilor strict necesare poate duce la imposibilitatea de a plasa comenzi sau de a rezerva saloane pe site-ul nostru.</li>
+                </ol>
+                <p>Dacă folosești funcția de ștergere totală a cookie-urilor din browser sau dacă accesezi platforma de pe un alt dispozitiv/browser, platforma te va considera un vizitator nou și îți va solicita din nou setarea preferințelor.</p>
             </section>
 
-            <p className="text-center terms-update-date">Versiune actualizata la data de 01 septembrie 2022</p>
+            <hr className="my-5" />
+
+            <section className="mb-5 terms-section">
+                <p>Ai nevoie de asistență tehnică privind datele tale? Ne poți contacta oricând la <a href="mailto:suport@chianti.ro" className="terms-link">suport@chianti.ro</a> pentru detalii suplimentare referitoare la trasabilitatea datelor tale pe platforma noastră.</p>
+            </section>
         </div>
     );
 };
