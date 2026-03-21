@@ -553,10 +553,10 @@ const AdminPOS = () => {
     // Helper: Trigger SoftPos Payment (Android Intent)
     const triggerSoftPosPayment = (amount) => {
         // Standard Android Intent URI for launching an app by package name
-        // Corrected to include intent:// and proper parameter ordering
-        const intentUri = `intent://#Intent;package=com.provisionpay.softpos.unicreditro;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+        // Simplified version to be more permissive and avoid Play Store false-positives
+        const intentUri = `intent://#Intent;package=com.provisionpay.softpos.unicreditro;scheme=android-app;end`;
         
-        console.log("Attempting to open SoftPos App:", intentUri);
+        console.log("Attempting to launch SoftPOS:", intentUri);
         
         try {
             window.location.href = intentUri;
