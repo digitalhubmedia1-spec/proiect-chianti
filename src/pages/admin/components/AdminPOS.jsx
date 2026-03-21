@@ -552,21 +552,17 @@ const AdminPOS = () => {
 
     // Helper: Trigger SoftPos Payment (Android Intent)
     const triggerSoftPosPayment = (amount) => {
-        // SoftPos UniCredit Intent structure
-        // We use a simpler intent to just open the app if possible
-        // The previous one was: intent:#Intent;action=com.unicredit.softpos.PAY;S.amount=${amount.toFixed(2)};S.currency=RON;S.transaction_type=SALE;end
+        // Standard Android Intent URI for launching an app by package name
+        // Corrected to include intent:// and proper parameter ordering
+        const intentUri = `intent://#Intent;package=com.provisionpay.softpos.unicreditro;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
         
-        // Let's try to target the package directly to ensure it opens
-        const intentUri = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.provisionpay.softpos.unicreditro;end`;
-        
-        console.log("Opening SoftPos App:", intentUri);
+        console.log("Attempting to open SoftPos App:", intentUri);
         
         try {
             window.location.href = intentUri;
             return true;
         } catch (err) {
             console.error("SoftPos App open failed:", err);
-            // Fallback for older browsers or specific environments
             alert("Nu s-a putut deschide aplicația SoftPos. Asigurați-vă că este instalată pe tabletă.");
             return false;
         }
