@@ -9,16 +9,17 @@ import { Search, Zap, UtensilsCrossed } from 'lucide-react';
 import SEO from '../components/SEO';
 import './Products.css';
 
-const Products = () => {
+const Products = ({ qrMode: propQrMode }) => {
     const { products, categories, loading, fetchDailyMenu, error: menuError } = useMenu();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const qrMode = propQrMode || searchParams.get('qr') === 'true';
+    const viewMode = qrMode ? 'catalog' : searchParams.get('view');
+
     const [activeCategory, setActiveCategory] = useState("Toate");
     const [isOpen, setIsOpen] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
-    const [closedMessage, setClosedMessage] = useState("");
     const { addToCart } = useCart();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const viewMode = searchParams.get('view');
 
     // Search & Sort State
     const [searchQuery, setSearchQuery] = useState("");
@@ -543,25 +544,27 @@ const Products = () => {
                         width: '100%'
                     }}>
                         {/* BACK BUTTON for easy return to mode selection */}
-                        <button
-                            onClick={() => navigate('/produse')}
-                            title="Înapoi la selecție"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                background: '#f8fafc',
-                                color: '#64748b',
-                                cursor: 'pointer',
-                                flexShrink: 0
-                            }}
-                        >
-                            <Zap size={20} />
-                        </button>
+                        {!qrMode && (
+                            <button
+                                onClick={() => navigate('/produse')}
+                                title="Înapoi la selecție"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e2e8f0',
+                                    background: '#f8fafc',
+                                    color: '#64748b',
+                                    cursor: 'pointer',
+                                    flexShrink: 0
+                                }}
+                            >
+                                <Zap size={20} />
+                            </button>
+                        )}
 
                         <div className="search-box" style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
                             <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -622,7 +625,7 @@ const Products = () => {
                             const isLowStock = stock !== null && stock !== undefined && stock < 10 && stock > 0;
 
                             return (
-                                <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}`)} style={{ cursor: 'pointer', position: 'relative' }}>
+                                <div key={product.id} className={`product-card ${product.is_available === false || isOutOfStock ? 'unavailable' : ''}`} onClick={() => navigate(`/produs/${product.id}?date=${formatDate(selectedDate)}${qrMode ? '&qr=true' : ''}`)} style={{ cursor: 'pointer', position: 'relative' }}>
                                     {isLowStock && (
                                         <div style={{
                                             position: 'absolute',
@@ -647,20 +650,22 @@ const Products = () => {
                                         <p className="product-desc" title={product.description}>{truncate(product.description, 80)}</p>
                                         <div className="product-footer">
                                             <span className="product-price">{product.price.toFixed(2)} Lei</span>
-                                            <button
-                                                className="btn btn-sm btn-primary"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleAddToCart(e, product);
-                                                }}
-                                                disabled={isOutOfStock}
-                                                title={isOutOfStock ? "Stoc epuizat" : "Adaugă în coș"}
-                                                style={isOutOfStock ? { background: '#94a3b8', cursor: 'not-allowed' } : {}}
-                                            >
-                                                {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
-                                            </button>
+                                            {!qrMode && (
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddToCart(e, product);
+                                                    }}
+                                                    disabled={isOutOfStock}
+                                                    title={isOutOfStock ? "Stoc epuizat" : "Adaugă în coș"}
+                                                    style={isOutOfStock ? { background: '#94a3b8', cursor: 'not-allowed' } : {}}
+                                                >
+                                                    {isOutOfStock ? 'Stoc epuizat' : 'Adaugă'}
+                                                </button>
+                                            )}
                                         </div>
-                                        <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} />
+                                        <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} qrMode={qrMode} />
                                     </div>
                                 </div>
                             );

@@ -3,11 +3,11 @@ import logoAlb from '../assets/logo/logoalb.png';
 import acceptarePlati from '../assets/Acceptare-plati.png';
 import './Footer.css';
 
-const Footer = () => {
+const Footer = ({ qrMode }) => {
     return (
         <footer className="footer">
             <div className="container">
-                <div className="footer-grid">
+                <div className="footer-grid" style={qrMode ? { display: 'flex', justifyContent: 'center', textAlign: 'center' } : {}}>
 
                     {/* Column 1: Brand & Info */}
                     <div className="footer-col brand-col">
@@ -23,41 +23,47 @@ const Footer = () => {
                             Singura companie din zona Roman dedicată exclusiv serviciilor de catering pentru evenimente
                         </p>
 
-                        <div className="payment-methods">
-                            <p>Plătește în siguranță prin</p>
-                            <div className="payment-logos">
-                                <img src={acceptarePlati} alt="Acceptare plăți" style={{ maxWidth: '200px', height: 'auto' }} />
+                        {!qrMode && (
+                            <div className="payment-methods">
+                                <p>Plătește în siguranță prin</p>
+                                <div className="payment-logos">
+                                    <img src={acceptarePlati} alt="Acceptare plăți" style={{ maxWidth: '200px', height: 'auto' }} />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Column 2: NAVIGARE RAPIDA */}
-                    <div className="footer-col">
-                        <h3>NAVIGARE</h3>
-                        <ul className="footer-links">
-                            <li><a href="/">Pagina Principală</a></li>
-                            <li><a href="/produse">Comandă Mâncare</a></li>
-                            <li><a href="/servicii-evenimente">Servicii Evenimente</a></li>
-                            <li><a href="/configurator">Configurator Meniuri</a></li>
-                            <li><a href="/saloane">Servicii Rezervări</a></li>
-                            <li><a href="/blog">Blog & Informații</a></li>
-                            <li><a href="/contact">Contact & Oferte</a></li>
-                            <li className="mt-2 pt-2 border-top border-secondary"><a href="/devino-livrator" style={{ color: '#e74c3c' }}>🚀 Devino Livrator Chianti</a></li>
-                        </ul>
-                    </div>
+                    {!qrMode && (
+                        <>
+                            {/* Column 2: NAVIGARE RAPIDA */}
+                            <div className="footer-col">
+                                <h3>NAVIGARE</h3>
+                                <ul className="footer-links">
+                                    <li><a href="/">Pagina Principală</a></li>
+                                    <li><a href="/produse">Comandă Mâncare</a></li>
+                                    <li><a href="/servicii-evenimente">Servicii Evenimente</a></li>
+                                    <li><a href="/configurator">Configurator Meniuri</a></li>
+                                    <li><a href="/saloane">Servicii Rezervări</a></li>
+                                    <li><a href="/blog">Blog & Informații</a></li>
+                                    <li><a href="/contact">Contact & Oferte</a></li>
+                                    <li className="mt-2 pt-2 border-top border-secondary"><a href="/devino-livrator" style={{ color: '#e74c3c' }}>🚀 Devino Livrator Chianti</a></li>
+                                </ul>
+                            </div>
 
-                    {/* Column 3: TERMENI ȘI CONDIȚII */}
-                    <div className="footer-col">
-                        <h3>TERMENI ȘI CONDIȚII</h3>
-                        <ul className="footer-links">
-                            <li><a href="/termeni">Termeni și Condiții</a></li>
-                            <li><a href="/siguranta-datelor">Informații privind siguranța datelor clienților</a></li>
-                            <li><a href="/confidentialitate">Politica de confidențialitate</a></li>
-                            <li><a href="/anulare">Politica de anulare și retur</a></li>
-                            <li><a href="/livrare">Politica de livrare</a></li>
-                            <li><a href="/comercializare">Politici de comercializare</a></li>
-                        </ul>
-                    </div>
+                            {/* Column 3: TERMENI ȘI CONDIȚII */}
+                            <div className="footer-col">
+                                <h3>TERMENI ȘI CONDIȚII</h3>
+                                <ul className="footer-links">
+                                    <li><a href="/termeni">Termeni și Condiții</a></li>
+                                    <li><a href="/siguranta-datelor">Informații privind siguranța datelor clienților</a></li>
+                                    <li><a href="/confidentialitate">Politica de confidențialitate</a></li>
+                                    <li><a href="/anulare">Politica de anulare și retur</a></li>
+                                    <li><a href="/livrare">Politica de livrare</a></li>
+                                    <li><a href="/comercializare">Politici de comercializare</a></li>
+                                </ul>
+                            </div>
+                        </>
+                    )}
 
                 </div>
 

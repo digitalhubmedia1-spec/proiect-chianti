@@ -13,6 +13,7 @@ const ProductDetails = () => {
     const { addToCart, cartItems } = useCart();
     const { products, categories, loading, fetchRecommendations, fetchDailyMenu } = useMenu();
     const [searchParams] = useSearchParams();
+    const qrMode = searchParams.get('qr') === 'true';
     const dateParam = searchParams.get('date');
     const [quantity, setQuantity] = useState(1);
     const [product, setProduct] = useState(null);
@@ -154,11 +155,8 @@ const ProductDetails = () => {
         <div className="product-details-page container">
             <button
                 onClick={() => {
-                    if (dateParam) {
-                        navigate(`/produse?view=catalog&date=${dateParam}`);
-                    } else {
-                        navigate(-1);
-                    }
+                    const destination = qrMode ? `/meniu?date=${dateParam || ''}` : (dateParam ? `/produse?view=catalog&date=${dateParam}` : '/produse?view=catalog');
+                    navigate(destination);
                 }}
                 className="btn-back"
             >
@@ -274,44 +272,46 @@ const ProductDetails = () => {
                         </div>
                     )}
 
-                    <div className="add-to-cart-section">
-                        <div className="qty-selector" style={{ opacity: isOutOfStock ? 0.5 : 1 }}>
+                    {!qrMode && (
+                        <div className="add-to-cart-section">
+                            <div className="qty-selector" style={{ opacity: isOutOfStock ? 0.5 : 1 }}>
+                                <button
+                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                    className="qty-btn"
+                                    disabled={isOutOfStock}
+                                >
+                                    <Minus size={16} />
+                                </button>
+                                <span className="qty-value">{quantity}</span>
+                                <button
+                                    onClick={() => {
+                                        if (stock !== null && quantity >= stock) return;
+                                        setQuantity(quantity + 1);
+                                    }}
+                                    className="qty-btn"
+                                    disabled={isOutOfStock || (stock !== null && quantity >= stock)}
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
                             <button
-                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                className="qty-btn"
-                                disabled={isOutOfStock}
-                            >
-                                <Minus size={16} />
-                            </button>
-                            <span className="qty-value">{quantity}</span>
-                            <button
-                                onClick={() => {
-                                    if (stock !== null && quantity >= stock) return;
-                                    setQuantity(quantity + 1);
+                                onClick={handleAddToCart}
+                                className="btn btn-primary btn-add-large"
+                                disabled={!isOpen || isOutOfStock}
+                                title={!isOpen ? "Restaurantul este închis." : isOutOfStock ? "Produs indisponibil" : ""}
+                                style={{
+                                    opacity: !isOpen || isOutOfStock ? 0.5 : 1,
+                                    cursor: !isOpen || isOutOfStock ? 'not-allowed' : 'pointer',
+                                    background: isOutOfStock ? '#94a3b8' : undefined,
+                                    borderColor: isOutOfStock ? '#94a3b8' : undefined
                                 }}
-                                className="qty-btn"
-                                disabled={isOutOfStock || (stock !== null && quantity >= stock)}
                             >
-                                <Plus size={16} />
+                                <ShoppingCart size={20} /> {isOutOfStock ? "Stoc Epuizat" : (isOpen ? "Adaugă în Coș" : "Indisponibil")}
                             </button>
                         </div>
-                        <button
-                            onClick={handleAddToCart}
-                            className="btn btn-primary btn-add-large"
-                            disabled={!isOpen || isOutOfStock}
-                            title={!isOpen ? "Restaurantul este închis." : isOutOfStock ? "Produs indisponibil" : ""}
-                            style={{
-                                opacity: !isOpen || isOutOfStock ? 0.5 : 1,
-                                cursor: !isOpen || isOutOfStock ? 'not-allowed' : 'pointer',
-                                background: isOutOfStock ? '#94a3b8' : undefined,
-                                borderColor: isOutOfStock ? '#94a3b8' : undefined
-                            }}
-                        >
-                            <ShoppingCart size={20} /> {isOutOfStock ? "Stoc Epuizat" : (isOpen ? "Adaugă în Coș" : "Indisponibil")}
-                        </button>
-                    </div>
+                    )}
 
-                    <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} mode="large" onAdd={handleExtraAdd} />
+                    <ProductExtras productId={product.id} dailyMenuMap={dailyMenuMap} mode="large" onAdd={handleExtraAdd} qrMode={qrMode} />
                 </div>
             </div>
 
@@ -321,25 +321,27 @@ const ProductDetails = () => {
                     <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>Îți recomandăm și...</h2>
                     <div className="recommendations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
                         {recommendations.map(rec => (
-                            <div key={rec.id} className="rec-card" onClick={() => navigate(`/produs/${rec.id}`)} style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s', border: '1px solid #f0f0f0', cursor: 'pointer' }}>
+                            <div key={rec.id} className="rec-card" onClick={() => navigate(`/produs/${rec.id}?qr=${qrMode}`)} style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s', border: '1px solid #f0f0f0', cursor: 'pointer' }}>
                                 <div style={{ height: '140px', overflow: 'hidden' }}>
                                     <img src={rec.image} alt={rec.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                                 <div style={{ padding: '1rem' }}>
                                     <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.5rem', height: '40px', overflow: 'hidden' }}>{rec.name}</h3>
                                     <p style={{ color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '1rem' }}>{rec.price.toFixed(2)} Lei</p>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addToCart(rec, 1);
-                                            // Optional: simple alert or toast
-                                        }}
-                                        className="btn btn-sm btn-outline-primary"
-                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                        disabled={!isOpen}
-                                    >
-                                        <Plus size={16} /> Adaugă
-                                    </button>
+                                    {!qrMode && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addToCart(rec, 1);
+                                                // Optional: simple alert or toast
+                                            }}
+                                            className="btn btn-sm btn-outline-primary"
+                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                            disabled={!isOpen}
+                                        >
+                                            <Plus size={16} /> Adaugă
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

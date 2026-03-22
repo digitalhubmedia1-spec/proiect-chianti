@@ -3,13 +3,14 @@ import { useMenu } from '../context/MenuContext';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
-const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
+const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd, qrMode }) => {
     const { fetchExtras, products } = useMenu();
     const { addToCart } = useCart();
     const [extras, setExtras] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const handleAdd = (extra) => {
+        if (qrMode) return; // Prevent adding in QR mode
         if (onAdd) {
             onAdd(extra);
         } else {
@@ -99,13 +100,13 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '1rem' }}>
                     {availableExtras.map(extra => (
-                        <div key={extra.id} onClick={(e) => { e.stopPropagation(); handleAdd(extra); }}
+                        <div key={extra.id} onClick={(e) => { e.stopPropagation(); !qrMode && handleAdd(extra); }}
                             style={{
                                 background: 'white',
                                 border: '1px solid #f1f5f9',
                                 borderRadius: '12px',
                                 padding: '12px',
-                                cursor: 'pointer',
+                                cursor: qrMode ? 'default' : 'pointer',
                                 transition: 'all 0.3s ease',
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -133,22 +134,29 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
                             )}
                             <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#334155', lineHeight: '1.2', marginBottom: '8px', flex: 1 }}>{extra.name}</span>
 
-                            <button style={{
-                                width: '100%',
-                                background: '#f0fdf4',
-                                border: 'none',
-                                color: '#166534',
-                                fontSize: '0.8rem',
-                                fontWeight: '700',
-                                padding: '6px',
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                            }}>
-                                <Plus size={14} /> {extra.price.toFixed(2)} Lei
-                            </button>
+                            {!qrMode && (
+                                <button style={{
+                                    width: '100%',
+                                    background: '#f0fdf4',
+                                    border: 'none',
+                                    color: '#166534',
+                                    fontSize: '0.8rem',
+                                    fontWeight: '700',
+                                    padding: '6px',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                }}>
+                                    <Plus size={14} /> {extra.price.toFixed(2)} Lei
+                                </button>
+                            )}
+                            {qrMode && (
+                                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#166534' }}>
+                                    {extra.price.toFixed(2)} Lei
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -179,7 +187,7 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
                     <div key={extra.id}
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleAdd(extra);
+                            !qrMode && handleAdd(extra);
                         }}
                         style={{
                             display: 'flex',
@@ -189,7 +197,7 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
                             border: '1px solid #bbf7d0',
                             borderRadius: '12px',
                             padding: '4px 8px',
-                            cursor: 'pointer',
+                            cursor: qrMode ? 'default' : 'pointer',
                             transition: 'all 0.2s',
                             maxWidth: '100%'
                         }}
@@ -203,18 +211,25 @@ const ProductExtras = ({ productId, dailyMenuMap, mode = 'small', onAdd }) => {
                         <span style={{ fontWeight: '500', color: '#14532d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
                             {extra.name}
                         </span>
-                        <div style={{
-                            background: '#16a34a',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '16px',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <Plus size={10} />
-                        </div>
+                        {!qrMode && (
+                            <div style={{
+                                background: '#16a34a',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '16px',
+                                height: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Plus size={10} />
+                            </div>
+                        )}
+                        {qrMode && (
+                             <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 'bold', marginLeft: '2px' }}>
+                                {extra.price.toFixed(2)}
+                             </span>
+                        )}
                     </div>
                 ))}
             </div>

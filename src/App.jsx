@@ -61,6 +61,7 @@ function App() {
                   {/* Public Routes with Layout */}
                   <Route path="/" element={<Layout><Home /></Layout>} />
                   <Route path="/produse" element={<Layout><Products /></Layout>} />
+                  <Route path="/meniu" element={<Layout qrMode={true}><Products qrMode={true} /></Layout>} />
                   <Route path="/produs/:id" element={<Layout><ProductDetails /></Layout>} />
                   <Route path="/catering" element={<Layout><Catering /></Layout>} />
                   <Route path="/configurator" element={<Layout><MenuConfigurator /></Layout>} />

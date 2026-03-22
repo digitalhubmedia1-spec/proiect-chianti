@@ -6,12 +6,14 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import './Layout.css';
 import '../animations.css';
 
-const Layout = ({ children }) => {
+const Layout = ({ children, qrMode: propQrMode }) => {
     const location = useLocation();
+    const query = new URLSearchParams(location.search);
+    const isQR = propQrMode || query.get('qr') === 'true';
 
     return (
         <div className="layout animated-site">
-            <Header />
+            <Header qrMode={isQR} />
             <Breadcrumbs />
             <main className="main-content">
                 {/* Key ensures animation triggers on route change */}
@@ -19,7 +21,7 @@ const Layout = ({ children }) => {
                     {children}
                 </div>
             </main>
-            <Footer />
+            <Footer qrMode={isQR} />
         </div>
     );
 };
