@@ -118,6 +118,9 @@ const ProductDetails = () => {
         // Validate Mandatory Options
         if (product.product_options && Array.isArray(product.product_options)) {
             for (const group of product.product_options) {
+                // Skip groups with no choices
+                if (!group.choices || group.choices.length === 0) continue;
+                
                 const selection = selectedOptions[group.name];
                 if (!selection || (Array.isArray(selection) && selection.length === 0)) {
                     alert(`Te rog selectează o opțiune pentru: ${group.name}`);
@@ -227,16 +230,19 @@ const ProductDetails = () => {
                     </div>
 
                     {/* MANDATORY OPTIONS SECTION */}
-                    {product.product_options && Array.isArray(product.product_options) && product.product_options.length > 0 && (
+                    {product.product_options && Array.isArray(product.product_options) && 
+                     product.product_options.filter(group => group.choices && group.choices.length > 0).length > 0 && (
                         <div className="product-options-section" style={{ marginTop: '1.5rem', marginBottom: '3rem', padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                            {product.product_options.map((group, idx) => {
-                                const maxChoices = group.max_choices || 1;
-                                return (
-                                    <div key={idx} style={{ marginBottom: '1.5rem' }}>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
-                                            {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
-                                            {maxChoices > 1 && <span style={{ fontSize: '0.8rem', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>(Alege până la {maxChoices} opțiuni)</span>}
-                                        </h3>
+                            {product.product_options
+                                .filter(group => group.choices && group.choices.length > 0)
+                                .map((group, idx) => {
+                                    const maxChoices = group.max_choices || 1;
+                                    return (
+                                        <div key={idx} style={{ marginBottom: '1.5rem' }}>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#1f2937' }}>
+                                                {group.name} <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>*</span>
+                                                {maxChoices > 1 && <span style={{ fontSize: '0.8rem', color: '#6b7280', marginLeft: '8px', fontWeight: 'normal' }}>(Alege până la {maxChoices} opțiuni)</span>}
+                                            </h3>
                                         <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                                             {group.choices && group.choices.map((choice, cIdx) => {
                                                 const currentSelection = selectedOptions[group.name];
