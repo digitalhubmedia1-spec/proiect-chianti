@@ -99,7 +99,7 @@ const AdminPOS = () => {
         }
     }, [adminRole]);
 
-    // Fetch Tables from DB
+    // Fetch Tables from DB + Real-time Sync
     useEffect(() => {
         if (!isAuthenticated) return;
 
@@ -115,10 +115,39 @@ const AdminPOS = () => {
                 setTables(data || []);
             }
         };
+
         fetchTables();
 
-        // Optional: Real-time subscription could go here
-    }, []);
+        // Real-time subscription to sync tables across devices
+        const channel = supabase
+            .channel('restaurant_tables_db_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'restaurant_tables',
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE') {
+                        setTables(prev => 
+                            prev.map(t => t.id === payload.new.id ? payload.new : t)
+                        );
+                    } else if (payload.eventType === 'INSERT') {
+                        setTables(prev => [...prev, payload.new]);
+                    } else if (payload.eventType === 'DELETE') {
+                        setTables(prev => 
+                            prev.filter(t => t.id === payload.old.id)
+                        );
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [isAuthenticated]);
 
     // Helper to update table items (Optimistic UI + DB Sync)
     const updateTableItems = async (tableId, newItems) => {
