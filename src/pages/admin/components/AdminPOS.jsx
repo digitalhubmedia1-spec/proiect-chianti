@@ -212,7 +212,11 @@ const AdminPOS = () => {
             
             const dailyItems = await fetchDailyMenu(dateStr);
 
-            // 0. Fetch LIVE Inventory Stock (Summed from batches)
+            // 0. Fetch LIVE Inventory Stock + Items for fallback
+            const { data: invItems } = await supabase
+                .from('inventory_items')
+                .select('id, name');
+
             const { data: batches } = await supabase
                 .from('inventory_batches')
                 .select('item_id, quantity');
@@ -236,12 +240,11 @@ const AdminPOS = () => {
             const barProductsList = products.filter(p => barCategories.includes(p.category));
             
             const barProductsWithStock = barProductsList.map(p => {
-                // Find recipe for this product to link to inventory
+                // Priority 1: Find recipe for this product
                 const recipe = recipes.find(r => r.linked_product_id === p.id);
                 let calculatedStock = undefined;
 
                 if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
-                    // Calculate limiting ingredient
                     const availabilities = recipe.ingredients.map(ing => {
                         const itemStock = inventoryStockMap[ing.ingredient_id] || 0;
                         const qtyRequired = parseFloat(ing.qty) || 1;
@@ -249,11 +252,12 @@ const AdminPOS = () => {
                     });
                     calculatedStock = Math.min(...availabilities);
                 } else {
-                    // Fallback: If no recipe mapping, we can't show stock
-                    // But maybe user wants us to guess by name? Let's stick to recipes for now.
-                    calculatedStock = undefined;
+                    // Priority 2: Fallback to exact name match in inventory
+                    const manualMatch = (invItems || []).find(i => i.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+                    if (manualMatch) {
+                        calculatedStock = inventoryStockMap[manualMatch.id] || 0;
+                    }
                 }
-
                 return { ...p, stock: calculatedStock };
             });
 
