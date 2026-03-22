@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog, Info, Trash2 } from 'lucide-react';
+import { Phone, Clock, MapPin, Utensils, User, Check, Users, ChevronLeft, ChevronRight, X, Image as ImageIcon, UserCog, Info, Trash2, Printer } from 'lucide-react';
 import { useMenu } from '../../../context/MenuContext';
 import { useOrder } from '../../../context/OrderContext';
+import { generateFiscalINP, downloadINPFile } from '../../../utils/receiptUtils';
 
 const OrderCard = ({ order, showActions = false, onConfirm }) => {
     const { products } = useMenu();
@@ -67,6 +68,18 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
         }
 
         updateOrderItems(order.id, updatedItems);
+    };
+
+    const handlePrintReceipt = (e) => {
+        e.stopPropagation();
+        try {
+            const content = generateFiscalINP(order.items, 'cash');
+            const orderId = order.orderNumber || order.id.slice(-6);
+            downloadINPFile(content, orderId);
+        } catch (error) {
+            console.error("Error generating receipt:", error);
+            alert("Eroare la generarea bonului.");
+        }
     };
 
     return (
@@ -156,6 +169,34 @@ const OrderCard = ({ order, showActions = false, onConfirm }) => {
                             fontWeight: '700',
                             textTransform: 'uppercase'
                         }}>Catering</span>
+                    )}
+
+                    {/* BON FISCAL button for Delivery & Pickup */}
+                    {(deliveryMethod === 'delivery' || deliveryMethod === 'pickup') && (
+                        <button
+                            onClick={handlePrintReceipt}
+                            style={{
+                                marginLeft: '0.5rem',
+                                background: '#64748b',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'background 0.2s'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#475569'}
+                            onMouseOut={e => e.currentTarget.style.background = '#64748b'}
+                            title="Descarca bon fiscal (.inp)"
+                        >
+                            <Printer size={14} />
+                            BON FISCAL
+                        </button>
                     )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>

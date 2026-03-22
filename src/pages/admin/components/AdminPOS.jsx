@@ -3,6 +3,7 @@ import { useMenu } from '../../../context/MenuContext';
 import { useRecipes } from '../../../context/RecipeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../supabaseClient';
+import { generateFiscalINP, downloadINPFile } from '../../../utils/receiptUtils';
 import { ShoppingCart, CreditCard, Banknote, Search, Plus, Minus, Trash2, Printer, CheckCircle, ChefHat, Wallet, ExternalLink } from 'lucide-react';
 
 const ProductCard = ({ product, addToCart, remainingPortions }) => {
@@ -567,59 +568,7 @@ const AdminPOS = () => {
     // Calculate Total
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-    // Generate FiscalNet INP Content
-    const generateFiscalINP = (items, paymentData) => {
-        let content = '';
-        
-        items.forEach(item => {
-            const price = item.price.toFixed(2);
-            const qty = item.qty.toFixed(3);
-            
-            let name = item.name || '';
-            name = name.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
-            name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            name = name.replace(/[;]/g, ' ').replace(/\s+/g, ' ').trim();
-            
-            if (name.length > 30) name = name.substring(0, 30);
 
-            // S,1,______,_,__;NAME;PRICE;QTY;VAT_INDEX;DEPT;1;0;0;
-            content += `S,1,______,_,__;${name};${price};${qty};1;1;1;0;0;\n`;
-        });
-
-        if (typeof paymentData === 'string') {
-            const payCode = paymentData === 'cash' ? '0' : '1';
-            const totalAmount = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-            // T,1,______,_,__;PAY_INDEX;TOTAL;;;;;
-            content += `T,1,______,_,__;${payCode};${totalAmount.toFixed(2)};;;;;\n`;
-        } else {
-            // Mixed payment: paymentData = { cash: 5, card: 5 }
-            const cashVal = parseFloat(paymentData.cash) || 0;
-            const cardVal = parseFloat(paymentData.card) || 0;
-            
-            if (cashVal > 0) {
-                content += `T,1,______,_,__;0;${cashVal.toFixed(2)};;;;;\n`;
-            }
-            if (cardVal > 0) {
-                content += `T,1,______,_,__;1;${cardVal.toFixed(2)};;;;;\n`;
-            }
-        }
-
-        return content;
-    };
-
-    // Download INP File
-    const downloadINPFile = (content, tableName) => {
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const timestamp = new Date().getTime();
-        a.download = `bon_${tableName.replace(/\s+/g, '_')}_${timestamp}.inp`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    };
 
     // Helper: Trigger SoftPos Payment (Android Intent)
     const triggerSoftPosPayment = (amount) => {
