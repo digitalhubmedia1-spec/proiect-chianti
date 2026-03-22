@@ -58,7 +58,7 @@ const ProductCard = ({ product, addToCart, remainingPortions }) => {
                 <div style={{ fontWeight: '600', fontSize: '0.85rem', marginBottom: '2px', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{product.name}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ color: '#2563eb', fontWeight: '700', fontSize: '0.85rem' }}>{product.price} Lei</div>
-                    {remainingPortions !== undefined && product.category !== 'Bar' && (
+                    {remainingPortions !== undefined && (
                         <div style={{ 
                             fontSize: '0.75rem', 
                             fontWeight: '700', 
@@ -204,7 +204,7 @@ const AdminPOS = () => {
         setPosDate(next);
     };
 
-    // Initialize: Load Daily Menu
+    // Initialize: Load Daily Menu + Bar Stock
     useEffect(() => {
         const loadMenu = async () => {
             const dateStr = formatDateForDB(posDate);
@@ -212,33 +212,55 @@ const AdminPOS = () => {
             
             const dailyItems = await fetchDailyMenu(dateStr);
 
-            // 1. Map daily items to full product details
+            // 0. Fetch LIVE Inventory Stock (Summed from batches)
+            const { data: batches } = await supabase
+                .from('inventory_batches')
+                .select('item_id, quantity');
+            
+            const inventoryStockMap = (batches || []).reduce((acc, b) => {
+                acc[b.item_id] = (acc[b.item_id] || 0) + (parseFloat(b.quantity) || 0);
+                return acc;
+            }, {});
+
+            // 1. Map daily items to full product details (Food Portions)
             const availableFromDaily = dailyItems.map(di => {
                 const prod = products.find(p => p.id === di.id);
                 return prod ? { ...prod, stock: di.stock } : null;
             }).filter(Boolean);
 
-            // 2. Add all Bar products regardless of daily menu
-            // Identify bar categories
+            // 2. Add Bar products with REAL Inventory Stock
             const barCategories = categories
                 .filter(c => c.type === 'bar')
                 .map(c => c.name);
             
-            // Get products that belong to bar categories
-            const barProducts = products.filter(p => barCategories.includes(p.category));
+            const barProductsList = products.filter(p => barCategories.includes(p.category));
+            
+            const barProductsWithStock = barProductsList.map(p => {
+                // Find recipe for this product to link to inventory
+                const recipe = recipes.find(r => r.linked_product_id === p.id);
+                let calculatedStock = undefined;
 
-            // Combine them, ensuring no duplicates
-            const combined = [...availableFromDaily];
-            barProducts.forEach(bp => {
-                if (!combined.some(p => p.id === bp.id)) {
-                    combined.push({ ...bp, stock: 999 }); // Default stock for bar items not in daily menu
+                if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
+                    // Calculate limiting ingredient
+                    const availabilities = recipe.ingredients.map(ing => {
+                        const itemStock = inventoryStockMap[ing.ingredient_id] || 0;
+                        const qtyRequired = parseFloat(ing.qty) || 1;
+                        return Math.floor(itemStock / qtyRequired);
+                    });
+                    calculatedStock = Math.min(...availabilities);
+                } else {
+                    // Fallback: If no recipe mapping, we can't show stock
+                    // But maybe user wants us to guess by name? Let's stick to recipes for now.
+                    calculatedStock = undefined;
                 }
+
+                return { ...p, stock: calculatedStock };
             });
 
-            setDailyProducts(combined);
+            setDailyProducts([...availableFromDaily, ...barProductsWithStock]);
         };
         if (products.length > 0) loadMenu();
-    }, [products, categories, fetchDailyMenu, posDate]);
+    }, [posDate, products, categories, recipes, fetchDailyMenu]);
     // Helper: Calculate remaining portions across ALL tables
     const getRemainingPortions = (productId) => {
         const product = dailyProducts.find(p => p.id === productId);
