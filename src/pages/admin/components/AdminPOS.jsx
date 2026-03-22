@@ -781,10 +781,10 @@ const AdminPOS = () => {
             card: parseFloat(mixedPaymentAmounts.card) || 0 
         } : null;
 
-        // Simplified flow: Card button now behaves like Cash (just saves and resets)
-        // The SoftPos app is opened separately via a new dedicated button
-        if (paymentMethod === 'card') {
-            finalizeOrder('card', finalTableId, finalCart, finalTableName, finalTotal, null);
+        // Cash payment - auto-generate receipt + save
+        if (paymentMethod === 'cash') {
+            handleGenerateBon('cash');
+            finalizeOrder('cash', finalTableId, finalCart, finalTableName, finalTotal, null);
             return;
         }
 
@@ -793,8 +793,8 @@ const AdminPOS = () => {
             return;
         }
 
-        // Cash payment - direct save
-        finalizeOrder('cash', finalTableId, finalCart, finalTableName, finalTotal, null);
+        // Default or Card (remaining as before)
+        finalizeOrder(paymentMethod, finalTableId, finalCart, finalTableName, finalTotal, null);
     };
 
     // Manual Bon Generation
@@ -1309,26 +1309,6 @@ const AdminPOS = () => {
                                 )}
                                 
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                     <button 
-                                         onClick={() => handleGenerateBon('cash')}
-                                         disabled={cart.length === 0 && !lastOrder}
-                                         style={{ 
-                                             flex: 1,
-                                             background: '#64748b', 
-                                             color: 'white', 
-                                             border: 'none', 
-                                             borderRadius: '6px', 
-                                             padding: '8px', 
-                                             fontSize: '0.85rem', 
-                                             fontWeight: '600', 
-                                             cursor: (cart.length === 0 && !lastOrder) ? 'not-allowed' : 'pointer',
-                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                             opacity: (cart.length === 0 && !lastOrder) ? 0.7 : 1
-                                         }}
-                                     >
-                                         <Printer size={16} />
-                                         BON NUMERAR
-                                     </button>
                                      <button 
                                          onClick={() => handleGenerateBon('card')}
                                          disabled={cart.length === 0 && !lastOrder}
