@@ -781,19 +781,14 @@ const AdminPOS = () => {
             card: parseFloat(mixedPaymentAmounts.card) || 0 
         } : null;
 
-        // Cash payment - auto-generate receipt + save
-        if (paymentMethod === 'cash') {
-            handleGenerateBon('cash');
-            finalizeOrder('cash', finalTableId, finalCart, finalTableName, finalTotal, null);
+        // Standard & Mixed payments - auto-generate receipt + save
+        if (paymentMethod === 'cash' || paymentMethod === 'card' || paymentMethod === 'mixed') {
+            handleGenerateBon(paymentMethod);
+            finalizeOrder(paymentMethod, finalTableId, finalCart, finalTableName, finalTotal, finalMixedAmounts);
             return;
         }
 
-        if (paymentMethod === 'mixed') {
-            finalizeOrder('mixed', finalTableId, finalCart, finalTableName, finalTotal, finalMixedAmounts);
-            return;
-        }
-
-        // Default or Card (remaining as before)
+        // Default fallback
         finalizeOrder(paymentMethod, finalTableId, finalCart, finalTableName, finalTotal, null);
     };
 
@@ -1308,47 +1303,7 @@ const AdminPOS = () => {
                                     </div>
                                 )}
                                 
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                     <button 
-                                         onClick={() => handleGenerateBon('card')}
-                                         disabled={cart.length === 0 && !lastOrder}
-                                         style={{ 
-                                             flex: 1, 
-                                             background: '#64748b', 
-                                             color: 'white', 
-                                             border: 'none', 
-                                             borderRadius: '6px', 
-                                             padding: '8px', 
-                                             fontSize: '0.85rem', 
-                                             fontWeight: '600', 
-                                             cursor: (cart.length === 0 && !lastOrder) ? 'not-allowed' : 'pointer',
-                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                             opacity: (cart.length === 0 && !lastOrder) ? 0.7 : 1
-                                         }}
-                                     >
-                                         <Printer size={16} />
-                                         BON CARD
-                                     </button>
-                                     {(isMixedPayment || (lastOrder && lastOrder.paymentMethod === 'mixed')) && (
-                                         <button 
-                                             onClick={() => handleGenerateBon('mixed')}
-                                             style={{ 
-                                                 flex: 1,
-                                                 background: '#f59e0b', 
-                                                 color: 'white', 
-                                                 border: 'none', 
-                                                 borderRadius: '6px', 
-                                                 padding: '8px', 
-                                                 fontSize: '0.85rem', 
-                                                 fontWeight: '600', 
-                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                                             }}
-                                         >
-                                             <Printer size={16} />
-                                             BON MIXT
-                                         </button>
-                                     )}
-                                 </div>
+                                {/* Receipts are now handled automatically by the payment buttons */}
                             </div>
                         </div>
                     </>
