@@ -418,26 +418,42 @@ const AdminPOS = () => {
         if (!selectedTable) return alert("Selectează o masă!");
         if (cart.length === 0) return alert("Coșul este gol!");
 
-        // Identify items that need to be sent (qty > sent_qty)
-        const itemsToSend = cart.filter(item => (item.qty - (item.sent_qty || 0)) > 0);
+        const barCategories = categories.filter(c => c.type === 'bar').map(c => c.name);
 
-        if (itemsToSend.length === 0) {
-            return alert("Toate produsele au fost deja trimise la bucătărie!");
+        // Identify items that need to be sent (qty > sent_qty)
+        const allNewItems = cart.filter(item => (item.qty - (item.sent_qty || 0)) > 0);
+        
+        // Filter out Bar items from the kitchen ticket
+        const itemsToKitchen = allNewItems.filter(item => !barCategories.includes(item.category));
+
+        if (allNewItems.length === 0) {
+            return alert("Toate produsele au fost deja procesate!");
         }
 
-        if (!window.confirm(`Trimiteți ${itemsToSend.length} produse noi la bucătărie?`)) return;
+        if (itemsToKitchen.length === 0) {
+            // Only bar items were added
+            const updatedItems = cart.map(item => ({
+                ...item,
+                sent_qty: item.qty
+            }));
+            updateTableItems(selectedTableId, updatedItems);
+            alert("Băuturile au fost adăugate la masa (nu se trimit la bucătărie).");
+            return;
+        }
+
+        if (!window.confirm(`Trimiteți ${itemsToKitchen.length} produse noi la bucătărie?`)) return;
 
         setIsSaving(true);
         try {
             const finalTableName = selectedTable.name;
             
-            // Calculate total for THIS kitchen ticket (only new items)
-            const ticketTotal = itemsToSend.reduce((sum, item) => {
+            // Calculate total for THIS kitchen ticket (only new food items)
+            const ticketTotal = itemsToKitchen.reduce((sum, item) => {
                 const qtyToSend = item.qty - (item.sent_qty || 0);
                 return sum + (item.price * qtyToSend);
             }, 0);
 
-            // 1. Create Order (Status: preparing) - ONLY for new items
+            // 1. Create Order (Status: preparing) - ONLY for new food items
             const orderPayload = {
                 id: Date.now(),
                 user_id: user?.id,
@@ -448,7 +464,7 @@ const AdminPOS = () => {
                 is_pos_order: true,
                 table_number: finalTableName,
                 fiscal_print_status: 'none',
-                items: itemsToSend.map(item => {
+                items: itemsToKitchen.map(item => {
                     const qtyToSend = item.qty - (item.sent_qty || 0);
                     let cleanName = item.name || '';
                     cleanName = cleanName.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
